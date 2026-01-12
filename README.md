@@ -8,13 +8,13 @@ Phoenix Insight transforms your Phoenix observability data into a structured fil
 
 ```bash
 # Install globally via npm
-npm install -g @arizeai/phoenix-insight
+npm install -g @cephalization/phoenix-insight
 
 # Or use with pnpm
-pnpm add -g @arizeai/phoenix-insight
+pnpm add -g @cephalization/phoenix-insight
 
 # Or run directly with npx
-npx @arizeai/phoenix-insight "your query"
+npx @cephalization/phoenix-insight "your query"
 ```
 
 ## Quick Start
