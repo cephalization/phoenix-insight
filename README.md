@@ -573,14 +573,4 @@ The recommendations endpoint has high variability, suggesting cache misses.
 
 ## License
 
-Apache-2.0 - See [LICENSE](../../../LICENSE) for details.
-
-## Contributing
-
-Contributions are welcome! Please see our [Contributing Guide](../../../CONTRIBUTING.md) for details.
-
-## Support
-
-- [GitHub Issues](https://github.com/Arize-ai/phoenix/issues)
-- [Phoenix Documentation](https://docs.arize.com/phoenix)
-- [Discord Community](https://discord.gg/arize-ai)
+Apache-2.0 - See [LICENSE](./LICENSE) for details.
