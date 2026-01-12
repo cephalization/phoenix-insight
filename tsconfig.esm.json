@@ -5,6 +5,5 @@
     "noEmit": false
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["test/**/*.ts"],
-  "references": [{ "path": "../phoenix-client" }]
+  "exclude": ["test/**/*.ts"]
 }
