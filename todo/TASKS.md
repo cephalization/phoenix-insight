@@ -90,7 +90,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### sequence-advanced-content
 
 - content: Organize the "advanced" portion of README: Configuration (file, env vars, tables), Execution Modes (sandbox vs local details), Agent Capabilities, Observability (--trace), Development, Contributing & Releases, License. Move these sections to the end.
-- status: pending
+- status: complete
 - dependencies: sequence-basic-content
 
 ### remove-redundancy

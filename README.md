@@ -396,27 +396,73 @@ Phoenix data is organized into an intuitive REST-like hierarchy:
     snapshot.json                   # Snapshot metadata
 ```
 
-## Execution Modes
+## Examples of Agent Analysis
 
-Phoenix Insight supports two execution modes:
+### Error Pattern Detection
 
-### Sandbox Mode (default)
+```
+User: "What are the most common errors in my traces?"
 
-Uses [just-bash](https://github.com/vercel-labs/just-bash) for complete isolation:
+Agent: I'll analyze the error patterns in your traces. Let me start by examining the context...
 
-- **In-memory filesystem**: No disk writes
-- **Simulated bash**: 50+ built-in commands
-- **Zero risk**: Cannot access your system
-- **Perfect for**: CI/CD, demos, safe exploration
+*reads _context.md*
+*searches for error spans across projects*
+*aggregates by error type*
+*identifies patterns*
 
-### Local Mode (--local)
+I found 3 main error patterns in your traces:
+1. **Database timeouts** (42% of errors): Occurring in user-service, primarily during peak hours
+2. **API rate limits** (31% of errors): Third-party integration hitting limits
+3. **Null pointer exceptions** (27% of errors): In the recommendation engine
 
-Uses real bash and persistent storage:
+The database timeouts show a clear pattern during 9-10am and 2-3pm daily.
+```
 
-- **Persistent data**: Snapshots saved to `~/.phoenix-insight/`
-- **Full bash power**: All system commands available
-- **Incremental updates**: Only fetches new data
-- **Perfect for**: Power users, complex analysis, custom tools
+### Performance Analysis
+
+```
+User: "Find the slowest API endpoints"
+
+Agent: I'll analyze your API endpoint performance. Let me examine the span data...
+
+*reads project spans*
+*calculates latency percentiles*
+*groups by endpoint*
+*identifies outliers*
+
+Here are your slowest API endpoints by p95 latency:
+1. `/api/v1/recommendations` - 3.2s p95 (8.1s p99)
+2. `/api/v1/search` - 2.8s p95 (5.2s p99)
+3. `/api/v1/user/history` - 1.9s p95 (3.1s p99)
+
+The recommendations endpoint has high variability, suggesting cache misses.
+```
+
+## Tips and Best Practices
+
+### Query Formulation
+
+- Be specific about what you want to analyze
+- Mention time ranges if relevant
+- Ask for patterns, not just raw data
+
+### Performance
+
+- Use `--limit` to control data volume
+- In sandbox mode, start with smaller datasets
+- Use local mode for production analysis
+
+### Security
+
+- Use sandbox mode when trying new queries
+- Never put API keys in queries
+- Review agent actions with `--stream`
+
+---
+
+## Advanced Topics
+
+The following sections cover configuration, execution modes, and internal details for power users.
 
 ## Configuration
 
@@ -489,22 +535,27 @@ In local mode, data is stored in:
 
 Use `phoenix-insight prune` to clean up local storage (see [CLI Examples](#snapshot-management)).
 
-## Troubleshooting
+## Execution Modes
 
-For connection issues, authentication errors, debug mode, and common issues, see the [Troubleshooting Guide](./TROUBLESHOOTING.md).
+Phoenix Insight supports two execution modes:
 
-## Observability
+### Sandbox Mode (default)
 
-Phoenix Insight can trace its own execution back to Phoenix for monitoring and debugging using the `--trace` flag (see [CLI Examples](#observability)).
+Uses [just-bash](https://github.com/vercel-labs/just-bash) for complete isolation:
 
-When `--trace` is enabled:
+- **In-memory filesystem**: No disk writes
+- **Simulated bash**: 50+ built-in commands
+- **Zero risk**: Cannot access your system
+- **Perfect for**: CI/CD, demos, safe exploration
 
-- All agent operations are traced as spans
-- Tool calls and responses are captured
-- Performance metrics are recorded
-- Traces are sent to the same Phoenix instance being queried (or the one specified by --base-url)
+### Local Mode (--local)
 
-This is useful for debugging slow queries, understanding agent decision-making, monitoring usage, and optimizing performance.
+Uses real bash and persistent storage:
+
+- **Persistent data**: Snapshots saved to `~/.phoenix-insight/`
+- **Full bash power**: All system commands available
+- **Incremental updates**: Only fetches new data
+- **Perfect for**: Power users, complex analysis, custom tools
 
 ## Agent Capabilities
 
@@ -538,6 +589,23 @@ The agent always starts by reading `/_context.md` which provides:
 - Recent activity highlights
 - Data freshness information
 - Available commands reminder
+
+## Observability
+
+Phoenix Insight can trace its own execution back to Phoenix for monitoring and debugging using the `--trace` flag (see [CLI Examples](#observability)).
+
+When `--trace` is enabled:
+
+- All agent operations are traced as spans
+- Tool calls and responses are captured
+- Performance metrics are recorded
+- Traces are sent to the same Phoenix instance being queried (or the one specified by --base-url)
+
+This is useful for debugging slow queries, understanding agent decision-making, monitoring usage, and optimizing performance.
+
+## Troubleshooting
+
+For connection issues, authentication errors, debug mode, and common issues, see the [Troubleshooting Guide](./TROUBLESHOOTING.md).
 
 ## Development
 
@@ -589,68 +657,6 @@ pnpm test src/modes/sandbox.test.ts
 # Type checking
 pnpm typecheck
 ```
-
-## Examples of Agent Analysis
-
-### Error Pattern Detection
-
-```
-User: "What are the most common errors in my traces?"
-
-Agent: I'll analyze the error patterns in your traces. Let me start by examining the context...
-
-*reads _context.md*
-*searches for error spans across projects*
-*aggregates by error type*
-*identifies patterns*
-
-I found 3 main error patterns in your traces:
-1. **Database timeouts** (42% of errors): Occurring in user-service, primarily during peak hours
-2. **API rate limits** (31% of errors): Third-party integration hitting limits
-3. **Null pointer exceptions** (27% of errors): In the recommendation engine
-
-The database timeouts show a clear pattern during 9-10am and 2-3pm daily.
-```
-
-### Performance Analysis
-
-```
-User: "Find the slowest API endpoints"
-
-Agent: I'll analyze your API endpoint performance. Let me examine the span data...
-
-*reads project spans*
-*calculates latency percentiles*
-*groups by endpoint*
-*identifies outliers*
-
-Here are your slowest API endpoints by p95 latency:
-1. `/api/v1/recommendations` - 3.2s p95 (8.1s p99)
-2. `/api/v1/search` - 2.8s p95 (5.2s p99)
-3. `/api/v1/user/history` - 1.9s p95 (3.1s p99)
-
-The recommendations endpoint has high variability, suggesting cache misses.
-```
-
-## Tips and Best Practices
-
-### Query Formulation
-
-- Be specific about what you want to analyze
-- Mention time ranges if relevant
-- Ask for patterns, not just raw data
-
-### Performance
-
-- Use `--limit` to control data volume
-- In sandbox mode, start with smaller datasets
-- Use local mode for production analysis
-
-### Security
-
-- Use sandbox mode when trying new queries
-- Never put API keys in queries
-- Review agent actions with `--stream`
 
 ## Contributing & Releases
 

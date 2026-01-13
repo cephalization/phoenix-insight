@@ -76,3 +76,20 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Key insight: The separation between "basic" and "advanced" content is about user journey - users want to know "how do I use this?" before "how does this work internally?"
 - Fixed a broken internal link: `#observability-1` changed to `#observability` since the section ID is no longer duplicated after reorganization
 - The next task (sequence-advanced-content) should properly order the advanced sections: Configuration, Execution Modes, Agent Capabilities, Observability, Development, Contributing, License
+
+## sequence-advanced-content
+
+- Reorganized advanced sections into a logical flow after the basic content: Configuration → Execution Modes → Agent Capabilities → Observability → Troubleshooting → Development → Contributing & Releases → Support → License
+- Added an "Advanced Topics" header with a brief intro sentence to create a clear boundary between basic and advanced content
+- Key insight: The advanced section order follows a "configure → understand → extend" progression:
+  1. Configuration (how to customize) - most commonly needed by power users
+  2. Execution Modes (sandbox vs local) - understanding the two operating modes
+  3. Agent Capabilities (what the AI can do) - internal details about bash commands and tools
+  4. Observability (tracing) - self-monitoring capabilities
+  5. Troubleshooting (link) - help when things go wrong
+  6. Development (building from source) - for contributors
+  7. Contributing & Releases - how to contribute
+  8. Support, License - standard end sections
+- Moved "Examples of Agent Analysis" and "Tips and Best Practices" to just before the "Advanced Topics" divider since they're practical content useful to all users, not just power users
+- The horizontal rule (---) serves as a visual separator between the basic usage sections and the advanced configuration/internals sections
+- Pattern: Group content by user intent - basic users want to start using, advanced users want to customize and understand internals
