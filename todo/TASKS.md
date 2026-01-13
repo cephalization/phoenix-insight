@@ -33,7 +33,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### install-changesets
 
 - content: Install @changesets/cli as a devDependency and initialize changesets with `pnpm changeset init`. Configure .changeset/config.json for single-package repo (set "access" to "public", "baseBranch" to "main")
-- status: pending
+- status: complete
 - dependencies: update-package-json
 
 ---
