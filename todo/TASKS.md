@@ -59,6 +59,6 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### update-readme-publishing
 
 - content: Add a "Contributing & Releases" section to README.md explaining how to use changesets for versioning (pnpm changeset, commit the changeset file, merge PR, release PR gets created automatically). Include badge for npm version
-- status: pending
+- status: complete
 - dependencies: create-release-workflow
 

@@ -59,3 +59,12 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - The `publish` option specifies `pnpm changeset publish` which handles the actual npm publish
 - Custom `title` and `commit` options set the PR/commit message format to `chore: version packages`
 - Workflow-only task - no tests required per PROMPT.md guidelines
+
+## update-readme-publishing
+
+- Added npm version badge using shields.io format: `[![npm version](https://img.shields.io/npm/v/@cephalization/phoenix-insight.svg)](https://www.npmjs.com/package/@cephalization/phoenix-insight)`
+- For scoped packages, the badge URL uses the full scoped name with `@` and `/` (e.g., `@cephalization/phoenix-insight`)
+- Replaced the simple "Contributing" section with a detailed "Contributing & Releases" section
+- Documented the full changesets workflow: create changeset, commit, merge PR, Version Packages PR created, merge version PR, auto-publish to npm
+- Included changeset type guidelines (patch/minor/major) to help contributors choose the right version bump
+- Documentation-only task - no tests required per PROMPT.md guidelines
