@@ -27,7 +27,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### update-package-json
 
 - content: Update package.json for npm publishing - add "publishConfig": { "access": "public" }, add "pxi" as a second bin alias, update repository/homepage/bugs URLs to point to cephalization/phoenix-insight repo
-- status: pending
+- status: complete
 - dependencies: none
 
 ### install-changesets
