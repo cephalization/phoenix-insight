@@ -68,7 +68,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### create-query-examples-section
 
 - content: Create a dedicated "Example Queries" section showcasing useful natural language queries for Phoenix analysis. Include categories: Error Analysis, Performance/Latency, Token Usage, RAG Analysis, Evaluations, Dataset Analysis, and Prompt Engineering. Use real Phoenix terminology.
-- status: pending
+- status: complete
 - dependencies: research-phoenix-use-cases
 
 ### create-command-reference-tables

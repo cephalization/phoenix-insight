@@ -41,3 +41,14 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Important: When consolidating, I accidentally removed the Execution Modes section - had to re-add it between Filesystem Structure and CLI Examples
 - Pattern: When doing large edits that replace multiple sections, double-check that all essential explanatory content (not just examples) is preserved
 - The progressive structure goes: basic usage → interactive mode → snapshot management → local mode → connection → data fetching → output → observability → on-demand → combining options
+
+## create-query-examples-section
+
+- Added a dedicated "Example Queries" section after "CLI Examples" and before "Configuration" to maintain the basic-to-advanced flow
+- Organized into 9 categories covering all requested areas plus two bonus categories (Session Analysis and Tool Calls) that were in the research notes
+- Categories: Error Analysis, Performance & Latency, Token Usage & Costs, RAG Analysis, Evaluations & Experiments, Dataset Analysis, Prompt Engineering, Session & Conversation Analysis, Tool & Function Calls
+- Each category has 4 example queries showing progressively more specific or advanced use cases
+- Used Phoenix-specific terminology: spans, traces, sessions, evaluations, experiments, retrievals, embeddings, tool calls
+- Key insight: The queries should demonstrate what's uniquely possible with Phoenix Insight's filesystem approach (e.g., cross-project analysis, aggregations, pattern detection) rather than simple lookups
+- Pattern: Each query example is a complete `phoenix-insight "..."` command users can copy-paste directly
+- Placed section strategically to flow from "how to use the CLI" (CLI Examples) to "what to ask" (Example Queries) to "how to configure" (Configuration)

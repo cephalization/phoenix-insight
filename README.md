@@ -258,6 +258,100 @@ phoenix-insight --local --base-url https://phoenix.example.com \
 phoenix-insight --refresh --trace --stream "analyze error patterns over time"
 ```
 
+## Example Queries
+
+Phoenix Insight understands natural language queries about your observability data. Here are examples organized by analysis type to help you get started.
+
+### Error Analysis
+
+```bash
+# Find and categorize errors
+phoenix-insight "What are the most common errors in the last 24 hours?"
+phoenix-insight "Show me all failed spans and their error messages"
+phoenix-insight "Which services have the highest error rates?"
+phoenix-insight "Find traces that contain exceptions or timeouts"
+```
+
+### Performance & Latency
+
+```bash
+# Identify performance bottlenecks
+phoenix-insight "What are the slowest LLM calls in my application?"
+phoenix-insight "Find traces where latency exceeds 5 seconds"
+phoenix-insight "Show p50, p95, and p99 latency by endpoint"
+phoenix-insight "Which operations have the highest latency variance?"
+```
+
+### Token Usage & Costs
+
+```bash
+# Analyze LLM resource consumption
+phoenix-insight "Which LLM calls are consuming the most tokens?"
+phoenix-insight "Calculate total token usage for the chatbot project"
+phoenix-insight "Show token usage breakdown by model type"
+phoenix-insight "Find conversations that exceeded 10,000 tokens"
+```
+
+### RAG Analysis
+
+```bash
+# Examine retrieval-augmented generation patterns
+phoenix-insight "Show retrieved documents with low relevance scores"
+phoenix-insight "Find retrieval calls that returned no results"
+phoenix-insight "What's the average number of documents retrieved per query?"
+phoenix-insight "Identify queries where retrieval latency dominated total time"
+```
+
+### Evaluations & Experiments
+
+```bash
+# Review evaluation results and experiment metrics
+phoenix-insight "What's the hallucination rate across my experiments?"
+phoenix-insight "Compare accuracy scores between model versions"
+phoenix-insight "Show experiments sorted by success rate"
+phoenix-insight "Find evaluation runs where quality scores dropped below threshold"
+```
+
+### Dataset Analysis
+
+```bash
+# Explore datasets and examples
+phoenix-insight "Show statistics for my evaluation datasets"
+phoenix-insight "Find examples where the model failed quality checks"
+phoenix-insight "What's the distribution of example categories in my dataset?"
+phoenix-insight "List datasets with the most recent updates"
+```
+
+### Prompt Engineering
+
+```bash
+# Analyze prompt versions and performance
+phoenix-insight "List all prompt versions and their performance metrics"
+phoenix-insight "Compare outputs between prompt v1 and v2"
+phoenix-insight "Which prompt template has the lowest error rate?"
+phoenix-insight "Show the evolution of my summarization prompt"
+```
+
+### Session & Conversation Analysis
+
+```bash
+# Understand user interaction patterns
+phoenix-insight "Show the conversation flow for session abc123"
+phoenix-insight "Find sessions with high user abandonment"
+phoenix-insight "What's the average conversation length by project?"
+phoenix-insight "Identify sessions where users repeated similar queries"
+```
+
+### Tool & Function Calls
+
+```bash
+# Analyze agent tool usage
+phoenix-insight "Which tools are being called most frequently?"
+phoenix-insight "Find tool calls that failed or timed out"
+phoenix-insight "Show the success rate for each tool type"
+phoenix-insight "What's the average latency for function calls?"
+```
+
 ## Configuration
 
 Phoenix Insight uses a layered configuration system with the following priority (highest to lowest):
