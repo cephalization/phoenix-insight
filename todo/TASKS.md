@@ -22,43 +22,89 @@ Each agent picks the next pending task, implements it, and marks it complete.
 
 ---
 
-## Phase 1: Package Configuration
+## Phase 1: Research & Planning
 
-### update-package-json
+### research-phoenix-use-cases
 
-- content: Update package.json for npm publishing - add "publishConfig": { "access": "public" }, add "pxi" as a second bin alias, update repository/homepage/bugs URLs to point to cephalization/phoenix-insight repo
+- content: Review Phoenix documentation to understand key use cases (tracing, evals, datasets/experiments, prompts) for writing relevant query examples. Document 8-12 compelling query examples that demonstrate real Phoenix analysis scenarios.
 - status: complete
 - dependencies: none
+- notes: Completed during planning - use cases documented below for reference by later tasks
 
-### install-changesets
-
-- content: Install @changesets/cli as a devDependency and initialize changesets with `pnpm changeset init`. Configure .changeset/config.json for single-package repo (set "access" to "public", "baseBranch" to "main")
-- status: complete
-- dependencies: update-package-json
-
----
-
-## Phase 2: GitHub Actions Workflows
-
-### create-ci-workflow
-
-- content: Create .github/workflows/ci.yml that runs on push to main and pull requests. Jobs: install deps (pnpm install), typecheck (pnpm typecheck), test (pnpm test), build (pnpm build). Use pnpm/action-setup and actions/setup-node with caching
-- status: complete
-- dependencies: install-changesets
-
-### create-release-workflow
-
-- content: Create .github/workflows/release.yml that runs on push to main. Uses changesets/action to either create a "Version Packages" PR (when changesets exist) or publish to npm (when no changesets and version changed). Requires NPM_TOKEN secret. Runs CI checks before publishing
-- status: complete
-- dependencies: create-ci-workflow
+**Phoenix Use Cases for Query Examples:**
+1. **Tracing/Latency**: "What are the slowest LLM calls in my application?" / "Find traces where latency exceeds 5 seconds"
+2. **Error Analysis**: "Show me all failed spans and their error messages" / "What are the most common exceptions in the last 24 hours?"
+3. **Token Usage**: "Which LLM calls are consuming the most tokens?" / "Calculate total token cost for the chatbot project"
+4. **RAG Analysis**: "Show retrieved documents with low relevance scores" / "Find retrieval calls that returned no results"
+5. **Evaluation Results**: "What's the hallucination rate across my experiments?" / "Compare accuracy scores between model versions"
+6. **Dataset Analysis**: "Show statistics for my evaluation datasets" / "Find examples where the model failed quality checks"
+7. **Prompt Engineering**: "List all prompt versions and their performance" / "Compare outputs between prompt v1 and v2"
+8. **Session Analysis**: "Show the conversation flow for session X" / "Find sessions with high user abandonment"
+9. **Tool Calls**: "Which tools are being called most frequently?" / "Find tool calls that failed or timed out"
+10. **Embedding Analysis**: "Show embedding dimensions across projects" / "Find semantic similarity outliers in retrieval"
 
 ---
 
-## Phase 3: Documentation
+## Phase 2: Documentation Restructure
 
-### update-readme-publishing
+### create-troubleshooting-doc
 
-- content: Add a "Contributing & Releases" section to README.md explaining how to use changesets for versioning (pnpm changeset, commit the changeset file, merge PR, release PR gets created automatically). Include badge for npm version
-- status: complete
-- dependencies: create-release-workflow
+- content: Extract all troubleshooting content from README.md into a new TROUBLESHOOTING.md file. Include connection issues, authentication errors, debug mode, and common issues sections. Add cross-reference link in README.
+- status: pending
+- dependencies: none
 
+### restructure-readme-intro
+
+- content: Rewrite the README introduction to lead with architecture value proposition. Explain the "bash + files" paradigm, why filesystem-native analysis is powerful, and how it enables transparent AI-driven observability. Keep it concise (2-3 paragraphs max).
+- status: pending
+- dependencies: none
+
+### consolidate-cli-examples
+
+- content: Create a single progressive "CLI Examples" section that starts with basic usage and advances to complex scenarios. Remove scattered examples from other sections. Cover: basic query, interactive mode, snapshot management, local mode, connection options, all flags with brief examples.
+- status: pending
+- dependencies: create-troubleshooting-doc
+
+### create-query-examples-section
+
+- content: Create a dedicated "Example Queries" section showcasing useful natural language queries for Phoenix analysis. Include categories: Error Analysis, Performance/Latency, Token Usage, RAG Analysis, Evaluations, Dataset Analysis, and Prompt Engineering. Use real Phoenix terminology.
+- status: pending
+- dependencies: research-phoenix-use-cases
+
+### create-command-reference-tables
+
+- content: Create separate CLI reference tables for each command (default/query, snapshot, prune, help). Each table should list all options with descriptions, defaults, and brief inline examples. Remove the current single combined table.
+- status: pending
+- dependencies: consolidate-cli-examples
+
+---
+
+## Phase 3: Content Sequencing
+
+### sequence-basic-content
+
+- content: Organize the "basic" portion of README: Introduction (architecture value), Installation, Quick Start, CLI Examples (progressive), Example Queries. Ensure smooth flow from simple to intermediate usage.
+- status: pending
+- dependencies: restructure-readme-intro, consolidate-cli-examples, create-query-examples-section, create-command-reference-tables
+
+### sequence-advanced-content
+
+- content: Organize the "advanced" portion of README: Configuration (file, env vars, tables), Execution Modes (sandbox vs local details), Agent Capabilities, Observability (--trace), Development, Contributing & Releases, License. Move these sections to the end.
+- status: pending
+- dependencies: sequence-basic-content
+
+### remove-redundancy
+
+- content: Final pass to remove all redundant content. Eliminate duplicate explanations, consolidate repeated flag descriptions, remove any content that appears in multiple places. Ensure each concept is explained exactly once.
+- status: pending
+- dependencies: sequence-advanced-content
+
+---
+
+## Phase 4: Final Review
+
+### review-and-polish
+
+- content: Final review of restructured README. Check for: consistent formatting, working markdown links, logical flow from basic to advanced, all commands documented with all options, no orphaned sections. Fix any issues found.
+- status: pending
+- dependencies: remove-redundancy
