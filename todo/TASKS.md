@@ -11,7 +11,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 4. Write and run tests
 5. Change the task's status to `complete`
 6. Append learnings to LEARNINGS.md
-7. Commit with message: `refactor(phoenix-insight): <task-id> - <description>`
+7. Commit with message: `feat: <task-id> - <description>`
 8. EXIT
 
 ## Task Statuses
@@ -22,82 +22,43 @@ Each agent picks the next pending task, implements it, and marks it complete.
 
 ---
 
-## Phase 1: Delete Ineffective and Skipped Tests
+## Phase 1: Package Configuration
 
-These tests provide no value - they either check file existence, match documentation text, or are already skipped.
+### update-package-json
 
-### delete-scaffold-structure-test
-
-- content: Delete `test/scaffold-structure.test.ts` - it only checks source file existence using `fs.existsSync`, which is not meaningful unit testing (build/typecheck already validates structure)
-- status: complete
+- content: Update package.json for npm publishing - add "publishConfig": { "access": "public" }, add "pxi" as a second bin alias, update repository/homepage/bugs URLs to point to cephalization/phoenix-insight repo
+- status: pending
 - dependencies: none
 
-### delete-skipped-cli-tests
+### install-changesets
 
-- content: Delete the three skipped test files that spawn real processes: `test/cli-prune.test.ts`, `test/cli-flags.test.ts`, `test/cli-help.test.ts` - they are not running and would be dangerous if unskipped
-- status: complete
-- dependencies: none
-
----
-
-## Phase 2: Refactor CLI Tests (Process Execution)
-
-These tests use `execAsync` to spawn real CLI processes, which is dangerous (leaky network, real I/O). Refactor to test exported functions directly, or delete if logic is not easily testable.
-
-### refactor-cli-test
-
-- content: Refactor `test/cli.test.ts` to test CLI logic via exported functions (command parsing, option handling) instead of spawning real processes with `execAsync`. If the CLI entry point doesn't expose testable units, delete the tests that require process execution.
-- status: complete
-- dependencies: delete-scaffold-structure-test, delete-skipped-cli-tests
-
-### refactor-cli-use-config-test
-
-- content: Refactor `test/cli-use-config.test.ts` to use mocked filesystem instead of creating real temp directories and files. Test config loading logic through exported functions with `vi.mock("node:fs/promises")` instead of spawning real CLI processes.
-- status: complete
-- dependencies: refactor-cli-test
-
-### refactor-cli-config-flag-test
-
-- content: Refactor `test/cli-config-flag.test.ts` to use mocked filesystem and test flag parsing logic directly instead of spawning real CLI processes. Delete if config flag logic is already covered by other tests.
-- status: complete
-- dependencies: refactor-cli-use-config-test
-
-### refactor-cli-snapshot-use-config-test
-
-- content: Refactor `test/cli-snapshot-use-config.test.ts` to use mocked filesystem and test snapshot config integration through exported functions instead of spawning real CLI processes.
-- status: complete
-- dependencies: refactor-cli-config-flag-test
+- content: Install @changesets/cli as a devDependency and initialize changesets with `pnpm changeset init`. Configure .changeset/config.json for single-package repo (set "access" to "public", "baseBranch" to "main")
+- status: pending
+- dependencies: update-package-json
 
 ---
 
-## Phase 3: Refactor Filesystem Tests
+## Phase 2: GitHub Actions Workflows
 
-These tests write to real filesystem locations (temp dirs, `~/.phoenix-insight/`). Refactor to use mocked `fs` module.
+### create-ci-workflow
 
-### refactor-local-mode-test
+- content: Create .github/workflows/ci.yml that runs on push to main and pull requests. Jobs: install deps (pnpm install), typecheck (pnpm typecheck), test (pnpm test), build (pnpm build). Use pnpm/action-setup and actions/setup-node with caching
+- status: pending
+- dependencies: install-changesets
 
-- content: Refactor `test/local-mode.test.ts` to use `vi.mock("node:fs/promises")` instead of writing to real directories in `~/.phoenix-insight/snapshots/`. Mock all fs operations to prevent any real disk I/O.
-- status: complete
-- dependencies: refactor-cli-snapshot-use-config-test
+### create-release-workflow
 
-### refactor-snapshot-incremental-local-test
-
-- content: Refactor `test/snapshot-incremental-local.test.ts` to use mocked filesystem instead of creating real directories in `os.tmpdir()`. The LocalMode integration should be tested with mocked fs operations.
-- status: complete
-- dependencies: refactor-local-mode-test
-
-### refactor-agent-tools-test
-
-- content: Refactor `test/agent/tools.test.ts` to remove the temp directory creation in `os.tmpdir()` (lines 53-59). Use mocked filesystem for any tests that need directory structure.
-- status: complete
-- dependencies: refactor-snapshot-incremental-local-test
+- content: Create .github/workflows/release.yml that runs on push to main. Uses changesets/action to either create a "Version Packages" PR (when changesets exist) or publish to npm (when no changesets and version changed). Requires NPM_TOKEN secret. Runs CI checks before publishing
+- status: pending
+- dependencies: create-ci-workflow
 
 ---
 
-## Phase 4: Final Verification
+## Phase 3: Documentation
 
-### verify-all-tests-pass
+### update-readme-publishing
 
-- content: Run `pnpm test` and verify all tests pass. Run `pnpm typecheck` to ensure no type errors. Document any tests that were deleted vs refactored in LEARNINGS.md summary.
-- status: complete
-- dependencies: refactor-agent-tools-test
+- content: Add a "Contributing & Releases" section to README.md explaining how to use changesets for versioning (pnpm changeset, commit the changeset file, merge PR, release PR gets created automatically). Include badge for npm version
+- status: pending
+- dependencies: create-release-workflow
+
