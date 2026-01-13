@@ -1,5 +1,7 @@
 # Phoenix Insight CLI
 
+[![npm version](https://img.shields.io/npm/v/@cephalization/phoenix-insight.svg)](https://www.npmjs.com/package/@cephalization/phoenix-insight)
+
 A filesystem-native AI agent CLI for querying Phoenix instances using the "bash + files" paradigm inspired by [Vercel's agent architecture](https://vercel.com/blog/how-to-build-agents-with-filesystems-and-bash).
 
 Phoenix Insight transforms your Phoenix observability data into a structured filesystem, then uses an AI agent with bash tools to analyze it through natural language queries. This approach provides transparency, flexibility, and power that traditional APIs can't match.
@@ -570,6 +572,48 @@ The recommendations endpoint has high variability, suggesting cache misses.
 - Use sandbox mode when trying new queries
 - Never put API keys in queries
 - Review agent actions with `--stream`
+
+## Contributing & Releases
+
+Contributions are welcome! This project uses [changesets](https://github.com/changesets/changesets) for version management and automated releases.
+
+### Making Changes
+
+1. Fork the repository and create a feature branch
+2. Make your changes and ensure tests pass (`pnpm test`)
+3. Create a changeset to document your changes:
+
+```bash
+pnpm changeset
+```
+
+4. Follow the prompts to:
+   - Select the type of change (patch, minor, major)
+   - Describe what changed for the changelog
+
+5. Commit the generated changeset file along with your changes
+6. Open a pull request
+
+### Release Process
+
+When your PR is merged to `main`:
+
+1. If there are pending changesets, a "Version Packages" PR is automatically created
+2. This PR updates the version in `package.json` and generates `CHANGELOG.md` entries
+3. When the Version Packages PR is merged, the package is automatically published to npm
+
+### Changeset Guidelines
+
+- **patch**: Bug fixes, documentation updates, internal refactoring
+- **minor**: New features, new CLI options, non-breaking enhancements
+- **major**: Breaking changes to CLI interface or behavior
+
+## Support
+
+This software is provided "as is" without warranty of any kind. Use at your own risk.
+
+You may file GitHub issues at [https://github.com/cephalization/phoenix-insight/issues](https://github.com/cephalization/phoenix-insight/issues).
+
 
 ## License
 
