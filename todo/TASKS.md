@@ -49,7 +49,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### create-release-workflow
 
 - content: Create .github/workflows/release.yml that runs on push to main. Uses changesets/action to either create a "Version Packages" PR (when changesets exist) or publish to npm (when no changesets and version changed). Requires NPM_TOKEN secret. Runs CI checks before publishing
-- status: pending
+- status: complete
 - dependencies: create-ci-workflow
 
 ---

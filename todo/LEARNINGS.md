@@ -44,3 +44,18 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - `--frozen-lockfile` flag ensures CI fails if lockfile is out of sync with package.json
 - Workflow triggers on push to main and pull requests targeting main
 - No tests required for workflow-only task per PROMPT.md guidelines
+
+## create-release-workflow
+
+- Created `.github/workflows/release.yml` using the `changesets/action@v1` action
+- Added `concurrency: ${{ github.workflow }}-${{ github.ref }}` to prevent concurrent releases which could cause race conditions
+- The workflow reuses the same CI steps (typecheck, test, build) before the release step to ensure only passing code gets published
+- `changesets/action` handles the dual behavior automatically:
+  - When changesets exist: Creates/updates a "Version Packages" PR with bumped versions
+  - When no changesets (after merging version PR): Publishes to npm
+- Two secrets are required:
+  - `GITHUB_TOKEN` (auto-provided): For creating PRs and commits
+  - `NPM_TOKEN` (must be added manually): For npm publishing
+- The `publish` option specifies `pnpm changeset publish` which handles the actual npm publish
+- Custom `title` and `commit` options set the PR/commit message format to `chore: version packages`
+- Workflow-only task - no tests required per PROMPT.md guidelines
