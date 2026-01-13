@@ -106,5 +106,5 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### review-and-polish
 
 - content: Final review of restructured README. Check for: consistent formatting, working markdown links, logical flow from basic to advanced, all commands documented with all options, no orphaned sections. Fix any issues found.
-- status: pending
+- status: complete
 - dependencies: remove-redundancy

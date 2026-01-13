@@ -266,7 +266,7 @@ phoenix-insight "What's the average latency for function calls?"
 
 Phoenix Insight provides several commands, each with its own options.
 
-### Query Command (default)
+### Query Command (Default)
 
 The default command analyzes Phoenix data with natural language queries.
 
@@ -325,8 +325,6 @@ phoenix-insight help
 ```
 
 No additional options. Shows usage information, all commands, and their options.
-
----
 
 ## How It Works
 
@@ -435,13 +433,11 @@ The recommendations endpoint has high variability, suggesting cache misses.
 - Never put API keys in queries
 - Review agent actions with `--stream`
 
----
-
 ## Advanced Topics
 
 The following sections cover configuration, execution modes, and internal details for power users.
 
-## Configuration
+### Configuration
 
 Phoenix Insight uses a layered configuration system with the following priority (highest to lowest):
 
@@ -449,7 +445,7 @@ Phoenix Insight uses a layered configuration system with the following priority 
 2. **Environment variables** - `PHOENIX_*` environment variables
 3. **Config file** - JSON file at `~/.phoenix-insight/config.json`
 
-### Config File
+#### Config File
 
 On first run, Phoenix Insight automatically creates a default config file at `~/.phoenix-insight/config.json` with all default values. You can edit this file to customize your settings.
 
@@ -483,7 +479,7 @@ On first run, Phoenix Insight automatically creates a default config file at `~/
 | `refresh`  | boolean                  | `false`                 | Force refresh of snapshot data                |
 | `trace`    | boolean                  | `false`                 | Enable tracing of agent operations to Phoenix |
 
-### Environment Variables
+#### Environment Variables
 
 | Variable                  | Config Key | Default                 | Description                |
 | ------------------------- | ---------- | ----------------------- | -------------------------- |
@@ -497,7 +493,7 @@ On first run, Phoenix Insight automatically creates a default config file at `~/
 | `PHOENIX_INSIGHT_CONFIG`  | -          | -                       | Custom config file path    |
 | `DEBUG`                   | -          | `0`                     | Show detailed error info   |
 
-### Local Mode Storage
+#### Local Mode Storage
 
 In local mode (`--local`), data persists at `~/.phoenix-insight/`:
 
@@ -510,7 +506,7 @@ In local mode (`--local`), data persists at `~/.phoenix-insight/`:
 
 Use `phoenix-insight prune` to clean up local storage.
 
-## Execution Modes
+### Execution Modes
 
 Phoenix Insight supports two execution modes:
 
@@ -519,11 +515,11 @@ Phoenix Insight supports two execution modes:
 | **Sandbox** (default) | `--sandbox` | In-memory | [just-bash](https://github.com/vercel-labs/just-bash) (50+ commands) | CI/CD, demos, safe exploration |
 | **Local** | `--local` | Persistent (`~/.phoenix-insight/`) | Real system bash | Power users, complex analysis |
 
-## Agent Capabilities
+### Agent Capabilities
 
 The AI agent has access to:
 
-### Bash Commands (Sandbox Mode)
+#### Bash Commands (Sandbox Mode)
 
 - **File operations**: `cat`, `ls`, `find`, `head`, `tail`
 - **Search & filter**: `grep`, `awk`, `sed`
@@ -531,21 +527,21 @@ The AI agent has access to:
 - **Analysis**: `sort`, `uniq`, `wc`
 - **And more**: 50+ commands via just-bash
 
-### Bash Commands (Local Mode)
+#### Bash Commands (Local Mode)
 
 - All commands available on your system
 - Custom tools: `ripgrep`, `fd`, `bat`, etc.
 - Full `jq`, `awk`, `sed` features
 - Any installed CLI tools
 
-### Custom Commands
+#### Custom Commands
 
 - `px-fetch-more spans`: Fetch additional spans for deeper analysis
 - `px-fetch-more trace`: Fetch a specific trace by ID
 
 See [On-Demand Data Fetching](#on-demand-data-fetching) for usage examples.
 
-### Understanding Context
+#### Understanding Context
 
 The agent always starts by reading `/_context.md` which provides:
 
@@ -554,17 +550,17 @@ The agent always starts by reading `/_context.md` which provides:
 - Data freshness information
 - Available commands reminder
 
-## Observability
+### Observability
 
 Phoenix Insight can trace its own execution back to Phoenix using `--trace`. When enabled, all agent operations, tool calls, and responses are traced as spans and sent to the Phoenix instance being queried. This is useful for debugging slow queries and understanding agent decision-making.
 
-## Troubleshooting
+### Troubleshooting
 
 For connection issues, authentication errors, debug mode, and common issues, see the [Troubleshooting Guide](./TROUBLESHOOTING.md).
 
-## Development
+### Development
 
-### Building from Source
+#### Building from Source
 
 ```bash
 # Clone the repository
@@ -587,7 +583,7 @@ pnpm build
 pnpm typecheck
 ```
 
-### Architecture
+#### Architecture
 
 Phoenix Insight uses:
 
@@ -597,7 +593,7 @@ Phoenix Insight uses:
 - **Phoenix Client** for data fetching
 - **TypeScript** for type safety
 
-### Testing
+#### Testing
 
 ```bash
 # Run all tests
@@ -607,17 +603,17 @@ pnpm test
 pnpm test -- --coverage
 
 # Run specific test file
-pnpm test src/modes/sandbox.test.ts
+pnpm test test/modes/sandbox.test.ts
 
 # Type checking
 pnpm typecheck
 ```
 
-## Contributing & Releases
+### Contributing & Releases
 
 Contributions are welcome! This project uses [changesets](https://github.com/changesets/changesets) for version management and automated releases.
 
-### Making Changes
+#### Making Changes
 
 1. Fork the repository and create a feature branch
 2. Make your changes and ensure tests pass (`pnpm test`)
@@ -634,7 +630,7 @@ pnpm changeset
 5. Commit the generated changeset file along with your changes
 6. Open a pull request
 
-### Release Process
+#### Release Process
 
 When your PR is merged to `main`:
 
@@ -642,19 +638,18 @@ When your PR is merged to `main`:
 2. This PR updates the version in `package.json` and generates `CHANGELOG.md` entries
 3. When the Version Packages PR is merged, the package is automatically published to npm
 
-### Changeset Guidelines
+#### Changeset Guidelines
 
 - **patch**: Bug fixes, documentation updates, internal refactoring
 - **minor**: New features, new CLI options, non-breaking enhancements
 - **major**: Breaking changes to CLI interface or behavior
 
-## Support
+### Support
 
 This software is provided "as is" without warranty of any kind. Use at your own risk.
 
 You may file GitHub issues at [https://github.com/cephalization/phoenix-insight/issues](https://github.com/cephalization/phoenix-insight/issues).
 
-
-## License
+### License
 
 Apache-2.0 - See [LICENSE](./LICENSE) for details.

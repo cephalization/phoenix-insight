@@ -107,3 +107,15 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Pattern: CLI Examples section should focus on "how to use" (command examples), while Advanced Topics sections explain "how it works" (internal details). When there's overlap, keep the usage in CLI Examples and link to it from the explanatory section
 - Pattern: Use tables for comparing multiple related items (like Sandbox vs Local mode) - more compact and scannable than bullet lists
 - Removed intro sentences like "Control how results are displayed:" before code blocks when the code comments are self-explanatory
+
+## review-and-polish
+
+- Fixed heading hierarchy inconsistency: Sections under "Advanced Topics" (## level) were using ## instead of ### for subsections, and their children were using ### instead of ####
+- Fixed hierarchy for: Configuration (→###), Config File (→####), Environment Variables (→####), Local Mode Storage (→####), Execution Modes (→###), Agent Capabilities (→###), Bash Commands sections (→####), Custom Commands (→####), Understanding Context (→####), Observability (→###), Troubleshooting (→###), Development (→###), Building from Source (→####), Architecture (→####), Testing (→####), Contributing & Releases (→###), Making Changes (→####), Release Process (→####), Changeset Guidelines (→####), Support (→###), License (→###)
+- Removed orphaned horizontal rule (---) between Command Reference and How It Works sections that served no purpose
+- Corrected test file path in documentation: `src/modes/sandbox.test.ts` → `test/modes/sandbox.test.ts` (tests are in `test/` directory per project conventions)
+- Removed unnecessary blank line between Support and License sections
+- Capitalized "Default" in "Query Command (Default)" for consistency with other heading capitalization
+- Verified all markdown links: [Phoenix](https://github.com/Arize-ai/phoenix), ["bash + files" paradigm](https://vercel.com/blog/...), [just-bash](https://github.com/vercel-labs/just-bash), [On-Demand Data Fetching](#on-demand-data-fetching), [Troubleshooting Guide](./TROUBLESHOOTING.md), [changesets](https://github.com/changesets/changesets), [LICENSE](./LICENSE), and GitHub issues URL
+- Key insight: When reviewing documentation hierarchy, the pattern is: ## for top-level sections, ### for subsections, #### for sub-subsections. The "Advanced Topics" section header at ## level means everything under it should be ###, and their children ####
+- Pattern: Final review should be systematic - check structure first (headings), then content (links, paths, formatting), then flow
