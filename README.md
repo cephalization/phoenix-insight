@@ -22,17 +22,11 @@ npx @cephalization/phoenix-insight "your query"
 ## Quick Start
 
 ```bash
-# Start interactive mode (no arguments needed)
+# Start interactive mode
 phoenix-insight
 
-# Query Phoenix data with natural language
+# Analyze Phoenix data with natural language
 phoenix-insight "What are the most common errors in the last hour?"
-
-# Local mode with persistent storage
-phoenix-insight --local "analyze trace patterns"
-
-# Force fresh data
-phoenix-insight --refresh "show me the slowest endpoints"
 
 # Show help
 phoenix-insight help
@@ -105,56 +99,41 @@ Uses real bash and persistent storage:
 - **Incremental updates**: Only fetches new data
 - **Perfect for**: Power users, complex analysis, custom tools
 
-## Usage Examples
+## CLI Examples
+
+This section covers all CLI usage, progressing from basic to advanced scenarios.
 
 ### Basic Queries
 
 ```bash
-# Analyze errors
+# Ask a question about your Phoenix data
 phoenix-insight "What types of errors are occurring most frequently?"
 
-# Performance analysis
+# Analyze performance patterns
 phoenix-insight "Find the slowest traces and identify patterns"
 
-# Experiment comparison
+# Compare experiments
 phoenix-insight "Compare success rates across recent experiments"
 
-# Dataset exploration
+# Explore datasets
 phoenix-insight "Show me statistics about my datasets"
-```
-
-### Advanced Options
-
-```bash
-# Connect to remote Phoenix instance
-phoenix-insight "analyze traces" \
-  --base-url https://phoenix.example.com \
-  --api-key your-api-key
-
-# Increase span fetch limit (default: 1000 per project)
-phoenix-insight "deep trace analysis" --limit 5000
-
-# Stream responses in real-time
-phoenix-insight "complex analysis task" --stream
-
-# Use local mode for persistent storage
-phoenix-insight "experimental query" --local
-
-# Enable observability tracing (sends traces to Phoenix)
-phoenix-insight "analyze performance" --trace
 ```
 
 ### Interactive Mode
 
-Start an interactive REPL session for multiple queries:
+Start an interactive REPL session for multiple queries without re-fetching data:
 
 ```bash
 # Start interactive mode (default when no query is provided)
-$ phoenix-insight
+phoenix-insight
 
 # Or explicitly with --interactive flag
-$ phoenix-insight --interactive
+phoenix-insight --interactive
+```
 
+Within interactive mode:
+
+```
 phoenix> What projects have the most spans?
 [Agent analyzes and responds...]
 
@@ -178,16 +157,11 @@ Create or update snapshots separately from queries:
 # Create initial snapshot
 phoenix-insight snapshot
 
-# Force refresh (ignore cache)
+# Force refresh snapshot (ignore cache)
 phoenix-insight snapshot --refresh
 
-# Snapshot from specific Phoenix instance
-phoenix-insight snapshot \
-  --base-url https://phoenix.example.com \
-  --api-key your-api-key
-
-# Enable observability tracing for snapshot process
-phoenix-insight snapshot --trace
+# Snapshot from a specific Phoenix instance
+phoenix-insight snapshot --base-url https://phoenix.example.com --api-key your-api-key
 
 # Clean up local snapshots
 phoenix-insight prune
@@ -196,18 +170,92 @@ phoenix-insight prune
 phoenix-insight prune --dry-run
 ```
 
-### On-Demand Data Fetching
+### Local Mode
 
-The agent can fetch additional data during analysis:
+Use local mode for persistent storage and full bash capabilities:
 
 ```bash
-# In your query, the agent might discover it needs more data:
-"I need more spans to complete this analysis. Let me fetch them..."
+# Run a query in local mode
+phoenix-insight --local "analyze trace patterns"
+
+# Snapshots are saved to ~/.phoenix-insight/ for reuse
+phoenix-insight --local "show me the slowest endpoints"
+```
+
+### Connection Options
+
+Connect to different Phoenix instances:
+
+```bash
+# Connect to a remote Phoenix instance
+phoenix-insight --base-url https://phoenix.example.com "analyze traces"
+
+# Authenticate with an API key
+phoenix-insight --base-url https://phoenix.example.com --api-key your-api-key "show errors"
+```
+
+### Data Fetching Options
+
+Control how much data is fetched:
+
+```bash
+# Increase span fetch limit (default: 1000 per project)
+phoenix-insight --limit 5000 "deep trace analysis"
+
+# Force refresh of cached data
+phoenix-insight --refresh "show me the latest errors"
+```
+
+### Output Options
+
+Control how results are displayed:
+
+```bash
+# Stream responses in real-time (default: enabled)
+phoenix-insight --stream "complex analysis task"
+
+# Disable streaming for batch processing
+phoenix-insight --no-stream "generate report" > report.txt
+```
+
+### Observability
+
+Trace Phoenix Insight's own execution:
+
+```bash
+# Enable tracing for queries (sends traces to Phoenix)
+phoenix-insight --trace "analyze performance"
+
+# Enable tracing for snapshot creation
+phoenix-insight snapshot --trace
+
+# Enable tracing in interactive mode
+phoenix-insight --interactive --trace
+```
+
+### On-Demand Data Fetching
+
+The agent can fetch additional data during analysis using special commands:
+
+```bash
+# Fetch more spans for a project
 px-fetch-more spans --project my-project --limit 500
 
-# Or fetch a specific trace:
-"I'll get the full trace to understand the error..."
+# Fetch a specific trace by ID
 px-fetch-more trace --trace-id abc123
+```
+
+### Combining Options
+
+Combine multiple options for complex scenarios:
+
+```bash
+# Remote instance with authentication, local mode, and increased limit
+phoenix-insight --local --base-url https://phoenix.example.com \
+  --api-key your-api-key --limit 5000 "deep analysis of production traces"
+
+# Refresh data, enable tracing, and stream output
+phoenix-insight --refresh --trace --stream "analyze error patterns over time"
 ```
 
 ## Configuration
@@ -305,15 +353,7 @@ In local mode, data is stored in:
   /cache/                      # API response cache
 ```
 
-To clean up local storage:
-
-```bash
-# Delete all local snapshots
-phoenix-insight prune
-
-# Preview what will be deleted
-phoenix-insight prune --dry-run
-```
+Use `phoenix-insight prune` to clean up local storage (see [CLI Examples](#snapshot-management)).
 
 ## Troubleshooting
 
@@ -321,18 +361,7 @@ For connection issues, authentication errors, debug mode, and common issues, see
 
 ## Observability
 
-Phoenix Insight can trace its own execution back to Phoenix for monitoring and debugging:
-
-```bash
-# Enable tracing for queries
-phoenix-insight "analyze errors" --trace
-
-# Enable tracing in interactive mode
-phoenix-insight --interactive --trace
-
-# Enable tracing for snapshot creation
-phoenix-insight snapshot --trace
-```
+Phoenix Insight can trace its own execution back to Phoenix for monitoring and debugging using the `--trace` flag (see [CLI Examples](#observability-1)).
 
 When `--trace` is enabled:
 
@@ -341,12 +370,7 @@ When `--trace` is enabled:
 - Performance metrics are recorded
 - Traces are sent to the same Phoenix instance being queried (or the one specified by --base-url)
 
-This is particularly useful for:
-
-- Debugging slow queries
-- Understanding agent decision-making
-- Monitoring Phoenix Insight usage
-- Optimizing performance
+This is useful for debugging slow queries, understanding agent decision-making, monitoring usage, and optimizing performance.
 
 ## Agent Capabilities
 

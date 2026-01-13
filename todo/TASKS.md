@@ -62,7 +62,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### consolidate-cli-examples
 
 - content: Create a single progressive "CLI Examples" section that starts with basic usage and advances to complex scenarios. Remove scattered examples from other sections. Cover: basic query, interactive mode, snapshot management, local mode, connection options, all flags with brief examples.
-- status: pending
+- status: complete
 - dependencies: create-troubleshooting-doc
 
 ### create-query-examples-section

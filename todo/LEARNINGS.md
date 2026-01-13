@@ -31,3 +31,13 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Kept it to exactly 2 paragraphs as requested, covering: (1) what it is and how it works, (2) why the filesystem-native approach matters
 - The Vercel blog link is preserved as it provides important context for the paradigm
 - Made sure to mention specific commands (cat, grep, jq, awk) to make the "bash" concept concrete and familiar
+
+## consolidate-cli-examples
+
+- Identified 7 scattered example sections: Quick Start, Usage Examples (Basic Queries + Advanced Options), Interactive Mode, Snapshot Management, On-Demand Data Fetching, plus duplicates in Local Mode Storage and Observability
+- Created a single progressive "CLI Examples" section with subsections: Basic Queries, Interactive Mode, Snapshot Management, Local Mode, Connection Options, Data Fetching Options, Output Options, Observability, On-Demand Data Fetching, Combining Options
+- Kept the Quick Start section minimal (3 examples) for quick onboarding, with the full examples in CLI Examples
+- Removed duplicate examples from Local Mode Storage and Observability sections, replacing them with cross-reference links to CLI Examples
+- Important: When consolidating, I accidentally removed the Execution Modes section - had to re-add it between Filesystem Structure and CLI Examples
+- Pattern: When doing large edits that replace multiple sections, double-check that all essential explanatory content (not just examples) is preserved
+- The progressive structure goes: basic usage → interactive mode → snapshot management → local mode → connection → data fetching → output → observability → on-demand → combining options
