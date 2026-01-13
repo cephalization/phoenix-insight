@@ -32,73 +32,6 @@ phoenix-insight "What are the most common errors in the last hour?"
 phoenix-insight help
 ```
 
-## How It Works
-
-Phoenix Insight operates in three phases:
-
-1. **Data Ingestion**: Fetches data from your Phoenix instance and creates a structured filesystem snapshot
-2. **AI Analysis**: An AI agent explores the data using bash commands (cat, grep, jq, awk, etc.)
-3. **Natural Language Results**: The agent synthesizes findings into clear, actionable insights
-
-### Filesystem Structure
-
-Phoenix data is organized into an intuitive REST-like hierarchy:
-
-```
-/phoenix/
-  _context.md                       # Start here! Human-readable summary
-  /projects/
-    index.jsonl                     # All projects
-    /{project_name}/
-      metadata.json                 # Project details
-      /spans/
-        index.jsonl                 # Trace spans (sampled)
-  /datasets/
-    index.jsonl                     # All datasets
-    /{dataset_name}/
-      metadata.json
-      examples.jsonl
-  /experiments/
-    index.jsonl                     # All experiments
-    /{experiment_id}/
-      metadata.json
-      runs.jsonl
-  /prompts/
-    index.jsonl                     # All prompts
-    /{prompt_name}/
-      metadata.json
-      /versions/
-        /{version}.md               # Prompt templates as markdown
-  /traces/                          # Fetched on-demand
-    /{trace_id}/
-      spans.jsonl
-      metadata.json
-  /_meta/
-    snapshot.json                   # Snapshot metadata
-```
-
-## Execution Modes
-
-Phoenix Insight supports two execution modes:
-
-### Sandbox Mode (default)
-
-Uses [just-bash](https://github.com/vercel-labs/just-bash) for complete isolation:
-
-- **In-memory filesystem**: No disk writes
-- **Simulated bash**: 50+ built-in commands
-- **Zero risk**: Cannot access your system
-- **Perfect for**: CI/CD, demos, safe exploration
-
-### Local Mode (--local)
-
-Uses real bash and persistent storage:
-
-- **Persistent data**: Snapshots saved to `~/.phoenix-insight/`
-- **Full bash power**: All system commands available
-- **Incremental updates**: Only fetches new data
-- **Perfect for**: Power users, complex analysis, custom tools
-
 ## CLI Examples
 
 This section covers all CLI usage, progressing from basic to advanced scenarios.
@@ -352,6 +285,139 @@ phoenix-insight "Show the success rate for each tool type"
 phoenix-insight "What's the average latency for function calls?"
 ```
 
+## Command Reference
+
+Phoenix Insight provides several commands, each with its own options.
+
+### Query Command (default)
+
+The default command analyzes Phoenix data with natural language queries.
+
+```bash
+phoenix-insight [options] [query]
+```
+
+| Option              | Description                                   | Default                 | Example                                        |
+| ------------------- | --------------------------------------------- | ----------------------- | ---------------------------------------------- |
+| `--config <path>`   | Custom config file path                       | `~/.phoenix-insight/config.json` | `--config ./my-config.json`           |
+| `--sandbox`         | Run in sandbox mode with in-memory filesystem | `true`                  | `phoenix-insight --sandbox "query"`            |
+| `--local`           | Run in local mode with persistent storage     | `false`                 | `phoenix-insight --local "query"`              |
+| `--base-url <url>`  | Phoenix server URL                            | `http://localhost:6006` | `--base-url https://phoenix.example.com`       |
+| `--api-key <key>`   | Phoenix API key for authentication            | (none)                  | `--api-key your-api-key`                       |
+| `--refresh`         | Force refresh of cached snapshot data         | `false`                 | `phoenix-insight --refresh "show latest data"` |
+| `--limit <n>`       | Maximum spans to fetch per project            | `1000`                  | `--limit 5000`                                 |
+| `--stream`          | Stream agent responses in real-time           | `true`                  | `--no-stream` to disable                       |
+| `-i, --interactive` | Start interactive REPL mode                   | `false`                 | `phoenix-insight -i`                           |
+| `--trace`           | Enable tracing of agent operations to Phoenix | `false`                 | `phoenix-insight --trace "query"`              |
+
+### Snapshot Command
+
+Creates or updates a data snapshot from Phoenix without running a query.
+
+```bash
+phoenix-insight snapshot [options]
+```
+
+| Option             | Description                                   | Default                 | Example                                         |
+| ------------------ | --------------------------------------------- | ----------------------- | ----------------------------------------------- |
+| `--config <path>`  | Custom config file path                       | `~/.phoenix-insight/config.json` | `--config ./my-config.json`            |
+| `--base-url <url>` | Phoenix server URL                            | `http://localhost:6006` | `--base-url https://phoenix.example.com`        |
+| `--api-key <key>`  | Phoenix API key for authentication            | (none)                  | `--api-key your-api-key`                        |
+| `--refresh`        | Force refresh (ignore existing cache)         | `false`                 | `phoenix-insight snapshot --refresh`            |
+| `--limit <n>`      | Maximum spans to fetch per project            | `1000`                  | `phoenix-insight snapshot --limit 5000`         |
+| `--trace`          | Enable tracing of snapshot operations         | `false`                 | `phoenix-insight snapshot --trace`              |
+
+### Prune Command
+
+Deletes the local snapshot directory to free up disk space.
+
+```bash
+phoenix-insight prune [options]
+```
+
+| Option      | Description                              | Default | Example                         |
+| ----------- | ---------------------------------------- | ------- | ------------------------------- |
+| `--dry-run` | Preview what would be deleted without actually deleting | `false` | `phoenix-insight prune --dry-run` |
+
+### Help Command
+
+Displays help information and available options.
+
+```bash
+phoenix-insight help
+```
+
+No additional options. Shows usage information, all commands, and their options.
+
+---
+
+## How It Works
+
+Phoenix Insight operates in three phases:
+
+1. **Data Ingestion**: Fetches data from your Phoenix instance and creates a structured filesystem snapshot
+2. **AI Analysis**: An AI agent explores the data using bash commands (cat, grep, jq, awk, etc.)
+3. **Natural Language Results**: The agent synthesizes findings into clear, actionable insights
+
+### Filesystem Structure
+
+Phoenix data is organized into an intuitive REST-like hierarchy:
+
+```
+/phoenix/
+  _context.md                       # Start here! Human-readable summary
+  /projects/
+    index.jsonl                     # All projects
+    /{project_name}/
+      metadata.json                 # Project details
+      /spans/
+        index.jsonl                 # Trace spans (sampled)
+  /datasets/
+    index.jsonl                     # All datasets
+    /{dataset_name}/
+      metadata.json
+      examples.jsonl
+  /experiments/
+    index.jsonl                     # All experiments
+    /{experiment_id}/
+      metadata.json
+      runs.jsonl
+  /prompts/
+    index.jsonl                     # All prompts
+    /{prompt_name}/
+      metadata.json
+      /versions/
+        /{version}.md               # Prompt templates as markdown
+  /traces/                          # Fetched on-demand
+    /{trace_id}/
+      spans.jsonl
+      metadata.json
+  /_meta/
+    snapshot.json                   # Snapshot metadata
+```
+
+## Execution Modes
+
+Phoenix Insight supports two execution modes:
+
+### Sandbox Mode (default)
+
+Uses [just-bash](https://github.com/vercel-labs/just-bash) for complete isolation:
+
+- **In-memory filesystem**: No disk writes
+- **Simulated bash**: 50+ built-in commands
+- **Zero risk**: Cannot access your system
+- **Perfect for**: CI/CD, demos, safe exploration
+
+### Local Mode (--local)
+
+Uses real bash and persistent storage:
+
+- **Persistent data**: Snapshots saved to `~/.phoenix-insight/`
+- **Full bash power**: All system commands available
+- **Incremental updates**: Only fetches new data
+- **Perfect for**: Power users, complex analysis, custom tools
+
 ## Configuration
 
 Phoenix Insight uses a layered configuration system with the following priority (highest to lowest):
@@ -408,70 +474,6 @@ On first run, Phoenix Insight automatically creates a default config file at `~/
 | `PHOENIX_INSIGHT_CONFIG`  | -          | -                       | Custom config file path    |
 | `DEBUG`                   | -          | `0`                     | Show detailed error info   |
 
-### Command Reference
-
-Phoenix Insight provides several commands, each with its own options.
-
-#### Query Command (default)
-
-The default command analyzes Phoenix data with natural language queries.
-
-```bash
-phoenix-insight [options] [query]
-```
-
-| Option              | Description                                   | Default                 | Example                                        |
-| ------------------- | --------------------------------------------- | ----------------------- | ---------------------------------------------- |
-| `--config <path>`   | Custom config file path                       | `~/.phoenix-insight/config.json` | `--config ./my-config.json`           |
-| `--sandbox`         | Run in sandbox mode with in-memory filesystem | `true`                  | `phoenix-insight --sandbox "query"`            |
-| `--local`           | Run in local mode with persistent storage     | `false`                 | `phoenix-insight --local "query"`              |
-| `--base-url <url>`  | Phoenix server URL                            | `http://localhost:6006` | `--base-url https://phoenix.example.com`       |
-| `--api-key <key>`   | Phoenix API key for authentication            | (none)                  | `--api-key your-api-key`                       |
-| `--refresh`         | Force refresh of cached snapshot data         | `false`                 | `phoenix-insight --refresh "show latest data"` |
-| `--limit <n>`       | Maximum spans to fetch per project            | `1000`                  | `--limit 5000`                                 |
-| `--stream`          | Stream agent responses in real-time           | `true`                  | `--no-stream` to disable                       |
-| `-i, --interactive` | Start interactive REPL mode                   | `false`                 | `phoenix-insight -i`                           |
-| `--trace`           | Enable tracing of agent operations to Phoenix | `false`                 | `phoenix-insight --trace "query"`              |
-
-#### Snapshot Command
-
-Creates or updates a data snapshot from Phoenix without running a query.
-
-```bash
-phoenix-insight snapshot [options]
-```
-
-| Option             | Description                                   | Default                 | Example                                         |
-| ------------------ | --------------------------------------------- | ----------------------- | ----------------------------------------------- |
-| `--config <path>`  | Custom config file path                       | `~/.phoenix-insight/config.json` | `--config ./my-config.json`            |
-| `--base-url <url>` | Phoenix server URL                            | `http://localhost:6006` | `--base-url https://phoenix.example.com`        |
-| `--api-key <key>`  | Phoenix API key for authentication            | (none)                  | `--api-key your-api-key`                        |
-| `--refresh`        | Force refresh (ignore existing cache)         | `false`                 | `phoenix-insight snapshot --refresh`            |
-| `--limit <n>`      | Maximum spans to fetch per project            | `1000`                  | `phoenix-insight snapshot --limit 5000`         |
-| `--trace`          | Enable tracing of snapshot operations         | `false`                 | `phoenix-insight snapshot --trace`              |
-
-#### Prune Command
-
-Deletes the local snapshot directory to free up disk space.
-
-```bash
-phoenix-insight prune [options]
-```
-
-| Option      | Description                              | Default | Example                         |
-| ----------- | ---------------------------------------- | ------- | ------------------------------- |
-| `--dry-run` | Preview what would be deleted without actually deleting | `false` | `phoenix-insight prune --dry-run` |
-
-#### Help Command
-
-Displays help information and available options.
-
-```bash
-phoenix-insight help
-```
-
-No additional options. Shows usage information, all commands, and their options.
-
 ### Local Mode Storage
 
 In local mode, data is stored in:
@@ -493,7 +495,7 @@ For connection issues, authentication errors, debug mode, and common issues, see
 
 ## Observability
 
-Phoenix Insight can trace its own execution back to Phoenix for monitoring and debugging using the `--trace` flag (see [CLI Examples](#observability-1)).
+Phoenix Insight can trace its own execution back to Phoenix for monitoring and debugging using the `--trace` flag (see [CLI Examples](#observability)).
 
 When `--trace` is enabled:
 

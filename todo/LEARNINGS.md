@@ -66,3 +66,13 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Pattern: Include inline examples in the table's Example column so users can see real usage without scrolling to CLI Examples section
 - The Help command gets a minimal section (no table needed, just explains what it does)
 - Changed section header from "Commands" + "Command Line Options" to single "Command Reference" with subheadings for each command
+
+## sequence-basic-content
+
+- The task was to organize the "basic" portion of README to flow: Introduction → Installation → Quick Start → CLI Examples → Example Queries
+- The original README had "How It Works", "Filesystem Structure", and "Execution Modes" sections sandwiched between Quick Start and CLI Examples, breaking the simple→complex flow
+- Moved these explanatory sections to after Example Queries with a horizontal rule (---) as a visual separator between "basic usage" and "advanced details"
+- The Command Reference tables were also moved up to follow Example Queries since they're essential reference material for the basic section
+- Key insight: The separation between "basic" and "advanced" content is about user journey - users want to know "how do I use this?" before "how does this work internally?"
+- Fixed a broken internal link: `#observability-1` changed to `#observability` since the section ID is no longer duplicated after reorganization
+- The next task (sequence-advanced-content) should properly order the advanced sections: Configuration, Execution Modes, Agent Capabilities, Observability, Development, Contributing, License

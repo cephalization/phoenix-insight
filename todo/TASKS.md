@@ -84,7 +84,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### sequence-basic-content
 
 - content: Organize the "basic" portion of README: Introduction (architecture value), Installation, Quick Start, CLI Examples (progressive), Example Queries. Ensure smooth flow from simple to intermediate usage.
-- status: pending
+- status: complete
 - dependencies: restructure-readme-intro, consolidate-cli-examples, create-query-examples-section, create-command-reference-tables
 
 ### sequence-advanced-content
