@@ -96,7 +96,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### remove-redundancy
 
 - content: Final pass to remove all redundant content. Eliminate duplicate explanations, consolidate repeated flag descriptions, remove any content that appears in multiple places. Ensure each concept is explained exactly once.
-- status: pending
+- status: complete
 - dependencies: sequence-advanced-content
 
 ---

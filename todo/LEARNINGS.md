@@ -93,3 +93,17 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Moved "Examples of Agent Analysis" and "Tips and Best Practices" to just before the "Advanced Topics" divider since they're practical content useful to all users, not just power users
 - The horizontal rule (---) serves as a visual separator between the basic usage sections and the advanced configuration/internals sections
 - Pattern: Group content by user intent - basic users want to start using, advanced users want to customize and understand internals
+
+## remove-redundancy
+
+- Reduced README from 706 to 661 lines by eliminating duplicate content
+- Key redundancies found and addressed:
+  1. **Local mode explanation**: Condensed CLI Examples "Local Mode" subsection to a single command example - full explanation is in the Execution Modes section
+  2. **Streaming output**: Removed redundant "Stream responses in real-time (default: enabled)" example since the Command Reference table already explains it's enabled by default
+  3. **Observability section**: Condensed from 8 lines to 2 lines - the CLI Examples already show `--trace` usage, so the advanced section only needs a brief explanation of what tracing does
+  4. **Execution Modes section**: Converted from two multi-bullet subsections to a compact comparison table, reducing from 14 lines to 4 lines while preserving all information
+  5. **On-demand data fetching**: Removed verbose intro text, added cross-reference from Agent Capabilities "Custom Commands" to avoid repeating the same command examples
+  6. **Local Mode Storage**: Condensed directory structure example by combining nested paths
+- Pattern: CLI Examples section should focus on "how to use" (command examples), while Advanced Topics sections explain "how it works" (internal details). When there's overlap, keep the usage in CLI Examples and link to it from the explanatory section
+- Pattern: Use tables for comparing multiple related items (like Sandbox vs Local mode) - more compact and scannable than bullet lists
+- Removed intro sentences like "Control how results are displayed:" before code blocks when the code comments are self-explanatory

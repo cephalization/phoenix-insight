@@ -105,14 +105,9 @@ phoenix-insight prune --dry-run
 
 ### Local Mode
 
-Use local mode for persistent storage and full bash capabilities:
-
 ```bash
-# Run a query in local mode
+# Run a query in local mode (persistent storage, full bash capabilities)
 phoenix-insight --local "analyze trace patterns"
-
-# Snapshots are saved to ~/.phoenix-insight/ for reuse
-phoenix-insight --local "show me the slowest endpoints"
 ```
 
 ### Connection Options
@@ -129,8 +124,6 @@ phoenix-insight --base-url https://phoenix.example.com --api-key your-api-key "s
 
 ### Data Fetching Options
 
-Control how much data is fetched:
-
 ```bash
 # Increase span fetch limit (default: 1000 per project)
 phoenix-insight --limit 5000 "deep trace analysis"
@@ -141,40 +134,24 @@ phoenix-insight --refresh "show me the latest errors"
 
 ### Output Options
 
-Control how results are displayed:
-
 ```bash
-# Stream responses in real-time (default: enabled)
-phoenix-insight --stream "complex analysis task"
-
-# Disable streaming for batch processing
+# Disable streaming for batch processing (streaming is enabled by default)
 phoenix-insight --no-stream "generate report" > report.txt
 ```
 
 ### Observability
 
-Trace Phoenix Insight's own execution:
-
 ```bash
-# Enable tracing for queries (sends traces to Phoenix)
+# Enable tracing of agent operations to Phoenix
 phoenix-insight --trace "analyze performance"
-
-# Enable tracing for snapshot creation
-phoenix-insight snapshot --trace
-
-# Enable tracing in interactive mode
-phoenix-insight --interactive --trace
 ```
 
 ### On-Demand Data Fetching
 
-The agent can fetch additional data during analysis using special commands:
+Within interactive mode, the agent can fetch additional data during analysis:
 
 ```bash
-# Fetch more spans for a project
 px-fetch-more spans --project my-project --limit 500
-
-# Fetch a specific trace by ID
 px-fetch-more trace --trace-id abc123
 ```
 
@@ -522,40 +499,25 @@ On first run, Phoenix Insight automatically creates a default config file at `~/
 
 ### Local Mode Storage
 
-In local mode, data is stored in:
+In local mode (`--local`), data persists at `~/.phoenix-insight/`:
 
 ```
 ~/.phoenix-insight/
   config.json                  # Configuration (auto-created on first run)
-  /snapshots/
-    /{timestamp}/              # Each snapshot
-      /phoenix/                # Phoenix data
+  /snapshots/{timestamp}/      # Snapshot data
   /cache/                      # API response cache
 ```
 
-Use `phoenix-insight prune` to clean up local storage (see [CLI Examples](#snapshot-management)).
+Use `phoenix-insight prune` to clean up local storage.
 
 ## Execution Modes
 
 Phoenix Insight supports two execution modes:
 
-### Sandbox Mode (default)
-
-Uses [just-bash](https://github.com/vercel-labs/just-bash) for complete isolation:
-
-- **In-memory filesystem**: No disk writes
-- **Simulated bash**: 50+ built-in commands
-- **Zero risk**: Cannot access your system
-- **Perfect for**: CI/CD, demos, safe exploration
-
-### Local Mode (--local)
-
-Uses real bash and persistent storage:
-
-- **Persistent data**: Snapshots saved to `~/.phoenix-insight/`
-- **Full bash power**: All system commands available
-- **Incremental updates**: Only fetches new data
-- **Perfect for**: Power users, complex analysis, custom tools
+| Mode | Flag | Filesystem | Bash | Use Case |
+|------|------|------------|------|----------|
+| **Sandbox** (default) | `--sandbox` | In-memory | [just-bash](https://github.com/vercel-labs/just-bash) (50+ commands) | CI/CD, demos, safe exploration |
+| **Local** | `--local` | Persistent (`~/.phoenix-insight/`) | Real system bash | Power users, complex analysis |
 
 ## Agent Capabilities
 
@@ -578,8 +540,10 @@ The AI agent has access to:
 
 ### Custom Commands
 
-- `px-fetch-more spans`: Fetch additional spans
-- `px-fetch-more trace`: Fetch specific trace by ID
+- `px-fetch-more spans`: Fetch additional spans for deeper analysis
+- `px-fetch-more trace`: Fetch a specific trace by ID
+
+See [On-Demand Data Fetching](#on-demand-data-fetching) for usage examples.
 
 ### Understanding Context
 
@@ -592,16 +556,7 @@ The agent always starts by reading `/_context.md` which provides:
 
 ## Observability
 
-Phoenix Insight can trace its own execution back to Phoenix for monitoring and debugging using the `--trace` flag (see [CLI Examples](#observability)).
-
-When `--trace` is enabled:
-
-- All agent operations are traced as spans
-- Tool calls and responses are captured
-- Performance metrics are recorded
-- Traces are sent to the same Phoenix instance being queried (or the one specified by --base-url)
-
-This is useful for debugging slow queries, understanding agent decision-making, monitoring usage, and optimizing performance.
+Phoenix Insight can trace its own execution back to Phoenix using `--trace`. When enabled, all agent operations, tool calls, and responses are traced as spans and sent to the Phoenix instance being queried. This is useful for debugging slow queries and understanding agent decision-making.
 
 ## Troubleshooting
 
