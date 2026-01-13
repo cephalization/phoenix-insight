@@ -33,3 +33,14 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - `pnpm changeset status` will error with "no changesets found" if there are uncommitted changes - this is expected behavior, not a failure
 - The "Opening `/dev/tty` failed" warning is benign in non-interactive environments (CI, automated scripts) - changesets still works correctly
 - Config-only task - no tests required per PROMPT.md guidelines
+
+## create-ci-workflow
+
+- Created `.github/workflows/ci.yml` with a single job that runs all CI steps sequentially
+- Used `pnpm/action-setup@v4` with explicit version `9.15.0` to match `packageManager` in package.json
+- Used `actions/setup-node@v4` with `cache: 'pnpm'` for dependency caching
+- Node version 18 matches the `engines.node` requirement in package.json
+- Steps run in order: checkout, pnpm setup, node setup, install (with `--frozen-lockfile`), typecheck, test, build
+- `--frozen-lockfile` flag ensures CI fails if lockfile is out of sync with package.json
+- Workflow triggers on push to main and pull requests targeting main
+- No tests required for workflow-only task per PROMPT.md guidelines

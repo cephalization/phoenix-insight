@@ -43,7 +43,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### create-ci-workflow
 
 - content: Create .github/workflows/ci.yml that runs on push to main and pull requests. Jobs: install deps (pnpm install), typecheck (pnpm typecheck), test (pnpm test), build (pnpm build). Use pnpm/action-setup and actions/setup-node with caching
-- status: pending
+- status: complete
 - dependencies: install-changesets
 
 ### create-release-workflow
