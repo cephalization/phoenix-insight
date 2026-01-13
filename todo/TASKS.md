@@ -50,7 +50,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### create-troubleshooting-doc
 
 - content: Extract all troubleshooting content from README.md into a new TROUBLESHOOTING.md file. Include connection issues, authentication errors, debug mode, and common issues sections. Add cross-reference link in README.
-- status: pending
+- status: complete
 - dependencies: none
 
 ### restructure-readme-intro
