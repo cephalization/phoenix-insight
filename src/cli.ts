@@ -268,10 +268,16 @@ program
 
 program
   .command("prune")
-  .description("Delete the local snapshot directory (~/.phoenix-insight/)")
+  .description(
+    "Delete the local snapshot directory (~/.phoenix-insight/snapshots)"
+  )
   .option("--dry-run", "Show what would be deleted without actually deleting")
   .action(async (options) => {
-    const snapshotDir = path.join(os.homedir(), ".phoenix-insight");
+    const snapshotDir = path.join(
+      os.homedir(),
+      ".phoenix-insight",
+      "snapshots"
+    );
 
     try {
       // Check if the directory exists
@@ -287,9 +293,7 @@ program
         console.log(`   ${snapshotDir}`);
 
         // Show size and count of snapshots
-        const snapshots = await fs
-          .readdir(path.join(snapshotDir, "snapshots"))
-          .catch(() => []);
+        const snapshots = await fs.readdir(snapshotDir).catch(() => []);
         console.log(`   📊 Contains ${snapshots.length} snapshot(s)`);
 
         return;
