@@ -408,31 +408,69 @@ On first run, Phoenix Insight automatically creates a default config file at `~/
 | `PHOENIX_INSIGHT_CONFIG`  | -          | -                       | Custom config file path    |
 | `DEBUG`                   | -          | `0`                     | Show detailed error info   |
 
-### Commands
+### Command Reference
 
-Phoenix Insight provides several commands:
+Phoenix Insight provides several commands, each with its own options.
 
-- **Default (interactive mode)**: `phoenix-insight` - Start interactive REPL when no query is provided
-- **Query mode**: `phoenix-insight "your query"` - Analyze Phoenix data with natural language
-- **`help`**: Show help information
-- **`snapshot`**: Create or update a data snapshot from Phoenix
-- **`prune`**: Delete local snapshot directory to free up space
+#### Query Command (default)
 
-### Command Line Options
+The default command analyzes Phoenix data with natural language queries.
 
-| Option                | Description                        | Default          | Applies to     |
-| --------------------- | ---------------------------------- | ---------------- | -------------- |
-| `--config <path>`     | Custom config file path            | (auto-detected)  | all            |
-| `--sandbox`           | Run in sandbox mode (default)      | true             | query          |
-| `--local`             | Run in local mode                  | false            | query          |
-| `--base-url <url>`    | Phoenix server URL                 | env or localhost | all            |
-| `--api-key <key>`     | Phoenix API key                    | env or none      | all            |
-| `--refresh`           | Force fresh snapshot               | false            | query/snapshot |
-| `--limit <n>`         | Max spans per project              | 1000             | query          |
-| `--stream`            | Stream agent responses             | true             | query          |
-| `--interactive`, `-i` | Interactive REPL mode              | false            | query          |
-| `--trace`             | Enable tracing to Phoenix instance | false            | query/snapshot |
-| `--dry-run`           | Preview without making changes     | false            | prune          |
+```bash
+phoenix-insight [options] [query]
+```
+
+| Option              | Description                                   | Default                 | Example                                        |
+| ------------------- | --------------------------------------------- | ----------------------- | ---------------------------------------------- |
+| `--config <path>`   | Custom config file path                       | `~/.phoenix-insight/config.json` | `--config ./my-config.json`           |
+| `--sandbox`         | Run in sandbox mode with in-memory filesystem | `true`                  | `phoenix-insight --sandbox "query"`            |
+| `--local`           | Run in local mode with persistent storage     | `false`                 | `phoenix-insight --local "query"`              |
+| `--base-url <url>`  | Phoenix server URL                            | `http://localhost:6006` | `--base-url https://phoenix.example.com`       |
+| `--api-key <key>`   | Phoenix API key for authentication            | (none)                  | `--api-key your-api-key`                       |
+| `--refresh`         | Force refresh of cached snapshot data         | `false`                 | `phoenix-insight --refresh "show latest data"` |
+| `--limit <n>`       | Maximum spans to fetch per project            | `1000`                  | `--limit 5000`                                 |
+| `--stream`          | Stream agent responses in real-time           | `true`                  | `--no-stream` to disable                       |
+| `-i, --interactive` | Start interactive REPL mode                   | `false`                 | `phoenix-insight -i`                           |
+| `--trace`           | Enable tracing of agent operations to Phoenix | `false`                 | `phoenix-insight --trace "query"`              |
+
+#### Snapshot Command
+
+Creates or updates a data snapshot from Phoenix without running a query.
+
+```bash
+phoenix-insight snapshot [options]
+```
+
+| Option             | Description                                   | Default                 | Example                                         |
+| ------------------ | --------------------------------------------- | ----------------------- | ----------------------------------------------- |
+| `--config <path>`  | Custom config file path                       | `~/.phoenix-insight/config.json` | `--config ./my-config.json`            |
+| `--base-url <url>` | Phoenix server URL                            | `http://localhost:6006` | `--base-url https://phoenix.example.com`        |
+| `--api-key <key>`  | Phoenix API key for authentication            | (none)                  | `--api-key your-api-key`                        |
+| `--refresh`        | Force refresh (ignore existing cache)         | `false`                 | `phoenix-insight snapshot --refresh`            |
+| `--limit <n>`      | Maximum spans to fetch per project            | `1000`                  | `phoenix-insight snapshot --limit 5000`         |
+| `--trace`          | Enable tracing of snapshot operations         | `false`                 | `phoenix-insight snapshot --trace`              |
+
+#### Prune Command
+
+Deletes the local snapshot directory to free up disk space.
+
+```bash
+phoenix-insight prune [options]
+```
+
+| Option      | Description                              | Default | Example                         |
+| ----------- | ---------------------------------------- | ------- | ------------------------------- |
+| `--dry-run` | Preview what would be deleted without actually deleting | `false` | `phoenix-insight prune --dry-run` |
+
+#### Help Command
+
+Displays help information and available options.
+
+```bash
+phoenix-insight help
+```
+
+No additional options. Shows usage information, all commands, and their options.
 
 ### Local Mode Storage
 

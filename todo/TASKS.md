@@ -74,7 +74,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### create-command-reference-tables
 
 - content: Create separate CLI reference tables for each command (default/query, snapshot, prune, help). Each table should list all options with descriptions, defaults, and brief inline examples. Remove the current single combined table.
-- status: pending
+- status: complete
 - dependencies: consolidate-cli-examples
 
 ---

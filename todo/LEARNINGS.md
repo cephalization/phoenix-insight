@@ -52,3 +52,17 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Key insight: The queries should demonstrate what's uniquely possible with Phoenix Insight's filesystem approach (e.g., cross-project analysis, aggregations, pattern detection) rather than simple lookups
 - Pattern: Each query example is a complete `phoenix-insight "..."` command users can copy-paste directly
 - Placed section strategically to flow from "how to use the CLI" (CLI Examples) to "what to ask" (Example Queries) to "how to configure" (Configuration)
+
+## create-command-reference-tables
+
+- Replaced the single combined CLI options table with four separate command-specific tables: Query (default), Snapshot, Prune, and Help
+- Each table includes: Option, Description, Default value, and Example (showing actual usage)
+- Key insight: Reading the source code (`src/cli.ts`) was essential to understand which options apply to which commands. The Commander.js setup shows:
+  - Query command (default): Most options including `--sandbox`, `--local`, `--stream`, `--interactive`
+  - Snapshot command: Inherits global options via preAction hook (`--config`, `--base-url`, `--api-key`, `--trace`, `--refresh`, `--limit`)
+  - Prune command: Only has `--dry-run`
+  - Help command: No additional options
+- Added code blocks showing the command syntax before each table (e.g., `phoenix-insight [options] [query]`)
+- Pattern: Include inline examples in the table's Example column so users can see real usage without scrolling to CLI Examples section
+- The Help command gets a minimal section (no table needed, just explains what it does)
+- Changed section header from "Commands" + "Command Line Options" to single "Command Reference" with subheadings for each command
