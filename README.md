@@ -2,9 +2,9 @@
 
 [![npm version](https://img.shields.io/npm/v/@cephalization/phoenix-insight.svg)](https://www.npmjs.com/package/@cephalization/phoenix-insight)
 
-A filesystem-native AI agent CLI for querying Phoenix instances using the "bash + files" paradigm inspired by [Vercel's agent architecture](https://vercel.com/blog/how-to-build-agents-with-filesystems-and-bash).
+Phoenix Insight brings AI-powered analysis to your [Phoenix](https://github.com/Arize-ai/phoenix) observability data using the ["bash + files" paradigm](https://vercel.com/blog/how-to-build-agents-with-filesystems-and-bash). Instead of hiding data behind opaque API calls, Phoenix Insight materializes your traces, experiments, datasets, and prompts as a structured filesystem. An AI agent then explores this data using standard bash commands you already know: `cat`, `grep`, `jq`, `awk`, and more.
 
-Phoenix Insight transforms your Phoenix observability data into a structured filesystem, then uses an AI agent with bash tools to analyze it through natural language queries. This approach provides transparency, flexibility, and power that traditional APIs can't match.
+This filesystem-native approach provides transparency that traditional APIs can't match. Every query the agent runs is visible and reproducible. You can inspect the exact files it reads, copy its commands, and run them yourself. The data is just files, and the analysis is just bash, making AI-driven observability debuggable, auditable, and extensible with any tool in your Unix toolkit.
 
 ## Installation
 

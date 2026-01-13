@@ -56,7 +56,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### restructure-readme-intro
 
 - content: Rewrite the README introduction to lead with architecture value proposition. Explain the "bash + files" paradigm, why filesystem-native analysis is powerful, and how it enables transparent AI-driven observability. Keep it concise (2-3 paragraphs max).
-- status: pending
+- status: complete
 - dependencies: none
 
 ### consolidate-cli-examples
