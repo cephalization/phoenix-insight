@@ -75,7 +75,7 @@ Goal: Set up MSW (Mock Service Worker) to mock Phoenix API responses for reliabl
 ### msw-integrate-vitest
 
 - content: Update `test/setup.ts` to start/stop the MSW server for tests. Configure MSW to intercept fetch requests to the Phoenix API base URL. Ensure MSW plays nicely with existing vitest configuration. The existing `@arizeai/phoenix-client` module mock can be removed if MSW handles all HTTP interception, or kept for unit tests if preferred.
-- status: pending
+- status: complete
 - dependencies: msw-setup-test-server
 
 ### msw-snapshot-integration-test

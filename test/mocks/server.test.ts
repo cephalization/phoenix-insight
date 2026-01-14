@@ -3,11 +3,13 @@
  *
  * Verifies that the MSW server correctly intercepts HTTP requests
  * and can switch between success and error responses.
+ *
+ * Note: Server lifecycle (listen/resetHandlers/close) is managed globally
+ * by test/setup.ts, so we don't need beforeAll/afterAll here.
  */
 
-import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
-  server,
   useErrorHandler,
   useErrorHandlers,
   resetToSuccessHandlers,
@@ -18,17 +20,6 @@ import {
 const BASE_URL = "http://localhost:6006";
 
 describe("MSW Server Setup", () => {
-  beforeAll(() => {
-    server.listen({ onUnhandledRequest: "error" });
-  });
-
-  afterEach(() => {
-    server.resetHandlers();
-  });
-
-  afterAll(() => {
-    server.close();
-  });
 
   describe("default success handlers", () => {
     it("returns projects from GET /v1/projects", async () => {
