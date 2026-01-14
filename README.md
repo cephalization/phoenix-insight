@@ -96,6 +96,9 @@ phoenix-insight snapshot --refresh
 # Snapshot from a specific Phoenix instance
 phoenix-insight snapshot --base-url https://phoenix.example.com --api-key your-api-key
 
+# Get the path to the latest snapshot
+phoenix-insight snapshot latest
+
 # Clean up local snapshots
 phoenix-insight prune
 
@@ -303,6 +306,35 @@ phoenix-insight snapshot [options]
 | `--refresh`        | Force refresh (ignore existing cache)         | `false`                 | `phoenix-insight snapshot --refresh`            |
 | `--limit <n>`      | Maximum spans to fetch per project            | `1000`                  | `phoenix-insight snapshot --limit 5000`         |
 | `--trace`          | Enable tracing of snapshot operations         | `false`                 | `phoenix-insight snapshot --trace`              |
+
+### Snapshot Latest Command
+
+Prints the absolute path to the latest snapshot directory.
+
+```bash
+phoenix-insight snapshot latest
+```
+
+Outputs the path to stdout with no decoration (just the path). Exit code 0 on success, exit code 1 if no snapshots exist.
+
+**Example usage:**
+
+```bash
+# Get the latest snapshot path
+phoenix-insight snapshot latest
+# Output: /Users/you/.phoenix-insight/snapshots/1704067200000-abc123/phoenix
+
+# Use in scripts
+SNAPSHOT_PATH=$(phoenix-insight snapshot latest)
+ls "$SNAPSHOT_PATH"
+
+# Check if snapshots exist
+if phoenix-insight snapshot latest > /dev/null 2>&1; then
+  echo "Snapshots available"
+else
+  echo "No snapshots found"
+fi
+```
 
 ### Prune Command
 

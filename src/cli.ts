@@ -13,6 +13,7 @@ import {
   createPhoenixClient,
   PhoenixClientError,
 } from "./snapshot/index.js";
+import { getLatestSnapshot } from "./snapshot/utils.js";
 import type { ExecutionMode } from "./modes/types.js";
 import type { PhoenixInsightAgentConfig } from "./agent/index.js";
 import { AgentProgress } from "./progress.js";
@@ -218,44 +219,70 @@ Examples:
     await initializeConfig(cliArgs);
   });
 
-program
+// Create snapshot command group
+const snapshotCmd = program
   .command("snapshot")
-  .description("Create a snapshot of Phoenix data")
+  .description("Snapshot management commands");
+
+// Default action for 'phoenix-insight snapshot' (backward compatibility)
+snapshotCmd.action(async () => {
+  const config = getConfig();
+
+  // Initialize observability if trace is enabled in config
+  if (config.trace) {
+    initializeObservability({
+      enabled: true,
+      baseUrl: config.baseUrl,
+      apiKey: config.apiKey,
+      projectName: "phoenix-insight-snapshot",
+      debug: !!process.env.DEBUG,
+    });
+  }
+
+  try {
+    // Determine the execution mode
+    const mode: ExecutionMode = await createLocalMode();
+
+    // Create snapshot with config values
+    const snapshotOptions = {
+      baseURL: config.baseUrl,
+      apiKey: config.apiKey,
+      spansPerProject: config.limit,
+      showProgress: true,
+    };
+
+    await createSnapshot(mode, snapshotOptions);
+
+    // Cleanup
+    await mode.cleanup();
+
+    // Shutdown observability if enabled
+    await shutdownObservability();
+  } catch (error) {
+    handleError(error, "creating snapshot");
+  }
+});
+
+// Subcommand: snapshot latest
+snapshotCmd
+  .command("latest")
+  .description("Print the absolute path to the latest snapshot directory")
   .action(async () => {
-    const config = getConfig();
-
-    // Initialize observability if trace is enabled in config
-    if (config.trace) {
-      initializeObservability({
-        enabled: true,
-        baseUrl: config.baseUrl,
-        apiKey: config.apiKey,
-        projectName: "phoenix-insight-snapshot",
-        debug: !!process.env.DEBUG,
-      });
-    }
-
     try {
-      // Determine the execution mode
-      const mode: ExecutionMode = await createLocalMode();
+      const latestSnapshot = await getLatestSnapshot();
 
-      // Create snapshot with config values
-      const snapshotOptions = {
-        baseURL: config.baseUrl,
-        apiKey: config.apiKey,
-        spansPerProject: config.limit,
-        showProgress: true,
-      };
+      if (!latestSnapshot) {
+        console.error("No snapshots found");
+        process.exit(1);
+      }
 
-      await createSnapshot(mode, snapshotOptions);
-
-      // Cleanup
-      await mode.cleanup();
-
-      // Shutdown observability if enabled
-      await shutdownObservability();
+      // Print only the path to stdout, no decoration
+      console.log(latestSnapshot.path);
     } catch (error) {
-      handleError(error, "creating snapshot");
+      console.error(
+        `Error: ${error instanceof Error ? error.message : String(error)}`
+      );
+      process.exit(1);
     }
   });
 

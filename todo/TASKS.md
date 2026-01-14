@@ -33,7 +33,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### snapshot-latest-command
 
 - content: Add `phoenix-insight snapshot latest` subcommand that prints the absolute path to the latest snapshot directory to stdout (path only, no decoration). Exit code 0 on success, exit code 1 with error message to stderr if no snapshots exist. Use the utility functions from add-snapshot-utils. Update README with documentation.
-- status: pending
+- status: complete
 - dependencies: add-snapshot-utils
 
 ### snapshot-list-command
