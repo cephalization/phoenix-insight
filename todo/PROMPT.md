@@ -225,7 +225,6 @@ If your task adds or modifies **user-facing features**, update `README.md`:
 | Dev run         | `pnpm dev` (runs `tsx src/cli.ts`)                  |
 | Clean           | `pnpm clean` (removes dist and tsbuildinfo)         |
 | Add changeset   | `pnpm changeset` (interactive version bump)         |
-| Generate mocks  | `pnpm generate:mocks` (regenerate MSW handlers)     |
 | Stage all       | `git add -A`                                        |
 | Commit          | `git commit -m "feat(phoenix-insight): ..."`        |
 
