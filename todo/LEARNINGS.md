@@ -282,3 +282,72 @@ The next task will create a script to generate handlers. Key considerations:
 2. Target endpoints: `/v1/projects`, `/v1/projects/{id}/spans`, `/v1/datasets`, `/v1/datasets/{dataset_id}/experiments`
 3. Output to `test/mocks/handlers.ts`
 4. May need to customize generated handlers for error scenarios post-generation
+
+## msw-generator-script
+
+### Why msw-auto-mock Couldn't Be Used Directly
+
+Initially tried using `msw-auto-mock` CLI tool to auto-generate handlers from the Phoenix OpenAPI schema. However, the Phoenix schema has **circular references** in the OTLP (OpenTelemetry Protocol) types:
+
+```
+circular reference for path #/components/schemas/OtlpSpan -> #/components/schemas/OtlpKeyValue 
+-> #/components/schemas/OtlpAnyValue -> #/components/schemas/OtlpArrayValue -> #/components/schemas/OtlpAnyValue
+```
+
+This causes `msw-auto-mock` to crash when generating handlers for endpoints that return spans. The `/v1/projects/:project_identifier/spans` endpoint uses these circular types, so direct generation fails.
+
+### Solution: Custom Generator Script
+
+Created a custom `scripts/generate-msw-handlers.ts` that generates handlers manually with:
+1. **TypeScript types** based on Phoenix OpenAPI schema (Project, Span, Dataset, Experiment)
+2. **Fixture generators** using `@faker-js/faker` for realistic test data
+3. **Pre-generated fixtures** for consistent test data across runs
+4. **Default handlers** that return success responses (happy path)
+5. **Error handlers** for testing error scenarios (`errorHandlers.projectsError`, etc.)
+6. **createHandlers()** utility for custom fixture injection
+
+### Key Design Decisions
+
+1. **Seeded faker** (`faker.seed(12345)`) ensures reproducible test data across runs
+2. **Wildcard URL patterns** (`*/v1/projects`) allow handlers to match any base URL
+3. **Lookup by ID or name** in spans handler matches Phoenix API behavior
+4. **Exported fixtures** allow tests to assert against expected data
+5. **Separate error handlers** pattern lets tests override specific endpoints
+
+### Output Structure
+
+```typescript
+// test/mocks/handlers.ts exports:
+- handlers         // Default success handlers
+- errorHandlers    // Error scenario handlers
+- fixtures         // Pre-generated test data
+- createProject()  // Fixture generator
+- createSpan()     // Fixture generator
+- createDataset()  // Fixture generator
+- createExperiment() // Fixture generator
+- createHandlers() // Custom handler factory
+```
+
+### Usage Pattern (for next task)
+
+```typescript
+import { setupServer } from 'msw/node';
+import { handlers, errorHandlers, fixtures } from './mocks/handlers';
+
+const server = setupServer(...handlers);
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+// Override for error testing:
+server.use(errorHandlers.projectsError);
+```
+
+### Phoenix API Endpoints Mocked
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/v1/projects` | GET | List all projects |
+| `/v1/projects/:project_identifier/spans` | GET | Get spans for a project |
+| `/v1/datasets` | GET | List all datasets |
+| `/v1/datasets/:dataset_id/experiments` | GET | List experiments for a dataset |

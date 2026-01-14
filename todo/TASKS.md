@@ -63,7 +63,7 @@ Goal: Set up MSW (Mock Service Worker) to mock Phoenix API responses for reliabl
 ### msw-generator-script
 
 - content: Create `scripts/generate-msw-handlers.ts` that fetches the Phoenix OpenAPI schema and generates MSW handlers. The script should: (1) fetch `https://raw.githubusercontent.com/Arize-ai/phoenix/refs/heads/main/schemas/openapi.json`, (2) generate handlers ONLY for endpoints used by phoenix-insight (`/v1/projects`, `/v1/projects/{id}/spans`, `/v1/datasets`, `/v1/experiments`), (3) output generated handlers to `test/mocks/handlers.ts`, (4) include realistic fake data using faker or simple fixtures. Add a `pnpm generate:mocks` script to package.json.
-- status: pending
+- status: complete
 - dependencies: msw-install-deps
 
 ### msw-setup-test-server
