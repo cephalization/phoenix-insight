@@ -9,6 +9,22 @@ export interface SnapshotSpansOptions {
   endTime?: Date | string | null;
   /** Maximum number of spans to fetch per project (default: 1000) */
   spansPerProject?: number;
+  /** Enable debug logging (default: uses DEBUG env var) */
+  debug?: boolean;
+}
+
+/**
+ * Debug logger that respects the debug flag or DEBUG environment variable
+ */
+function createDebugLogger(debug?: boolean) {
+  const isDebugEnabled = debug ?? !!process.env.DEBUG;
+  return {
+    log: (message: string) => {
+      if (isDebugEnabled) {
+        console.log(`[snapshotSpans] ${message}`);
+      }
+    },
+  };
 }
 
 interface SpanData {
@@ -44,13 +60,16 @@ export async function snapshotSpans(
   mode: ExecutionMode,
   options: SnapshotSpansOptions = {}
 ): Promise<void> {
-  const { startTime, endTime, spansPerProject = 1000 } = options;
+  const { startTime, endTime, spansPerProject = 1000, debug } = options;
+  const logger = createDebugLogger(debug);
 
   // Read projects index to get project names
   // Use relative path so it works with the cwd set by the execution mode
+  logger.log("Reading projects index from projects/index.jsonl");
   const projectsIndexContent = await mode.exec("cat projects/index.jsonl");
   if (!projectsIndexContent.stdout) {
     // No projects, nothing to do
+    logger.log("No projects found in index, skipping span fetch");
     return;
   }
 
@@ -63,9 +82,12 @@ export async function snapshotSpans(
       return project.name;
     });
 
+  logger.log(`Found ${projectNames.length} project(s): ${projectNames.join(", ")}`);
+
   // Fetch spans for each project
   for (const projectName of projectNames) {
     await withErrorHandling(async () => {
+      logger.log(`Starting span fetch for project: ${projectName}`);
       const spans: SpanData[] = [];
       let cursor: string | null = null;
       let totalFetched = 0;
@@ -116,14 +138,17 @@ export async function snapshotSpans(
         }
       }
 
+      logger.log(`Completed span fetch for project ${projectName}: ${spans.length} span(s) fetched`);
+
       // Write spans to JSONL file
+      const spansFilePath = `/phoenix/projects/${projectName}/spans/index.jsonl`;
+      logger.log(`Writing spans to ${spansFilePath}`);
       const jsonlContent = spans.map((span) => JSON.stringify(span)).join("\n");
-      await mode.writeFile(
-        `/phoenix/projects/${projectName}/spans/index.jsonl`,
-        jsonlContent
-      );
+      await mode.writeFile(spansFilePath, jsonlContent);
 
       // Write metadata about the spans snapshot
+      const metadataFilePath = `/phoenix/projects/${projectName}/spans/metadata.json`;
+      logger.log(`Writing metadata to ${metadataFilePath}`);
       const metadata = {
         project: projectName,
         spanCount: spans.length,
@@ -132,10 +157,7 @@ export async function snapshotSpans(
         snapshotTime: new Date().toISOString(),
       };
 
-      await mode.writeFile(
-        `/phoenix/projects/${projectName}/spans/metadata.json`,
-        JSON.stringify(metadata, null, 2)
-      );
+      await mode.writeFile(metadataFilePath, JSON.stringify(metadata, null, 2));
     }, `fetching spans for project ${projectName}`);
   }
 }
