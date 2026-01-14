@@ -81,5 +81,5 @@ Goal: Set up MSW (Mock Service Worker) to mock Phoenix API responses for reliabl
 ### msw-snapshot-integration-test
 
 - content: Write an integration test in `test/snapshot/integration.test.ts` that uses MSW to test the full snapshot workflow with mocked Phoenix responses. Test that `snapshotProjects`, `snapshotSpans`, `snapshotDatasets`, and `snapshotExperiments` work correctly with the mocked server. This validates the MSW setup works end-to-end and prevents snapshot functionality from breaking.
-- status: pending
+- status: complete
 - dependencies: msw-integrate-vitest

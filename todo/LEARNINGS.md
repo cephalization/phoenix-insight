@@ -471,3 +471,82 @@ Updated `test/setup.ts` to integrate MSW server lifecycle globally:
 ### Test Count
 
 All 371 tests pass with no type errors. The test count increased from 355 to 371 since the previous tasks, likely due to accumulated test additions.
+
+## msw-snapshot-integration-test
+
+### Integration Test Setup
+
+Created `test/snapshot/integration.test.ts` with 13 tests covering the full snapshot workflow with MSW-mocked Phoenix API responses. The tests verify that `fetchProjects`, `snapshotSpans`, `fetchDatasets`, and `fetchExperiments` work correctly with mocked API responses.
+
+### Key Challenge: Bypassing Global Client Mock
+
+The global `test/setup.ts` mocks `@arizeai/phoenix-client` to prevent unit tests from making real network calls. This caused integration tests to fail because `createPhoenixClient()` would return `undefined`.
+
+**Solution**: Used `vi.importActual()` to import the real `@arizeai/phoenix-client` module:
+
+```typescript
+const { createClient: realCreateClient } = await vi.importActual<typeof import("@arizeai/phoenix-client")>("@arizeai/phoenix-client");
+
+function createTestClient(baseURL: string): PhoenixClient {
+  return realCreateClient({
+    options: { baseUrl: baseURL },
+  });
+}
+```
+
+This allows the integration tests to:
+1. Create real Phoenix client instances
+2. Make actual HTTP requests via `fetch()`
+3. Have those requests intercepted by MSW
+4. Receive mock responses from our handlers
+
+### Test Coverage
+
+The integration tests cover:
+
+1. **fetchProjects**: Fetches projects from mocked API, writes index.jsonl and metadata files
+2. **snapshotSpans**: Fetches spans for all projects, writes span data and metadata
+3. **fetchDatasets**: Fetches datasets with examples, writes dataset files
+4. **fetchExperiments**: Fetches experiments with runs, writes experiment files
+5. **Full Workflow**: Executes complete snapshot workflow with all data types
+6. **Partial Failures**: Tests graceful handling when some APIs fail
+7. **Custom Fixtures**: Demonstrates using `createProject()`, `createSpan()`, etc. for custom test data
+
+### Additional MSW Handlers Needed
+
+The existing handlers only covered `/v1/projects`, `/v1/projects/:id/spans`, `/v1/datasets`, and `/v1/datasets/:id/experiments`. The integration tests add inline handlers for:
+
+- `/v1/datasets/:id/examples` - Returns dataset examples
+- `/v1/experiments/:experiment_id/runs` - Returns experiment runs
+
+These could be added to `test/mocks/handlers.ts` in the future for broader reuse.
+
+### Mock ExecutionMode Pattern
+
+Created a `createMockMode()` helper that:
+1. Captures all `writeFile()` calls in a Map
+2. Simulates `exec()` for reading the projects index (needed by `snapshotSpans`)
+3. Returns both the mock mode and the written files map for assertions
+
+```typescript
+function createMockMode() {
+  const writtenFiles = new Map<string, string>();
+  const mockMode: ExecutionMode = {
+    writeFile: vi.fn(async (path, content) => writtenFiles.set(path, content)),
+    exec: vi.fn(async (command) => {
+      if (command.includes("cat") && command.includes("projects/index.jsonl")) {
+        const content = writtenFiles.get("/phoenix/projects/index.jsonl");
+        return { stdout: content || "", stderr: "", exitCode: content ? 0 : 1 };
+      }
+      return { stdout: "", stderr: "", exitCode: 0 };
+    }),
+    getBashTool: vi.fn(),
+    cleanup: vi.fn(),
+  };
+  return { mockMode, writtenFiles };
+}
+```
+
+### Test Count
+
+All 384 tests pass (13 new integration tests added).
