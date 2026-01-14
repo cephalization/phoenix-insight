@@ -47,3 +47,63 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **Testing approach**: Used `vi.spyOn(console, 'log')` to capture console output in tests. Important to remember to clean up in `afterEach` by calling `mockRestore()` and deleting `process.env.DEBUG` to prevent test pollution.
 
 - **SnapshotSpansOptions extended**: Added `debug?: boolean` to the options interface so callers can explicitly enable debug logging without relying on the environment variable. This is useful for programmatic control and testing.
+
+## verify-spans-integration
+
+### Verification Steps Performed
+
+1. **Ran snapshot command with DEBUG logging enabled**:
+   ```bash
+   DEBUG=1 pnpm dev snapshot
+   ```
+   
+2. **Verified relative path fix is working**:
+   - Debug output shows: `[snapshotSpans] Reading projects index from projects/index.jsonl`
+   - This confirms the fix from `fix-spans-path` is using relative paths correctly
+   - The `cat projects/index.jsonl` command executes with `cwd` set to the snapshot's phoenix directory
+
+3. **Verified end-to-end span fetching**:
+   - Successfully connected to real Phoenix server at `http://localhost:6006`
+   - Found 3 projects: `phoenix-insight`, `mastra-service`, `default`
+   - Fetched spans for each project (59, 20, 26 spans respectively)
+   - Wrote span data to `index.jsonl` and metadata to `metadata.json` for each project
+
+4. **Verified file structure**:
+   ```
+   ~/.phoenix-insight/snapshots/{timestamp}/phoenix/projects/
+   ├── index.jsonl
+   ├── default/
+   │   ├── metadata.json
+   │   └── spans/
+   │       ├── index.jsonl (197KB of span data)
+   │       └── metadata.json
+   ├── mastra-service/
+   │   └── spans/
+   │       ├── index.jsonl (57KB)
+   │       └── metadata.json
+   └── phoenix-insight/
+       └── spans/
+           ├── index.jsonl
+           └── metadata.json
+   ```
+
+5. **Verified span data content**:
+   - Span data is valid JSONL format
+   - Sample span name: `OpenAI.chat`
+   - Metadata correctly tracks span count and snapshot time
+
+6. **Ran full test suite**:
+   - All 355 tests pass
+   - No type errors
+
+### Key Observations
+
+- **The relative path fix works correctly**: The `snapshotSpans` function now uses `cat projects/index.jsonl` instead of `cat /phoenix/projects/index.jsonl`, which resolves correctly in both SandboxMode and LocalMode.
+
+- **Debug logging is helpful**: The `[snapshotSpans]` prefix makes it easy to trace the span fetching process. Logs show project discovery, fetch progress, and file writes.
+
+- **Agent path issue (unrelated to this fix)**: The AI agent still uses absolute paths like `/phoenix/_context.md` because that's what the system prompt instructs. This is expected behavior - the system prompt is designed for the agent's mental model, not the actual filesystem. The bash tool's `cwd` is set to the phoenix directory, so the agent should ideally use relative paths, but the system prompt would need updating to change this behavior. This is outside the scope of the spans fix.
+
+### Conclusion
+
+The `snapshotSpans` fix is verified working end-to-end against a real Phoenix server. The relative path change allows span data to be correctly fetched and stored in LocalMode.

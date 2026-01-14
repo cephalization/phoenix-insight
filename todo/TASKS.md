@@ -39,7 +39,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### verify-spans-integration
 
 - content: Manually verify the fix works end-to-end by running `pnpm dev` against a real Phoenix server with spans. Document the verification steps and results in LEARNINGS.md. This ensures the fix works in real-world conditions, not just in tests.
-- status: pending
+- status: complete
 - dependencies: add-spans-debug-logging
 
 ---
