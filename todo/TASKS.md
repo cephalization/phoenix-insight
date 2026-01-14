@@ -49,7 +49,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### snapshot-create-subcommand
 
 - content: Refactor the existing `snapshot` command to use Commander.js subcommand pattern. Add `phoenix-insight snapshot create` as the explicit create command. Keep `phoenix-insight snapshot` (no subcommand) working as an alias for `snapshot create` for backward compatibility. All existing options should continue to work.
-- status: pending
+- status: complete
 - dependencies: snapshot-latest-command, snapshot-list-command
 
 ---

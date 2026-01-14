@@ -40,3 +40,10 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **Exit code semantics**: Unlike `snapshot latest` which exits with code 1 when no snapshots exist (because it's an error condition), `snapshot list` exits with code 0 even when empty - an empty list is a valid result, not an error.
 - **Script-friendly output format**: Using `<timestamp> <path>` with a space separator makes it easy to parse with standard Unix tools like `cut -d' ' -f2` or `while read timestamp path`.
 - **Test coverage strategy**: Since `listSnapshots()` is already thoroughly tested in `utils.test.ts`, the command tests focus on output format (ISO 8601) and integration aspects rather than re-testing edge cases.
+
+## snapshot-create-subcommand
+
+- **Backward compatibility pattern**: To add a new subcommand while keeping the parent command working, extract shared logic into a helper function (e.g., `executeSnapshotCreate()`). Both the parent's default `.action()` and the subcommand's `.action()` call the same function.
+- **Commander.js subcommand with default action**: A command can have both a default action (when called without subcommand) and explicit subcommands. The default action is triggered when no subcommand is provided.
+- **Test strategy for thin wrappers**: When the command handler is just a thin wrapper around shared logic, tests can focus on verifying the Commander.js structure is correct (subcommands exist, descriptions are set) rather than duplicating extensive logic tests.
+- **Documentation updates**: When adding alternative ways to invoke the same functionality, document both the explicit form (`snapshot create`) and the shorthand (`snapshot`) to help users choose based on clarity needs (scripts vs interactive use).

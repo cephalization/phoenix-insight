@@ -87,7 +87,10 @@ phoenix> exit
 Create or update snapshots separately from queries:
 
 ```bash
-# Create initial snapshot
+# Create initial snapshot (explicit command)
+phoenix-insight snapshot create
+
+# Create initial snapshot (shorthand, same as 'snapshot create')
 phoenix-insight snapshot
 
 # Force refresh snapshot (ignore cache)
@@ -299,7 +302,10 @@ Creates or updates a data snapshot from Phoenix without running a query.
 
 ```bash
 phoenix-insight snapshot [options]
+phoenix-insight snapshot create [options]
 ```
+
+Note: `phoenix-insight snapshot` (without subcommand) is equivalent to `phoenix-insight snapshot create` for backward compatibility.
 
 | Option             | Description                                   | Default                 | Example                                         |
 | ------------------ | --------------------------------------------- | ----------------------- | ----------------------------------------------- |
@@ -309,6 +315,16 @@ phoenix-insight snapshot [options]
 | `--refresh`        | Force refresh (ignore existing cache)         | `false`                 | `phoenix-insight snapshot --refresh`            |
 | `--limit <n>`      | Maximum spans to fetch per project            | `1000`                  | `phoenix-insight snapshot --limit 5000`         |
 | `--trace`          | Enable tracing of snapshot operations         | `false`                 | `phoenix-insight snapshot --trace`              |
+
+### Snapshot Create Subcommand
+
+Explicitly creates a new snapshot from Phoenix data. This is the preferred way to create snapshots.
+
+```bash
+phoenix-insight snapshot create
+```
+
+Same options as `phoenix-insight snapshot`. Use `snapshot create` for clarity in scripts and automation.
 
 ### Snapshot Latest Command
 
