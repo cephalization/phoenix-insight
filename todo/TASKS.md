@@ -51,7 +51,7 @@ Goal: Set up MSW (Mock Service Worker) to mock Phoenix API responses for reliabl
 ### msw-research-tooling
 
 - content: Research TypeScript libraries that can generate MSW handlers from OpenAPI schemas. Investigate options like `msw-auto-mock`, `openapi-msw`, `@mswjs/data`, or manual generation approaches. Document findings in LEARNINGS.md with pros/cons of each approach. Recommend the simplest solution that supports: (1) generating handlers from OpenAPI JSON, (2) basic faker-style data generation, (3) ability to switch between success/error responses. The OpenAPI schema is at `https://raw.githubusercontent.com/Arize-ai/phoenix/refs/heads/main/schemas/openapi.json`.
-- status: pending
+- status: complete
 - dependencies: none
 
 ### msw-install-deps
