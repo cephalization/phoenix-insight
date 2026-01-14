@@ -107,3 +107,122 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 ### Conclusion
 
 The `snapshotSpans` fix is verified working end-to-end against a real Phoenix server. The relative path change allows span data to be correctly fetched and stored in LocalMode.
+
+## msw-research-tooling
+
+### Research Summary
+
+Investigated TypeScript libraries that can generate MSW handlers from OpenAPI schemas. The Phoenix OpenAPI schema is at `https://raw.githubusercontent.com/Arize-ai/phoenix/refs/heads/main/schemas/openapi.json` and uses OpenAPI 3.1.0.
+
+### Libraries Evaluated
+
+#### 1. msw-auto-mock (380 stars)
+**GitHub**: https://github.com/zoubingwu/msw-auto-mock
+
+**What it does**: CLI tool that generates random mock data from OpenAPI definitions for MSW.
+
+**Pros**:
+- Generates complete MSW handler files directly from OpenAPI JSON/YAML
+- Built-in faker.js integration for random data generation
+- Supports filtering endpoints via `--includes` and `--excludes` flags
+- Supports static or dynamic mock generation
+- Can generate TypeScript files with `--typescript` flag
+- Active maintenance (v0.31.0 as of Apr 2025)
+- Generative AI support for smarter mock data (optional)
+
+**Cons**:
+- Requires @faker-js/faker >= 8 and msw >= 2 as peer dependencies
+- Output is generated code that needs regeneration when schema changes
+- Less type-safe at runtime (types come from generated code)
+
+**Usage**:
+```bash
+npx msw-auto-mock https://openapi-url.json -o ./mock --typescript
+```
+
+#### 2. openapi-msw (81 stars)
+**GitHub**: https://github.com/christoph-fricke/openapi-msw
+
+**What it does**: Type-safe wrapper around MSW for type inference from OpenAPI schemas.
+
+**Pros**:
+- Tiny wrapper, minimal footprint
+- Full TypeScript type safety with inference from OpenAPI types
+- Requires openapi-typescript to generate types first
+- Great developer experience with type-safe path, params, query, body, response
+- Built-in `response` helper for validated responses by status code
+- No code generation for handlers - write handlers manually with type support
+
+**Cons**:
+- Does NOT generate mock data or handlers automatically
+- Requires manual handler writing for each endpoint
+- Requires openapi-typescript as a prerequisite step
+- Only provides type safety, not mock data generation
+
+**Usage**:
+```typescript
+import { createOpenApiHttp } from "openapi-msw";
+import type { paths } from "./your-openapi-schema"; // from openapi-typescript
+const http = createOpenApiHttp<paths>();
+```
+
+#### 3. @mswjs/data (969 stars)
+**GitHub**: https://github.com/mswjs/data
+
+**What it does**: Data modeling and querying library for testing, works with MSW.
+
+**Pros**:
+- Official MSW library for data modeling
+- ORM-like syntax for creating/querying mock data
+- Supports relations between models
+- Schema validation via Standard Schema (Zod, etc.)
+
+**Cons**:
+- Does NOT work with OpenAPI schemas
+- Requires manually defining schemas (not generated from OpenAPI)
+- Meant for stateful mock databases, not simple request/response mocking
+- Overkill for snapshot testing use case
+
+### Recommendation: msw-auto-mock (Recommended)
+
+For phoenix-insight's needs, **msw-auto-mock** is the best choice because it:
+
+1. **Generates handlers from OpenAPI JSON** - Directly supports the Phoenix OpenAPI schema URL
+2. **Basic faker-style data generation** - Built-in @faker-js/faker integration
+3. **Ability to switch between success/error responses** - Handlers can be customized after generation
+4. **Simple integration** - One CLI command generates all handler files
+5. **Filtering support** - Can target specific endpoints via `--includes` flag
+
+**Implementation approach**:
+1. Install: `pnpm add -D msw msw-auto-mock @faker-js/faker`
+2. Create generation script that:
+   - Fetches Phoenix OpenAPI schema
+   - Uses msw-auto-mock with `--includes` to generate only needed endpoints
+   - Outputs to `test/mocks/handlers.ts`
+3. Customize generated handlers as needed for error scenarios
+
+**Endpoints needed** (per TASKS.md):
+- `/v1/projects`
+- `/v1/projects/{id}/spans`
+- `/v1/datasets`
+- `/v1/experiments` (actually `/v1/datasets/{dataset_id}/experiments` per OpenAPI)
+
+### Why not the alternatives?
+
+- **openapi-msw**: Great for type safety but requires manual handler writing. Since we just need happy-path mocks with fake data, auto-generation is more appropriate.
+
+- **@mswjs/data**: Designed for complex stateful mock databases. Our snapshot tests just need simple request/response mocking, not a full mock database.
+
+### Notes on Phoenix OpenAPI Schema
+
+- Uses OpenAPI 3.1.0
+- Defines many endpoints, but phoenix-insight only uses a subset
+- Endpoints of interest:
+  - `GET /v1/projects` - listProjects (actually not directly in schema, uses `GET /v1/projects/{project_identifier}/spans`)
+  - `GET /v1/datasets` - listDatasets
+  - `GET /v1/datasets/{dataset_id}/experiments` - listExperiments
+  - Spans are fetched via `@arizeai/phoenix-client`, may need different approach
+
+### Important caveat
+
+Looking at the OpenAPI schema, I noticed phoenix-insight uses `@arizeai/phoenix-client` for some operations (spans) rather than direct REST calls. The MSW mocking will need to intercept the underlying fetch calls that the client makes. This should work as long as the client uses standard fetch under the hood.
