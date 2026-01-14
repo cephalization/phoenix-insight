@@ -33,7 +33,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### add-spans-debug-logging
 
 - content: Add optional debug logging to `snapshotSpans` to help diagnose future issues. Log when reading projects index (count found), when starting/completing span fetch per project, and when writing output files. Use a debug flag or environment variable to control verbosity. This helps users understand what's happening during snapshot creation.
-- status: pending
+- status: complete
 - dependencies: fix-spans-path
 
 ### verify-spans-integration

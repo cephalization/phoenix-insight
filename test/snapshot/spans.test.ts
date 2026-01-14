@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { snapshotSpans } from "../../src/snapshot/spans.js";
 import type { PhoenixClient } from "@arizeai/phoenix-client";
 import type { ExecutionMode } from "../../src/modes/types.js";
@@ -435,5 +435,159 @@ describe("snapshotSpans", () => {
       "/phoenix/projects/my project/with spaces & symbols/spans/index.jsonl",
       ""
     );
+  });
+
+  describe("debug logging", () => {
+    let consoleSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleSpy.mockRestore();
+      delete process.env.DEBUG;
+    });
+
+    it("should log debug messages when debug option is true", async () => {
+      const projects = [{ name: "test-project", id: "proj-1" }];
+
+      vi.mocked(mockMode.exec).mockResolvedValueOnce({
+        stdout: projects.map((p) => JSON.stringify(p)).join("\n"),
+        stderr: "",
+        exitCode: 0,
+      });
+
+      const mockClient = createMockClient([
+        { data: { data: [], next_cursor: null } },
+      ]);
+
+      await snapshotSpans(mockClient, mockMode, { debug: true });
+
+      // Verify debug messages were logged
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[snapshotSpans] Reading projects index from projects/index.jsonl"
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[snapshotSpans] Found 1 project(s): test-project"
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[snapshotSpans] Starting span fetch for project: test-project"
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[snapshotSpans] Completed span fetch for project test-project: 0 span(s) fetched"
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[snapshotSpans] Writing spans to /phoenix/projects/test-project/spans/index.jsonl"
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[snapshotSpans] Writing metadata to /phoenix/projects/test-project/spans/metadata.json"
+      );
+    });
+
+    it("should log debug messages when DEBUG env var is set", async () => {
+      process.env.DEBUG = "1";
+
+      const projects = [{ name: "env-project", id: "proj-1" }];
+
+      vi.mocked(mockMode.exec).mockResolvedValueOnce({
+        stdout: projects.map((p) => JSON.stringify(p)).join("\n"),
+        stderr: "",
+        exitCode: 0,
+      });
+
+      const mockClient = createMockClient([
+        { data: { data: [], next_cursor: null } },
+      ]);
+
+      await snapshotSpans(mockClient, mockMode);
+
+      // Verify debug messages were logged
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[snapshotSpans] Found 1 project(s): env-project"
+      );
+    });
+
+    it("should not log debug messages when debug is disabled", async () => {
+      const projects = [{ name: "quiet-project", id: "proj-1" }];
+
+      vi.mocked(mockMode.exec).mockResolvedValueOnce({
+        stdout: projects.map((p) => JSON.stringify(p)).join("\n"),
+        stderr: "",
+        exitCode: 0,
+      });
+
+      const mockClient = createMockClient([
+        { data: { data: [], next_cursor: null } },
+      ]);
+
+      await snapshotSpans(mockClient, mockMode, { debug: false });
+
+      // Verify no debug messages were logged
+      expect(consoleSpy).not.toHaveBeenCalled();
+    });
+
+    it("should log when no projects are found", async () => {
+      vi.mocked(mockMode.exec).mockResolvedValueOnce({
+        stdout: "",
+        stderr: "",
+        exitCode: 0,
+      });
+
+      const mockClient = createMockClient([]);
+
+      await snapshotSpans(mockClient, mockMode, { debug: true });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[snapshotSpans] Reading projects index from projects/index.jsonl"
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[snapshotSpans] No projects found in index, skipping span fetch"
+      );
+    });
+
+    it("should log span counts for multiple projects", async () => {
+      const projects = [
+        { name: "project-a", id: "proj-a" },
+        { name: "project-b", id: "proj-b" },
+      ];
+
+      vi.mocked(mockMode.exec).mockResolvedValueOnce({
+        stdout: projects.map((p) => JSON.stringify(p)).join("\n"),
+        stderr: "",
+        exitCode: 0,
+      });
+
+      const span1 = {
+        id: "span1",
+        name: "op1",
+        context: { trace_id: "t1", span_id: "s1" },
+        span_kind: "SERVER",
+        parent_id: null,
+        start_time: "2024-01-01T00:00:00Z",
+        end_time: "2024-01-01T00:00:01Z",
+        status_code: "OK",
+        status_message: "",
+        attributes: {},
+        events: [],
+      };
+
+      const mockClient = createMockClient([
+        { data: { data: [span1, span1], next_cursor: null } },
+        { data: { data: [span1], next_cursor: null } },
+      ]);
+
+      await snapshotSpans(mockClient, mockMode, { debug: true });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[snapshotSpans] Found 2 project(s): project-a, project-b"
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[snapshotSpans] Completed span fetch for project project-a: 2 span(s) fetched"
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[snapshotSpans] Completed span fetch for project project-b: 1 span(s) fetched"
+      );
+    });
   });
 });
