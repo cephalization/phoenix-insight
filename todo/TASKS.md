@@ -57,7 +57,7 @@ Goal: Set up MSW (Mock Service Worker) to mock Phoenix API responses for reliabl
 ### msw-install-deps
 
 - content: Install MSW and any chosen OpenAPI-to-MSW tooling as devDependencies. Run `pnpm add -D msw` plus any additional packages identified in the research task. Verify installation succeeds and MSW version is compatible with Node 18+.
-- status: pending
+- status: complete
 - dependencies: msw-research-tooling
 
 ### msw-generator-script

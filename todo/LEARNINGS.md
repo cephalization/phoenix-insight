@@ -226,3 +226,59 @@ For phoenix-insight's needs, **msw-auto-mock** is the best choice because it:
 ### Important caveat
 
 Looking at the OpenAPI schema, I noticed phoenix-insight uses `@arizeai/phoenix-client` for some operations (spans) rather than direct REST calls. The MSW mocking will need to intercept the underlying fetch calls that the client makes. This should work as long as the client uses standard fetch under the hood.
+
+## msw-install-deps
+
+### Packages Installed
+
+Installed three devDependencies as recommended by the research task:
+- `msw@2.12.7` - Mock Service Worker for intercepting HTTP requests
+- `msw-auto-mock@0.31.0` - CLI tool to generate MSW handlers from OpenAPI schemas
+- `@faker-js/faker@10.2.0` - Fake data generation for mock responses
+
+### Peer Dependency Warnings
+
+During installation, pnpm reported unmet peer dependency warnings for zod:
+```
+msw-auto-mock 0.31.0
+├─┬ ai 4.1.54
+│ ├── ✕ unmet peer zod@^3.0.0: found 4.3.5
+...
+```
+
+**These warnings can be safely ignored** because:
+1. The warnings are about `msw-auto-mock`'s internal dependencies (`ai` SDK)
+2. We only use `msw-auto-mock` as a CLI code generation tool, not its runtime features
+3. The generated handlers use `msw` directly, not the AI SDK features
+4. Our project uses zod@4.3.5 for its own validation, which is unrelated to msw-auto-mock's needs
+
+### Verification Results
+
+- **MSW import works**: Both `msw` and `msw/node` (server setup) import successfully
+- **Faker import works**: `@faker-js/faker` imports and generates fake data correctly
+- **All 355 tests pass**: No regressions from adding these dependencies
+- **Node compatibility**: Verified on Node v24.11.0, MSW 2.x supports Node 18+
+
+### Key Import Paths for Next Tasks
+
+```typescript
+// Core MSW exports
+import { http, HttpResponse } from 'msw';
+
+// Node.js server for testing
+import { setupServer } from 'msw/node';
+
+// Faker for test data
+import { faker } from '@faker-js/faker';
+
+// msw-auto-mock is a CLI tool, invoked via:
+// npx msw-auto-mock <openapi-url> -o ./output --typescript
+```
+
+### Notes for msw-generator-script Task
+
+The next task will create a script to generate handlers. Key considerations:
+1. Use `--includes` flag to filter to only needed endpoints
+2. Target endpoints: `/v1/projects`, `/v1/projects/{id}/spans`, `/v1/datasets`, `/v1/datasets/{dataset_id}/experiments`
+3. Output to `test/mocks/handlers.ts`
+4. May need to customize generated handlers for error scenarios post-generation
