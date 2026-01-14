@@ -39,7 +39,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### snapshot-list-command
 
 - content: Add `phoenix-insight snapshot list` subcommand that prints all available snapshots with their timestamps, one per line. Format: `<timestamp> <path>` where timestamp is ISO 8601. Most recent first. Exit code 0 even if empty (just print nothing). Update README with documentation.
-- status: pending
+- status: complete
 - dependencies: add-snapshot-utils
 
 ---

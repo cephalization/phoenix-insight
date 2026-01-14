@@ -32,3 +32,11 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **Exit codes**: Use `process.exit(1)` for error conditions (no snapshots found) to enable proper error handling in shell scripts.
 - **Testing commands**: Tests for CLI subcommands can focus on the underlying utility functions (`getLatestSnapshot()`) since the command handler is a thin wrapper. The utils tests already cover the core functionality thoroughly.
 - **README updates**: When adding new user-facing commands, update both the "Snapshot Management" examples section and the "Command Reference" section with usage examples.
+
+## snapshot-list-command
+
+- **Reusing utility functions**: The `listSnapshots()` function from `utils.ts` already handles all the heavy lifting (sorting by timestamp descending, filtering invalid directories). The command handler is a thin wrapper that formats output.
+- **ISO 8601 timestamps**: JavaScript's `Date.toISOString()` produces the standard ISO 8601 format (`YYYY-MM-DDTHH:mm:ss.sssZ`) which is both human-readable and machine-parseable.
+- **Exit code semantics**: Unlike `snapshot latest` which exits with code 1 when no snapshots exist (because it's an error condition), `snapshot list` exits with code 0 even when empty - an empty list is a valid result, not an error.
+- **Script-friendly output format**: Using `<timestamp> <path>` with a space separator makes it easy to parse with standard Unix tools like `cut -d' ' -f2` or `while read timestamp path`.
+- **Test coverage strategy**: Since `listSnapshots()` is already thoroughly tested in `utils.test.ts`, the command tests focus on output format (ISO 8601) and integration aspects rather than re-testing edge cases.

@@ -99,6 +99,9 @@ phoenix-insight snapshot --base-url https://phoenix.example.com --api-key your-a
 # Get the path to the latest snapshot
 phoenix-insight snapshot latest
 
+# List all available snapshots
+phoenix-insight snapshot list
+
 # Clean up local snapshots
 phoenix-insight prune
 
@@ -334,6 +337,37 @@ if phoenix-insight snapshot latest > /dev/null 2>&1; then
 else
   echo "No snapshots found"
 fi
+```
+
+### Snapshot List Command
+
+Lists all available snapshots with their timestamps.
+
+```bash
+phoenix-insight snapshot list
+```
+
+Outputs one snapshot per line in the format `<timestamp> <path>` where timestamp is ISO 8601. Most recent first. Exit code 0 even if empty (just prints nothing).
+
+**Example usage:**
+
+```bash
+# List all snapshots
+phoenix-insight snapshot list
+# Output:
+# 2024-01-01T12:30:00.000Z /Users/you/.phoenix-insight/snapshots/1704113400000-abc123/phoenix
+# 2024-01-01T10:00:00.000Z /Users/you/.phoenix-insight/snapshots/1704104400000-def456/phoenix
+
+# Count snapshots
+phoenix-insight snapshot list | wc -l
+
+# Get oldest snapshot path
+phoenix-insight snapshot list | tail -1 | cut -d' ' -f2
+
+# Process snapshots in a script
+phoenix-insight snapshot list | while read timestamp path; do
+  echo "Snapshot from $timestamp at $path"
+done
 ```
 
 ### Prune Command

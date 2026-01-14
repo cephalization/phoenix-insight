@@ -13,7 +13,7 @@ import {
   createPhoenixClient,
   PhoenixClientError,
 } from "./snapshot/index.js";
-import { getLatestSnapshot } from "./snapshot/utils.js";
+import { getLatestSnapshot, listSnapshots } from "./snapshot/utils.js";
 import type { ExecutionMode } from "./modes/types.js";
 import type { PhoenixInsightAgentConfig } from "./agent/index.js";
 import { AgentProgress } from "./progress.js";
@@ -278,6 +278,31 @@ snapshotCmd
 
       // Print only the path to stdout, no decoration
       console.log(latestSnapshot.path);
+    } catch (error) {
+      console.error(
+        `Error: ${error instanceof Error ? error.message : String(error)}`
+      );
+      process.exit(1);
+    }
+  });
+
+// Subcommand: snapshot list
+snapshotCmd
+  .command("list")
+  .description("List all available snapshots with their timestamps")
+  .action(async () => {
+    try {
+      const snapshots = await listSnapshots();
+
+      // Print each snapshot: <timestamp> <path>
+      // Most recent first (already sorted by listSnapshots)
+      for (const snapshot of snapshots) {
+        // Format timestamp as ISO 8601
+        const isoTimestamp = snapshot.timestamp.toISOString();
+        console.log(`${isoTimestamp} ${snapshot.path}`);
+      }
+
+      // Exit code 0 even if empty (just print nothing)
     } catch (error) {
       console.error(
         `Error: ${error instanceof Error ? error.message : String(error)}`
