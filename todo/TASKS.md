@@ -99,7 +99,7 @@ Goal: The `scripts/generate-msw-handlers.ts` script doesn't actually generate ha
 ### remove-msw-auto-mock-dep
 
 - content: Remove `msw-auto-mock` from devDependencies since it's no longer needed after removing the generator script. Run `pnpm remove msw-auto-mock` and verify all tests still pass. This also removes the zod peer dependency warnings that were logged during install.
-- status: pending
+- status: complete
 - dependencies: remove-msw-generator-script
 
 ### update-handlers-comments
