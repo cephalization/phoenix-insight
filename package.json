@@ -28,7 +28,8 @@
     "start": "node dist/cli.js",
     "dev": "tsx src/cli.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --typecheck"
+    "test": "vitest run --typecheck",
+    "generate:mocks": "tsx scripts/generate-msw-handlers.ts"
   },
   "keywords": [
     "phoenix",
