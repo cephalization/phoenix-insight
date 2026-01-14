@@ -55,3 +55,12 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **Table format for key files**: Using a markdown table for "Key Files to Start With" provides a quick scannable reference that agents can easily extract file paths from.
 - **Concrete bash examples**: Rather than just describing file formats, providing actual bash commands (like `cat /phoenix/projects/index.jsonl | jq -s '.'`) helps agents immediately understand how to interact with the data.
 - **Test updates when restructuring**: When reorganizing content (e.g., removing a separate "## File Formats" section and integrating its content into Quick Start), update tests to verify the new structure rather than the old section headers.
+
+## refactor-context-templates
+
+- **Template literal organization**: Extract static documentation sections into named constants at the module level (`QUICK_START_SECTION`, `DIRECTORY_STRUCTURE_SECTION`, etc.). This makes it trivial to edit static text without touching the generation logic.
+- **Section composition pattern**: Use an array of sections joined with `\n` for the final output: `[header, QUICK_START_SECTION, dynamicContent, DIRECTORY_STRUCTURE_SECTION].join("\n")`. This makes the document structure immediately visible at a glance.
+- **Keep dynamic sections as functions**: The "What's Here" and "Recent Activity" sections depend on runtime data, so they remain as functions that build strings. The key insight is separating static documentation from dynamic data interpolation.
+- **Helper function extraction**: Breaking out `buildWhatsHereSection()` and `buildRecentActivitySection()` as separate functions improves readability and makes the main `generateContext()` function show the document structure clearly.
+- **Code organization with comment separators**: Using `// ===` comment blocks to visually separate "Static Section Templates", "Main Context Generation", "Dynamic Section Builders", "Data Collection", and "Helper Functions" makes the 500+ line file much easier to navigate.
+- **Maintainability win**: Before this refactor, changing a single word in the Quick Start section required finding the right `lines.push()` call among dozens. Now it's a single edit to one template literal constant.

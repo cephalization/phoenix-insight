@@ -62,3 +62,19 @@ Each agent picks the next pending task, implements it, and marks it complete.
 - status: complete
 - dependencies: snapshot-create-subcommand
 
+---
+
+## Phase 4: Context Generation Refactor
+
+### refactor-context-templates
+
+- content: Refactor `src/snapshot/context.ts` to use template literals instead of line-by-line `lines.push()` calls. Extract static sections (Quick Start, Directory Structure, What You Can Do, Data Freshness) into template literal constants or helper functions. Keep the dynamic sections (What's Here, Recent Activity) using string building but consolidate where possible. Minor reformatting of content is acceptable. The goal is maintainability - changing static text should be a single edit, not dozens of push() calls.
+- status: complete
+- dependencies: enhance-context-md
+
+### simplify-context-tests
+
+- content: Refactor `test/snapshot/context.test.ts` to focus on meaningful assertions rather than exact string matching. Tests should: 1) Verify all major sections exist (headings present), 2) Verify conditional content appears under correct conditions (e.g., "No projects found" vs project list with counts), 3) Verify dynamic data is interpolated (project names, span counts, timestamps), 4) NOT verify exact wording of static documentation text. Remove brittle assertions that would break from minor text changes.
+- status: pending
+- dependencies: refactor-context-templates
+

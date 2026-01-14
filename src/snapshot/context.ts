@@ -39,6 +39,131 @@ interface PromptInfo {
   updatedAt?: string;
 }
 
+// =============================================================================
+// Static Section Templates
+// =============================================================================
+
+/**
+ * Quick Start section for external agents - appears at the top for discoverability
+ */
+const QUICK_START_SECTION = `## Quick Start for External Agents
+
+This is a **read-only snapshot** of Phoenix observability data. You cannot modify this data.
+
+### Key Files to Start With
+
+| File | Description |
+|------|-------------|
+| \`/phoenix/projects/index.jsonl\` | List of all projects with traces |
+| \`/phoenix/datasets/index.jsonl\` | List of all datasets |
+| \`/phoenix/experiments/index.jsonl\` | List of all experiments |
+| \`/phoenix/prompts/index.jsonl\` | List of all prompts |
+
+### How to Parse Each File Format
+
+**JSONL files** (\`.jsonl\`): One JSON object per line
+\`\`\`bash
+# Read all lines as a JSON array
+cat /phoenix/projects/index.jsonl | jq -s '.'
+
+# Process each line individually
+while read -r line; do echo "$line" | jq '.name'; done < /phoenix/projects/index.jsonl
+
+# Get first N items
+head -n 5 /phoenix/projects/index.jsonl | jq -s '.'
+\`\`\`
+
+**JSON files** (\`.json\`): Standard JSON format
+\`\`\`bash
+# Read and pretty-print
+cat /phoenix/projects/my-project/metadata.json | jq '.'
+
+# Extract specific field
+cat /phoenix/projects/my-project/metadata.json | jq '.name'
+\`\`\`
+
+**Markdown files** (\`.md\`): Plain text prompt templates
+\`\`\`bash
+# Read prompt template
+cat /phoenix/prompts/my-prompt/versions/v1.md
+\`\`\`
+
+### Common Operations
+
+\`\`\`bash
+# List all project names
+cat /phoenix/projects/index.jsonl | jq -r '.name'
+
+# Count spans in a project
+wc -l < /phoenix/projects/my-project/spans/index.jsonl
+
+# Find spans with errors
+cat /phoenix/projects/my-project/spans/index.jsonl | jq 'select(.status_code == "ERROR")'
+
+# Get dataset examples
+cat /phoenix/datasets/my-dataset/examples.jsonl | jq -s '.' | head -n 100
+
+# Search across all files
+grep -r "error" /phoenix/
+\`\`\``;
+
+/**
+ * Directory Structure section showing the snapshot layout
+ */
+const DIRECTORY_STRUCTURE_SECTION = `## Directory Structure
+
+\`\`\`
+/phoenix/
+  _context.md                    # This file - start here!
+  /projects/
+    index.jsonl                  # List of all projects
+    /{project_name}/
+      metadata.json              # Project details
+      /spans/
+        index.jsonl              # Span data (may be sampled)
+        metadata.json            # Span snapshot metadata
+  /datasets/
+    index.jsonl                  # List of all datasets
+    /{dataset_name}/
+      metadata.json              # Dataset details
+      examples.jsonl             # Dataset examples
+  /experiments/
+    index.jsonl                  # List of all experiments
+    /{experiment_id}/
+      metadata.json              # Experiment details
+      runs.jsonl                 # Experiment runs
+  /prompts/
+    index.jsonl                  # List of all prompts
+    /{prompt_name}/
+      metadata.json              # Prompt details
+      /versions/
+        index.jsonl              # Version list
+        /{version_id}.md         # Version template
+  /_meta/
+    snapshot.json                # Snapshot metadata
+\`\`\``;
+
+/**
+ * What You Can Do section describing available operations
+ */
+const WHAT_YOU_CAN_DO_SECTION = `## What You Can Do
+
+- **Explore**: ls, cat, grep, find, jq, awk, sed
+- **Fetch more data**: \`px-fetch-more spans --project <name> --limit 500\`
+- **Fetch specific trace**: \`px-fetch-more trace --trace-id <id>\``;
+
+/**
+ * Data Freshness section with refresh instructions
+ */
+const DATA_FRESHNESS_SECTION = `## Data Freshness
+
+This is a **read-only snapshot**. Data may have changed since capture.
+Run with \`--refresh\` to get latest data.`;
+
+// =============================================================================
+// Main Context Generation
+// =============================================================================
+
 /**
  * Generates a _context.md summary file for the Phoenix snapshot
  * This provides human and agent-readable context about what data is available
@@ -47,93 +172,52 @@ export async function generateContext(
   mode: ExecutionMode,
   metadata: ContextMetadata
 ): Promise<void> {
-  const lines: string[] = [];
-
-  // Header
-  lines.push("# Phoenix Snapshot Context");
-  lines.push("");
-
-  // Quick Start for External Agents section - at the top for discoverability
-  lines.push("## Quick Start for External Agents");
-  lines.push("");
-  lines.push(
-    "This is a **read-only snapshot** of Phoenix observability data. You cannot modify this data."
-  );
-  lines.push("");
-  lines.push("### Key Files to Start With");
-  lines.push("");
-  lines.push("| File | Description |");
-  lines.push("|------|-------------|");
-  lines.push(
-    "| `/phoenix/projects/index.jsonl` | List of all projects with traces |"
-  );
-  lines.push("| `/phoenix/datasets/index.jsonl` | List of all datasets |");
-  lines.push(
-    "| `/phoenix/experiments/index.jsonl` | List of all experiments |"
-  );
-  lines.push("| `/phoenix/prompts/index.jsonl` | List of all prompts |");
-  lines.push("");
-  lines.push("### How to Parse Each File Format");
-  lines.push("");
-  lines.push("**JSONL files** (`.jsonl`): One JSON object per line");
-  lines.push("```bash");
-  lines.push("# Read all lines as a JSON array");
-  lines.push("cat /phoenix/projects/index.jsonl | jq -s '.'");
-  lines.push("");
-  lines.push("# Process each line individually");
-  lines.push(
-    "while read -r line; do echo \"$line\" | jq '.name'; done < /phoenix/projects/index.jsonl"
-  );
-  lines.push("");
-  lines.push("# Get first N items");
-  lines.push("head -n 5 /phoenix/projects/index.jsonl | jq -s '.'");
-  lines.push("```");
-  lines.push("");
-  lines.push("**JSON files** (`.json`): Standard JSON format");
-  lines.push("```bash");
-  lines.push("# Read and pretty-print");
-  lines.push("cat /phoenix/projects/my-project/metadata.json | jq '.'");
-  lines.push("");
-  lines.push("# Extract specific field");
-  lines.push("cat /phoenix/projects/my-project/metadata.json | jq '.name'");
-  lines.push("```");
-  lines.push("");
-  lines.push("**Markdown files** (`.md`): Plain text prompt templates");
-  lines.push("```bash");
-  lines.push("# Read prompt template");
-  lines.push("cat /phoenix/prompts/my-prompt/versions/v1.md");
-  lines.push("```");
-  lines.push("");
-  lines.push("### Common Operations");
-  lines.push("");
-  lines.push("```bash");
-  lines.push("# List all project names");
-  lines.push("cat /phoenix/projects/index.jsonl | jq -r '.name'");
-  lines.push("");
-  lines.push("# Count spans in a project");
-  lines.push(
-    "wc -l < /phoenix/projects/my-project/spans/index.jsonl"
-  );
-  lines.push("");
-  lines.push("# Find spans with errors");
-  lines.push(
-    "cat /phoenix/projects/my-project/spans/index.jsonl | jq 'select(.status_code == \"ERROR\")'"
-  );
-  lines.push("");
-  lines.push("# Get dataset examples");
-  lines.push(
-    "cat /phoenix/datasets/my-dataset/examples.jsonl | jq -s '.' | head -n 100"
-  );
-  lines.push("");
-  lines.push("# Search across all files");
-  lines.push('grep -r "error" /phoenix/');
-  lines.push("```");
-  lines.push("");
-
   // Collect stats from the snapshot
   const stats = await collectSnapshotStats(mode);
 
-  // What's Here section
+  // Build the dynamic "What's Here" section
+  const whatsHereSection = buildWhatsHereSection(stats, metadata);
+
+  // Build the dynamic "Recent Activity" section (may be empty)
+  const recentActivitySection = buildRecentActivitySection(stats);
+
+  // Compose the full context document
+  const content = [
+    "# Phoenix Snapshot Context",
+    "",
+    QUICK_START_SECTION,
+    "",
+    whatsHereSection,
+    recentActivitySection,
+    DIRECTORY_STRUCTURE_SECTION,
+    "",
+    WHAT_YOU_CAN_DO_SECTION,
+    "",
+    DATA_FRESHNESS_SECTION,
+  ].join("\n");
+
+  // Write the context file
+  await mode.writeFile("/phoenix/_context.md", content);
+}
+
+// =============================================================================
+// Dynamic Section Builders
+// =============================================================================
+
+/**
+ * Builds the "What's Here" section with project/dataset/experiment/prompt summaries
+ */
+function buildWhatsHereSection(
+  stats: {
+    projects: ProjectStats[];
+    datasets: DatasetInfo[];
+    experiments: ExperimentInfo[];
+    prompts: PromptInfo[];
+  },
+  metadata: ContextMetadata
+): string {
+  const lines: string[] = [];
+
   lines.push("## What's Here");
   lines.push("");
 
@@ -193,75 +277,39 @@ export async function generateContext(
   );
   lines.push("");
 
-  // Recent Activity section (if we have recent data)
-  const recentActivity = getRecentActivity(stats);
-  if (recentActivity.length > 0) {
-    lines.push("## Recent Activity");
-    lines.push("");
-    for (const activity of recentActivity) {
-      lines.push(`- ${activity}`);
-    }
-    lines.push("");
+  return lines.join("\n");
+}
+
+/**
+ * Builds the "Recent Activity" section if there are recent updates
+ * Returns an empty string if no recent activity
+ */
+function buildRecentActivitySection(stats: {
+  projects: ProjectStats[];
+  datasets: DatasetInfo[];
+  experiments: ExperimentInfo[];
+  prompts: PromptInfo[];
+}): string {
+  const activities = getRecentActivity(stats);
+
+  if (activities.length === 0) {
+    return "";
   }
 
-  // Directory Structure section - moved before detailed file formats for better flow
-  lines.push("## Directory Structure");
+  const lines: string[] = [];
+  lines.push("## Recent Activity");
   lines.push("");
-  lines.push("```");
-  lines.push("/phoenix/");
-  lines.push("  _context.md                    # This file - start here!");
-  lines.push("  /projects/");
-  lines.push("    index.jsonl                  # List of all projects");
-  lines.push("    /{project_name}/");
-  lines.push("      metadata.json              # Project details");
-  lines.push("      /spans/");
-  lines.push("        index.jsonl              # Span data (may be sampled)");
-  lines.push("        metadata.json            # Span snapshot metadata");
-  lines.push("  /datasets/");
-  lines.push("    index.jsonl                  # List of all datasets");
-  lines.push("    /{dataset_name}/");
-  lines.push("      metadata.json              # Dataset details");
-  lines.push("      examples.jsonl             # Dataset examples");
-  lines.push("  /experiments/");
-  lines.push("    index.jsonl                  # List of all experiments");
-  lines.push("    /{experiment_id}/");
-  lines.push("      metadata.json              # Experiment details");
-  lines.push("      runs.jsonl                 # Experiment runs");
-  lines.push("  /prompts/");
-  lines.push("    index.jsonl                  # List of all prompts");
-  lines.push("    /{prompt_name}/");
-  lines.push("      metadata.json              # Prompt details");
-  lines.push("      /versions/");
-  lines.push("        index.jsonl              # Version list");
-  lines.push("        /{version_id}.md         # Version template");
-  lines.push("  /_meta/");
-  lines.push("    snapshot.json                # Snapshot metadata");
-  lines.push("```");
+  for (const activity of activities) {
+    lines.push(`- ${activity}`);
+  }
   lines.push("");
 
-  // What You Can Do section
-  lines.push("## What You Can Do");
-  lines.push("");
-  lines.push("- **Explore**: ls, cat, grep, find, jq, awk, sed");
-  lines.push(
-    "- **Fetch more data**: `px-fetch-more spans --project <name> --limit 500`"
-  );
-  lines.push(
-    "- **Fetch specific trace**: `px-fetch-more trace --trace-id <id>`"
-  );
-  lines.push("");
-
-  // Data Freshness section
-  lines.push("## Data Freshness");
-  lines.push("");
-  lines.push(
-    "This is a **read-only snapshot**. Data may have changed since capture."
-  );
-  lines.push("Run with `--refresh` to get latest data.");
-
-  // Write the context file
-  await mode.writeFile("/phoenix/_context.md", lines.join("\n"));
+  return lines.join("\n");
 }
+
+// =============================================================================
+// Data Collection
+// =============================================================================
 
 /**
  * Collects statistics from the snapshot filesystem
@@ -430,6 +478,10 @@ async function collectSnapshotStats(mode: ExecutionMode): Promise<{
 
   return result;
 }
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
 
 /**
  * Determines the status of an experiment based on its run counts
