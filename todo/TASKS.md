@@ -59,6 +59,6 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### enhance-context-md
 
 - content: Improve `_context.md` to better support external agents that don't know about phoenix-insight. Add a "Quick Start for External Agents" section at the top explaining: 1) This is a read-only snapshot, 2) How to parse each file format (JSONL, JSON, MD), 3) Key files to start with (index.jsonl files), 4) Example bash commands for common operations. Keep existing content but reorganize for discoverability.
-- status: pending
+- status: complete
 - dependencies: snapshot-create-subcommand
 

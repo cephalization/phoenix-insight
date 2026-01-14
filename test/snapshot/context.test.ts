@@ -189,11 +189,17 @@ describe("generateContext", () => {
     expect(content).toContain("read-only snapshot");
     expect(content).toContain("--refresh");
 
-    // Check File Formats section
-    expect(content).toContain("## File Formats");
-    expect(content).toContain(".jsonl");
-    expect(content).toContain(".json");
-    expect(content).toContain(".md");
+    // Check Quick Start for External Agents section (new)
+    expect(content).toContain("## Quick Start for External Agents");
+    expect(content).toContain("read-only snapshot");
+    expect(content).toContain("### Key Files to Start With");
+    expect(content).toContain("/phoenix/projects/index.jsonl");
+    expect(content).toContain("### How to Parse Each File Format");
+    expect(content).toContain("**JSONL files**");
+    expect(content).toContain("**JSON files**");
+    expect(content).toContain("**Markdown files**");
+    expect(content).toContain("### Common Operations");
+    expect(content).toContain("jq -s '.'");
 
     // Check Directory Structure
     expect(content).toContain("## Directory Structure");
