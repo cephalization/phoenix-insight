@@ -47,9 +47,8 @@ export async function snapshotSpans(
   const { startTime, endTime, spansPerProject = 1000 } = options;
 
   // Read projects index to get project names
-  const projectsIndexContent = await mode.exec(
-    "cat /phoenix/projects/index.jsonl"
-  );
+  // Use relative path so it works with the cwd set by the execution mode
+  const projectsIndexContent = await mode.exec("cat projects/index.jsonl");
   if (!projectsIndexContent.stdout) {
     // No projects, nothing to do
     return;

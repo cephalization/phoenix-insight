@@ -22,59 +22,64 @@ Each agent picks the next pending task, implements it, and marks it complete.
 
 ---
 
-## Phase 1: Snapshot Discovery Infrastructure
+## Phase 1: Fix Span Fetching Bug
 
-### add-snapshot-utils
+### fix-spans-path
 
-- content: Create a utility module `src/snapshot/utils.ts` with functions to list all snapshot directories and find the latest snapshot. Implement `listSnapshots()` returning array of `{path, timestamp, id}` sorted by timestamp descending, and `getLatestSnapshot()` returning the latest snapshot path or null if none exist. Handle edge cases: no snapshots directory, empty directory, invalid directory names.
+- content: Fix absolute path issue in `snapshotSpans` function (`src/snapshot/spans.ts:50-51`). The `mode.exec("cat /phoenix/projects/index.jsonl")` uses an absolute path which doesn't work in LocalMode where the working directory is `~/.phoenix-insight/snapshots/{timestamp}/phoenix`. Change to use a relative path `cat projects/index.jsonl` so it works correctly with the `cwd` set by the execution mode. Update the corresponding test in `test/snapshot/spans.test.ts` to verify the fix.
 - status: complete
 - dependencies: none
 
-### snapshot-latest-command
+### add-spans-debug-logging
 
-- content: Add `phoenix-insight snapshot latest` subcommand that prints the absolute path to the latest snapshot directory to stdout (path only, no decoration). Exit code 0 on success, exit code 1 with error message to stderr if no snapshots exist. Use the utility functions from add-snapshot-utils. Update README with documentation.
-- status: complete
-- dependencies: add-snapshot-utils
+- content: Add optional debug logging to `snapshotSpans` to help diagnose future issues. Log when reading projects index (count found), when starting/completing span fetch per project, and when writing output files. Use a debug flag or environment variable to control verbosity. This helps users understand what's happening during snapshot creation.
+- status: pending
+- dependencies: fix-spans-path
 
-### snapshot-list-command
+### verify-spans-integration
 
-- content: Add `phoenix-insight snapshot list` subcommand that prints all available snapshots with their timestamps, one per line. Format: `<timestamp> <path>` where timestamp is ISO 8601. Most recent first. Exit code 0 even if empty (just print nothing). Update README with documentation.
-- status: complete
-- dependencies: add-snapshot-utils
-
----
-
-## Phase 2: Backward Compatibility
-
-### snapshot-create-subcommand
-
-- content: Refactor the existing `snapshot` command to use Commander.js subcommand pattern. Add `phoenix-insight snapshot create` as the explicit create command. Keep `phoenix-insight snapshot` (no subcommand) working as an alias for `snapshot create` for backward compatibility. All existing options should continue to work.
-- status: complete
-- dependencies: snapshot-latest-command, snapshot-list-command
+- content: Manually verify the fix works end-to-end by running `pnpm dev` against a real Phoenix server with spans. Document the verification steps and results in LEARNINGS.md. This ensures the fix works in real-world conditions, not just in tests.
+- status: pending
+- dependencies: add-spans-debug-logging
 
 ---
 
-## Phase 3: Agent Discoverability
+## Phase 2: MSW Mock Server for Snapshot Testing
 
-### enhance-context-md
+Goal: Set up MSW (Mock Service Worker) to mock Phoenix API responses for reliable snapshot testing without requiring a running Phoenix instance. Keep it simple - happy path testing only.
 
-- content: Improve `_context.md` to better support external agents that don't know about phoenix-insight. Add a "Quick Start for External Agents" section at the top explaining: 1) This is a read-only snapshot, 2) How to parse each file format (JSONL, JSON, MD), 3) Key files to start with (index.jsonl files), 4) Example bash commands for common operations. Keep existing content but reorganize for discoverability.
-- status: complete
-- dependencies: snapshot-create-subcommand
+### msw-research-tooling
 
----
+- content: Research TypeScript libraries that can generate MSW handlers from OpenAPI schemas. Investigate options like `msw-auto-mock`, `openapi-msw`, `@mswjs/data`, or manual generation approaches. Document findings in LEARNINGS.md with pros/cons of each approach. Recommend the simplest solution that supports: (1) generating handlers from OpenAPI JSON, (2) basic faker-style data generation, (3) ability to switch between success/error responses. The OpenAPI schema is at `https://raw.githubusercontent.com/Arize-ai/phoenix/refs/heads/main/schemas/openapi.json`.
+- status: pending
+- dependencies: none
 
-## Phase 4: Context Generation Refactor
+### msw-install-deps
 
-### refactor-context-templates
+- content: Install MSW and any chosen OpenAPI-to-MSW tooling as devDependencies. Run `pnpm add -D msw` plus any additional packages identified in the research task. Verify installation succeeds and MSW version is compatible with Node 18+.
+- status: pending
+- dependencies: msw-research-tooling
 
-- content: Refactor `src/snapshot/context.ts` to use template literals instead of line-by-line `lines.push()` calls. Extract static sections (Quick Start, Directory Structure, What You Can Do, Data Freshness) into template literal constants or helper functions. Keep the dynamic sections (What's Here, Recent Activity) using string building but consolidate where possible. Minor reformatting of content is acceptable. The goal is maintainability - changing static text should be a single edit, not dozens of push() calls.
-- status: complete
-- dependencies: enhance-context-md
+### msw-generator-script
 
-### simplify-context-tests
+- content: Create `scripts/generate-msw-handlers.ts` that fetches the Phoenix OpenAPI schema and generates MSW handlers. The script should: (1) fetch `https://raw.githubusercontent.com/Arize-ai/phoenix/refs/heads/main/schemas/openapi.json`, (2) generate handlers ONLY for endpoints used by phoenix-insight (`/v1/projects`, `/v1/projects/{id}/spans`, `/v1/datasets`, `/v1/experiments`), (3) output generated handlers to `test/mocks/handlers.ts`, (4) include realistic fake data using faker or simple fixtures. Add a `pnpm generate:mocks` script to package.json.
+- status: pending
+- dependencies: msw-install-deps
 
-- content: Refactor `test/snapshot/context.test.ts` to focus on meaningful assertions rather than exact string matching. Tests should: 1) Verify all major sections exist (headings present), 2) Verify conditional content appears under correct conditions (e.g., "No projects found" vs project list with counts), 3) Verify dynamic data is interpolated (project names, span counts, timestamps), 4) NOT verify exact wording of static documentation text. Remove brittle assertions that would break from minor text changes.
-- status: complete
-- dependencies: refactor-context-templates
+### msw-setup-test-server
 
+- content: Create `test/mocks/server.ts` with MSW server setup for Node.js testing. Import the generated handlers and configure the server. Create `test/mocks/index.ts` as the main export point. The setup should support switching between success/error responses via a simple API (e.g., `server.use(errorHandlers.projects)` to simulate errors).
+- status: pending
+- dependencies: msw-generator-script
+
+### msw-integrate-vitest
+
+- content: Update `test/setup.ts` to start/stop the MSW server for tests. Configure MSW to intercept fetch requests to the Phoenix API base URL. Ensure MSW plays nicely with existing vitest configuration. The existing `@arizeai/phoenix-client` module mock can be removed if MSW handles all HTTP interception, or kept for unit tests if preferred.
+- status: pending
+- dependencies: msw-setup-test-server
+
+### msw-snapshot-integration-test
+
+- content: Write an integration test in `test/snapshot/integration.test.ts` that uses MSW to test the full snapshot workflow with mocked Phoenix responses. Test that `snapshotProjects`, `snapshotSpans`, `snapshotDatasets`, and `snapshotExperiments` work correctly with the mocked server. This validates the MSW setup works end-to-end and prevents snapshot functionality from breaking.
+- status: pending
+- dependencies: msw-integrate-vitest
