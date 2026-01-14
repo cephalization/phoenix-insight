@@ -439,3 +439,35 @@ it('handles API errors gracefully', async () => {
   await expect(snapshotProjects(mockMode, baseUrl)).rejects.toThrow();
 });
 ```
+
+## msw-integrate-vitest
+
+### What Was Done
+
+Updated `test/setup.ts` to integrate MSW server lifecycle globally:
+1. Import `server` from `./mocks`
+2. Add `beforeAll()` to start the MSW server with `onUnhandledRequest: "bypass"`
+3. Add `afterEach()` to reset handlers (combined with existing `vi.clearAllMocks()`)
+4. Add `afterAll()` to close the server
+
+### Key Design Decisions
+
+1. **Kept `@arizeai/phoenix-client` mock**: The global `vi.mock("@arizeai/phoenix-client")` is preserved because many unit tests mock the client directly to test specific error conditions and behaviors. MSW handles HTTP-level interception for integration tests, but unit tests benefit from module-level mocking.
+
+2. **Used `onUnhandledRequest: "bypass"`**: This allows non-Phoenix API requests to pass through without errors. This is important because:
+   - Tests may make localhost requests that aren't meant to hit Phoenix
+   - Stricter behavior (`"error"`) can be used in specific test files if needed
+   - Individual test suites can override this with `server.listen({ onUnhandledRequest: "error" })`
+
+3. **Removed duplicate lifecycle from `server.test.ts`**: The server tests previously had their own `beforeAll`/`afterEach`/`afterAll` blocks. These were removed since the global setup now handles this. The tests continue to work because the server is started globally before any tests run.
+
+### Why This Approach Works
+
+- **Centralized lifecycle management**: All tests benefit from MSW without needing to set up the server individually
+- **Handler reset between tests**: `server.resetHandlers()` in `afterEach` ensures error handlers don't leak between tests
+- **Backwards compatible**: Existing tests that mock `@arizeai/phoenix-client` continue to work unchanged
+- **Integration-test ready**: The next task (`msw-snapshot-integration-test`) can now make real `fetch()` calls that are intercepted by MSW
+
+### Test Count
+
+All 371 tests pass with no type errors. The test count increased from 355 to 371 since the previous tasks, likely due to accumulated test additions.
