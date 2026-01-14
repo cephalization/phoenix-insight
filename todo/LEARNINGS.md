@@ -64,3 +64,12 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **Helper function extraction**: Breaking out `buildWhatsHereSection()` and `buildRecentActivitySection()` as separate functions improves readability and makes the main `generateContext()` function show the document structure clearly.
 - **Code organization with comment separators**: Using `// ===` comment blocks to visually separate "Static Section Templates", "Main Context Generation", "Dynamic Section Builders", "Data Collection", and "Helper Functions" makes the 500+ line file much easier to navigate.
 - **Maintainability win**: Before this refactor, changing a single word in the Quick Start section required finding the right `lines.push()` call among dozens. Now it's a single edit to one template literal constant.
+
+## simplify-context-tests
+
+- **Test organization**: Restructured tests into `describe` blocks by category: "section structure", "dynamic content interpolation", "conditional content", "experiment status determination", "timestamp formatting", and "error handling". This makes it clear what each test is validating.
+- **Avoid brittle assertions**: Instead of checking for exact strings like `"ls, cat, grep, find, jq, awk, sed"`, test for section headings (`## What You Can Do`) and dynamic data only. Static documentation text may change frequently but headings rarely do.
+- **Regex for flexible matching**: Use `expect(content).toMatch(/\*\*2 projects\*\*/)` instead of exact string matching. This allows flexibility in surrounding context while still verifying the key data.
+- **Separate tests for "no data" conditions**: Instead of one big test that overrides `exec` to return empty data and checks all four "No X found" messages, split into four tests - one for each entity type. This makes failures more specific and tests more readable.
+- **Test what matters**: The refactored tests focus on: 1) Major headings exist (structure), 2) Dynamic values are interpolated correctly (data), 3) Conditional content appears/disappears appropriately (logic). Static documentation prose is not tested since that's covered by the template refactor.
+- **Preserve edge case tests**: Kept tests for experiment status determination (completed/in_progress/failed counts), timestamp formatting ("just now"), and error handling (exec failures). These test actual business logic, not static text.

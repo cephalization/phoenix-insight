@@ -75,6 +75,6 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### simplify-context-tests
 
 - content: Refactor `test/snapshot/context.test.ts` to focus on meaningful assertions rather than exact string matching. Tests should: 1) Verify all major sections exist (headings present), 2) Verify conditional content appears under correct conditions (e.g., "No projects found" vs project list with counts), 3) Verify dynamic data is interpolated (project names, span counts, timestamps), 4) NOT verify exact wording of static documentation text. Remove brittle assertions that would break from minor text changes.
-- status: pending
+- status: complete
 - dependencies: refactor-context-templates
 
