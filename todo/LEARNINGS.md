@@ -47,3 +47,11 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **Commander.js subcommand with default action**: A command can have both a default action (when called without subcommand) and explicit subcommands. The default action is triggered when no subcommand is provided.
 - **Test strategy for thin wrappers**: When the command handler is just a thin wrapper around shared logic, tests can focus on verifying the Commander.js structure is correct (subcommands exist, descriptions are set) rather than duplicating extensive logic tests.
 - **Documentation updates**: When adding alternative ways to invoke the same functionality, document both the explicit form (`snapshot create`) and the shorthand (`snapshot`) to help users choose based on clarity needs (scripts vs interactive use).
+
+## enhance-context-md
+
+- **Discoverability for external agents**: The `_context.md` file is the first thing agents read when exploring a snapshot. Putting a "Quick Start for External Agents" section at the very top improves discoverability over burying important info in the middle.
+- **Self-contained documentation**: External agents may not know about phoenix-insight at all. The Quick Start section explains: 1) this is read-only data, 2) how to parse each file format with concrete bash examples, 3) which index.jsonl files to start with, 4) common operations like counting spans and finding errors.
+- **Table format for key files**: Using a markdown table for "Key Files to Start With" provides a quick scannable reference that agents can easily extract file paths from.
+- **Concrete bash examples**: Rather than just describing file formats, providing actual bash commands (like `cat /phoenix/projects/index.jsonl | jq -s '.'`) helps agents immediately understand how to interact with the data.
+- **Test updates when restructuring**: When reorganizing content (e.g., removing a separate "## File Formats" section and integrating its content into Quick Start), update tests to verify the new structure rather than the old section headers.

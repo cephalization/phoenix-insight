@@ -53,11 +53,89 @@ export async function generateContext(
   lines.push("# Phoenix Snapshot Context");
   lines.push("");
 
+  // Quick Start for External Agents section - at the top for discoverability
+  lines.push("## Quick Start for External Agents");
+  lines.push("");
+  lines.push(
+    "This is a **read-only snapshot** of Phoenix observability data. You cannot modify this data."
+  );
+  lines.push("");
+  lines.push("### Key Files to Start With");
+  lines.push("");
+  lines.push("| File | Description |");
+  lines.push("|------|-------------|");
+  lines.push(
+    "| `/phoenix/projects/index.jsonl` | List of all projects with traces |"
+  );
+  lines.push("| `/phoenix/datasets/index.jsonl` | List of all datasets |");
+  lines.push(
+    "| `/phoenix/experiments/index.jsonl` | List of all experiments |"
+  );
+  lines.push("| `/phoenix/prompts/index.jsonl` | List of all prompts |");
+  lines.push("");
+  lines.push("### How to Parse Each File Format");
+  lines.push("");
+  lines.push("**JSONL files** (`.jsonl`): One JSON object per line");
+  lines.push("```bash");
+  lines.push("# Read all lines as a JSON array");
+  lines.push("cat /phoenix/projects/index.jsonl | jq -s '.'");
+  lines.push("");
+  lines.push("# Process each line individually");
+  lines.push(
+    "while read -r line; do echo \"$line\" | jq '.name'; done < /phoenix/projects/index.jsonl"
+  );
+  lines.push("");
+  lines.push("# Get first N items");
+  lines.push("head -n 5 /phoenix/projects/index.jsonl | jq -s '.'");
+  lines.push("```");
+  lines.push("");
+  lines.push("**JSON files** (`.json`): Standard JSON format");
+  lines.push("```bash");
+  lines.push("# Read and pretty-print");
+  lines.push("cat /phoenix/projects/my-project/metadata.json | jq '.'");
+  lines.push("");
+  lines.push("# Extract specific field");
+  lines.push("cat /phoenix/projects/my-project/metadata.json | jq '.name'");
+  lines.push("```");
+  lines.push("");
+  lines.push("**Markdown files** (`.md`): Plain text prompt templates");
+  lines.push("```bash");
+  lines.push("# Read prompt template");
+  lines.push("cat /phoenix/prompts/my-prompt/versions/v1.md");
+  lines.push("```");
+  lines.push("");
+  lines.push("### Common Operations");
+  lines.push("");
+  lines.push("```bash");
+  lines.push("# List all project names");
+  lines.push("cat /phoenix/projects/index.jsonl | jq -r '.name'");
+  lines.push("");
+  lines.push("# Count spans in a project");
+  lines.push(
+    "wc -l < /phoenix/projects/my-project/spans/index.jsonl"
+  );
+  lines.push("");
+  lines.push("# Find spans with errors");
+  lines.push(
+    "cat /phoenix/projects/my-project/spans/index.jsonl | jq 'select(.status_code == \"ERROR\")'"
+  );
+  lines.push("");
+  lines.push("# Get dataset examples");
+  lines.push(
+    "cat /phoenix/datasets/my-dataset/examples.jsonl | jq -s '.' | head -n 100"
+  );
+  lines.push("");
+  lines.push("# Search across all files");
+  lines.push('grep -r "error" /phoenix/');
+  lines.push("```");
+  lines.push("");
+
   // Collect stats from the snapshot
   const stats = await collectSnapshotStats(mode);
 
   // What's Here section
   lines.push("## What's Here");
+  lines.push("");
 
   // Projects summary
   if (stats.projects.length > 0) {
@@ -119,45 +197,19 @@ export async function generateContext(
   const recentActivity = getRecentActivity(stats);
   if (recentActivity.length > 0) {
     lines.push("## Recent Activity");
+    lines.push("");
     for (const activity of recentActivity) {
       lines.push(`- ${activity}`);
     }
     lines.push("");
   }
 
-  // What You Can Do section
-  lines.push("## What You Can Do");
-  lines.push("- **Explore**: ls, cat, grep, find, jq, awk, sed");
-  lines.push(
-    "- **Fetch more data**: `px-fetch-more spans --project <name> --limit 500`"
-  );
-  lines.push(
-    "- **Fetch specific trace**: `px-fetch-more trace --trace-id <id>`"
-  );
-  lines.push("");
-
-  // Data Freshness section
-  lines.push("## Data Freshness");
-  lines.push(
-    "This is a **read-only snapshot**. Data may have changed since capture."
-  );
-  lines.push("Run with `--refresh` to get latest data.");
-  lines.push("");
-
-  // File Formats section
-  lines.push("## File Formats");
-  lines.push(
-    "- `.jsonl` files: One JSON object per line, use `jq -s` to parse as array"
-  );
-  lines.push("- `.json` files: Standard JSON");
-  lines.push("- `.md` files: Markdown (prompt templates)");
-  lines.push("");
-
-  // Directory Structure section
+  // Directory Structure section - moved before detailed file formats for better flow
   lines.push("## Directory Structure");
+  lines.push("");
   lines.push("```");
   lines.push("/phoenix/");
-  lines.push("  _context.md                    # This file");
+  lines.push("  _context.md                    # This file - start here!");
   lines.push("  /projects/");
   lines.push("    index.jsonl                  # List of all projects");
   lines.push("    /{project_name}/");
@@ -185,6 +237,27 @@ export async function generateContext(
   lines.push("  /_meta/");
   lines.push("    snapshot.json                # Snapshot metadata");
   lines.push("```");
+  lines.push("");
+
+  // What You Can Do section
+  lines.push("## What You Can Do");
+  lines.push("");
+  lines.push("- **Explore**: ls, cat, grep, find, jq, awk, sed");
+  lines.push(
+    "- **Fetch more data**: `px-fetch-more spans --project <name> --limit 500`"
+  );
+  lines.push(
+    "- **Fetch specific trace**: `px-fetch-more trace --trace-id <id>`"
+  );
+  lines.push("");
+
+  // Data Freshness section
+  lines.push("## Data Freshness");
+  lines.push("");
+  lines.push(
+    "This is a **read-only snapshot**. Data may have changed since capture."
+  );
+  lines.push("Run with `--refresh` to get latest data.");
 
   // Write the context file
   await mode.writeFile("/phoenix/_context.md", lines.join("\n"));
