@@ -219,13 +219,11 @@ Examples:
     await initializeConfig(cliArgs);
   });
 
-// Create snapshot command group
-const snapshotCmd = program
-  .command("snapshot")
-  .description("Snapshot management commands");
-
-// Default action for 'phoenix-insight snapshot' (backward compatibility)
-snapshotCmd.action(async () => {
+/**
+ * Shared logic for creating a snapshot.
+ * Used by both 'phoenix-insight snapshot' and 'phoenix-insight snapshot create'.
+ */
+async function executeSnapshotCreate(): Promise<void> {
   const config = getConfig();
 
   // Initialize observability if trace is enabled in config
@@ -261,7 +259,25 @@ snapshotCmd.action(async () => {
   } catch (error) {
     handleError(error, "creating snapshot");
   }
+}
+
+// Create snapshot command group
+const snapshotCmd = program
+  .command("snapshot")
+  .description("Snapshot management commands");
+
+// Default action for 'phoenix-insight snapshot' (backward compatibility alias for 'snapshot create')
+snapshotCmd.action(async () => {
+  await executeSnapshotCreate();
 });
+
+// Subcommand: snapshot create (explicit create command)
+snapshotCmd
+  .command("create")
+  .description("Create a new snapshot from Phoenix data")
+  .action(async () => {
+    await executeSnapshotCreate();
+  });
 
 // Subcommand: snapshot latest
 snapshotCmd
