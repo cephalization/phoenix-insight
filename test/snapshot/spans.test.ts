@@ -109,6 +109,9 @@ describe("snapshotSpans", () => {
 
     await snapshotSpans(mockClient, mockMode);
 
+    // Verify projects index is read using relative path (works with cwd)
+    expect(mockMode.exec).toHaveBeenCalledWith("cat projects/index.jsonl");
+
     // Verify API calls
     expect(mockClient.GET).toHaveBeenCalledTimes(2);
     expect(mockClient.GET).toHaveBeenCalledWith(
