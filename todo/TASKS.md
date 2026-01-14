@@ -69,7 +69,7 @@ Goal: Set up MSW (Mock Service Worker) to mock Phoenix API responses for reliabl
 ### msw-setup-test-server
 
 - content: Create `test/mocks/server.ts` with MSW server setup for Node.js testing. Import the generated handlers and configure the server. Create `test/mocks/index.ts` as the main export point. The setup should support switching between success/error responses via a simple API (e.g., `server.use(errorHandlers.projects)` to simulate errors).
-- status: pending
+- status: complete
 - dependencies: msw-generator-script
 
 ### msw-integrate-vitest

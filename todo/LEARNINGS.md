@@ -351,3 +351,91 @@ server.use(errorHandlers.projectsError);
 | `/v1/projects/:project_identifier/spans` | GET | Get spans for a project |
 | `/v1/datasets` | GET | List all datasets |
 | `/v1/datasets/:dataset_id/experiments` | GET | List experiments for a dataset |
+
+## msw-setup-test-server
+
+### Files Created
+
+1. **`test/mocks/server.ts`** - MSW server setup for Node.js testing
+2. **`test/mocks/index.ts`** - Main export point that re-exports server and handlers
+3. **`test/mocks/server.test.ts`** - Tests verifying the MSW setup works correctly
+
+### Server API Design
+
+The server module provides a simple API for controlling mock behavior:
+
+```typescript
+import { server, useErrorHandler, fixtures } from '../mocks';
+
+// Lifecycle management
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+// Switch to error responses
+useErrorHandler('projects');        // 500 error
+useErrorHandler('projectsForbidden'); // 403 error
+useErrorHandler('spans');           // 500 error
+useErrorHandler('datasets');        // 500 error
+useErrorHandler('experiments');     // 500 error
+
+// Multiple errors at once
+useErrorHandlers(['projects', 'datasets']);
+
+// Reset back to success handlers
+resetToSuccessHandlers();
+```
+
+### Key Design Decisions
+
+1. **Type-safe error handler names**: Used a const object mapping to ensure `useErrorHandler()` only accepts valid handler names with TypeScript inference.
+
+2. **Convenience wrappers**: Instead of requiring `server.use(errorHandlers.projectsError)`, provided `useErrorHandler('projects')` for cleaner test code.
+
+3. **Clear separation**: Server setup (`server.ts`) is separate from handler definitions (`handlers.ts`), keeping concerns modular.
+
+4. **Comprehensive re-exports**: The `index.ts` re-exports everything from both modules so tests can import from a single location.
+
+### Test Coverage
+
+The server tests verify:
+- All 4 success handlers return correct fixture data
+- Project lookup works by both ID and name
+- 404 is returned for unknown projects
+- Empty arrays for datasets with no experiments
+- All 5 error handlers switch correctly
+- Multiple error handlers can be combined
+- `resetToSuccessHandlers()` restores default behavior
+- Handler isolation across tests (via `afterEach`)
+
+### Usage Pattern for Next Tasks
+
+The `msw-integrate-vitest` task will need to:
+1. Start the server in `test/setup.ts`
+2. Reset handlers after each test
+3. Close server after all tests
+
+```typescript
+// test/setup.ts
+import { server } from './mocks';
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+```
+
+The `msw-snapshot-integration-test` task can then write integration tests like:
+
+```typescript
+import { useErrorHandler, fixtures } from '../mocks';
+
+it('fetches projects from mock API', async () => {
+  const result = await snapshotProjects(mockMode, baseUrl);
+  expect(result).toContain(fixtures.projects[0].name);
+});
+
+it('handles API errors gracefully', async () => {
+  useErrorHandler('projects');
+  await expect(snapshotProjects(mockMode, baseUrl)).rejects.toThrow();
+});
+```
