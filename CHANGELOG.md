@@ -1,5 +1,11 @@
 # @cephalization/phoenix-insight
 
+## 0.4.0
+
+### Minor Changes
+
+- 7b60c93: fix: Ensure spans are fetched from projects
+
 ## 0.3.0
 
 ### Minor Changes
