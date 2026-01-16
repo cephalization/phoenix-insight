@@ -7,6 +7,10 @@
     "./types": {
       "types": "./src/lib/types.ts",
       "import": "./src/lib/types.ts"
+    },
+    "./catalog": {
+      "types": "./src/lib/json-render/catalog.ts",
+      "import": "./src/lib/json-render/catalog.ts"
     }
   },
   "scripts": {

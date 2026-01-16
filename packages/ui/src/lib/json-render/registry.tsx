@@ -448,6 +448,23 @@ function ChartRenderer({
   );
 }
 
+/**
+ * Component registry mapping component types to their renderers.
+ * Used by json-render to look up components by type name.
+ */
+export const registry = {
+  Card: CardRenderer,
+  Text: TextRenderer,
+  Heading: HeadingRenderer,
+  List: ListRenderer,
+  Table: TableRenderer,
+  Metric: MetricRenderer,
+  Badge: BadgeRenderer,
+  Alert: AlertRenderer,
+  Separator: SeparatorRenderer,
+  Code: CodeRenderer,
+};
+
 // Export individual components for direct use if needed
 export {
   CardRenderer,
