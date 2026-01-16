@@ -41,3 +41,11 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Removed ~30 lines of duplicated type definitions from CLI, replaced with 5-line import/re-export pattern
 - All 534 CLI tests pass; typecheck passes for both packages
 - Pre-existing UI test failures (catalog component count, ReportRenderer mock) remain unrelated to this change
+
+## cli-import-catalog-schemas
+
+- Removed ~90 lines of duplicate Zod schema definitions from `report-tool.ts`, replaced with a single import from `@cephalization/phoenix-insight-ui/catalog`
+- The UI schemas use simpler names (e.g., `CardSchema`) while CLI had used `CardPropsSchema` - updated `getPropsSchemaForType()` switch cases accordingly
+- Important: The original `UIElementSchema` was missing "Chart" in its type enum - added it to maintain consistency with `VALID_COMPONENT_TYPES` array
+- Kept the `UIElementSchema`, `UITreeSchema`, and validation logic in CLI since they're tool-specific (the json-render types from UI don't include the `children` and `parentKey` fields needed for CLI validation)
+- All 534 CLI tests pass; typecheck passes for both packages
