@@ -103,7 +103,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-chat-message-component
 
 - content: Create `packages/ui/src/components/ChatMessage.tsx`. Display message with role indicator (user/assistant), timestamp, and content. User messages aligned right with different background. Assistant messages aligned left. Support markdown rendering using `streamdown` (add as dependency) which is optimized for AI streaming - handles incomplete/unterminated markdown blocks gracefully. Configure streamdown with Tailwind styles via `@source` directive in globals.css. Show streaming indicator for in-progress messages. Style with Tailwind, use shadcn patterns.
-- status: pending
+- status: complete
 - dependencies: ui-app-layout
 
 ### ui-chat-input-component
