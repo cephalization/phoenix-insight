@@ -229,7 +229,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-build-config
 
 - content: Configure `packages/ui/vite.config.ts` for production build. Set `base: './'` for relative asset paths. Configure output to `dist/`. Ensure assets are properly chunked. Add build script to package.json. Verify `pnpm build` produces working static bundle that can be served.
-- status: pending
+- status: complete
 - dependencies: ui-responsive-design, ui-error-handling
 
 ### cli-bundle-ui
