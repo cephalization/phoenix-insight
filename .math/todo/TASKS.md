@@ -213,7 +213,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-connection-status
 
 - content: Add connection status indicator to UI header. Show: connected (green), connecting (yellow), disconnected (red). Auto-reconnect on disconnect with visual feedback. Show toast notification on connection state changes using shadcn Sonner. Disable chat input when disconnected.
-- status: pending
+- status: complete
 - dependencies: ui-websocket-hook, ui-chat-panel
 
 ### ui-error-handling

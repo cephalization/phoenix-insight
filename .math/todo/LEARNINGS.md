@@ -392,3 +392,18 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Tests verify: desktop shows resizable panels (data-slot="resizable-handle"), mobile shows tabs (role="tablist")
 - Tests also verify tab switching, touch target sizing, and both panels being accessible in each mode
 - All 424 UI tests pass including 13 new App tests and 10 new useMediaQuery hook tests
+
+## ui-connection-status
+
+- Added new `ConnectionStatus` type with three states: `"connected"`, `"connecting"`, `"disconnected"` to the chat store
+- The `setConnectionStatus` action updates both `connectionStatus` and `isConnected` (for backward compatibility) in a single atomic update
+- When WebSocket closes, we set status to "connecting" first (because partysocket auto-reconnects), not "disconnected"
+- Created `ConnectionStatusIndicator` component with visual feedback: green dot for connected, yellow pulsing dot for connecting, red dot for disconnected
+- Toast notifications use `sonner`'s typed toast functions: `toast.success()`, `toast.info()`, `toast.error()` with descriptions
+- Used `useRef` to track previous connection status to avoid showing toast on initial mount and to detect actual changes
+- GOTCHA: When updating Zustand store state in tests, wrap with `act()` to avoid React warnings about uncontrolled state updates
+- Updated `ChatInput` component to accept optional `connectionStatus` prop with fallback derived from `isConnected` for backward compatibility
+- Had to update existing tests (`ChatPanel.test.tsx`, `chat.test.ts`, `App.test.tsx`) to include `connectionStatus` in store reset and mocks
+- The `useWebSocket` hook now calls `setConnectionStatus("connecting")` before attempting connection and on close handler
+- Chat input remains disabled when disconnected or connecting (both states have `isConnected: false`)
+- 18 new tests (16 ConnectionStatusIndicator + 1 chat store + 1 ChatPanel), total 442 UI tests, 976 total tests passing

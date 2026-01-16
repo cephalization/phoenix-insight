@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
+export type ConnectionStatusType = "connected" | "connecting" | "disconnected";
+
 export interface ChatInputProps {
   /** Called when the user submits a message */
   onSend: (message: string) => void;
@@ -12,6 +14,8 @@ export interface ChatInputProps {
   isConnected: boolean;
   /** Whether a response is currently streaming */
   isStreaming: boolean;
+  /** Connection status for the indicator (defaults to based on isConnected) */
+  connectionStatus?: ConnectionStatusType;
   /** Placeholder text for the textarea */
   placeholder?: string;
   /** Optional className for the container */
@@ -19,20 +23,49 @@ export interface ChatInputProps {
 }
 
 /**
+ * Get status color class based on connection status
+ */
+function getStatusColor(status: ConnectionStatusType): string {
+  switch (status) {
+    case "connected":
+      return "bg-green-500";
+    case "connecting":
+      return "bg-yellow-500";
+    case "disconnected":
+      return "bg-red-500";
+  }
+}
+
+/**
+ * Get human-readable status text
+ */
+function getStatusText(status: ConnectionStatusType): string {
+  switch (status) {
+    case "connected":
+      return "Connected";
+    case "connecting":
+      return "Connecting...";
+    case "disconnected":
+      return "Disconnected";
+  }
+}
+
+/**
  * Connection status indicator component
  */
-function ConnectionStatus({ isConnected }: { isConnected: boolean }) {
+function ConnectionStatus({ status }: { status: ConnectionStatusType }) {
   return (
     <div className="flex items-center gap-2">
       <span
         className={cn(
           "h-2 w-2 rounded-full",
-          isConnected ? "bg-green-500" : "bg-red-500"
+          getStatusColor(status),
+          status === "connecting" && "animate-pulse"
         )}
         aria-hidden="true"
       />
       <span className="text-xs text-muted-foreground">
-        {isConnected ? "Connected" : "Disconnected"}
+        {getStatusText(status)}
       </span>
     </div>
   );
@@ -52,9 +85,12 @@ export function ChatInput({
   onCancel,
   isConnected,
   isStreaming,
+  connectionStatus,
   placeholder = "Type a message...",
   className,
 }: ChatInputProps) {
+  // Derive status from isConnected if not explicitly provided
+  const effectiveStatus: ConnectionStatusType = connectionStatus ?? (isConnected ? "connected" : "disconnected");
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -101,7 +137,7 @@ export function ChatInput({
   return (
     <div className={cn("flex flex-col gap-2 p-4", className)}>
       {/* Connection status indicator */}
-      <ConnectionStatus isConnected={isConnected} />
+      <ConnectionStatus status={effectiveStatus} />
 
       {/* Input area */}
       <div className="flex gap-2">

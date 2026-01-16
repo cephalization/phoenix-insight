@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Toaster } from "@/components/ui/sonner"
 import { ChatPanel } from "@/components/ChatPanel"
 import { ReportPanel } from "@/components/ReportPanel"
+import { ConnectionStatusIndicator } from "@/components/ConnectionStatusIndicator"
 import { useIsDesktop } from "@/hooks/useMediaQuery"
 
 /**
@@ -125,8 +126,9 @@ function App() {
     <div className="flex h-screen flex-col bg-background text-foreground">
       <Toaster />
       {/* Header */}
-      <header className="flex h-14 shrink-0 items-center border-b px-4">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b px-4">
         <h1 className="text-lg font-semibold">Phoenix Insight</h1>
+        <ConnectionStatusIndicator />
       </header>
 
       {/* Main content - responsive layout */}
