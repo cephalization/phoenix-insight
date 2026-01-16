@@ -324,3 +324,21 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Message collectors (`createMessageCollector()`) gather all broadcast messages for assertion
 - 38 tests covering: AgentSession (constructor, id, executing, history, executeQuery, cancel, sendReport, clearHistory, cleanup), SessionManager (getOrCreateSession, getSessionForClient, getSession, removeSession, sessionCount, cleanup)
 - Total: 471 CLI tests (38 new), 401 UI tests = 872 tests passing
+
+## cli-report-tool
+
+- Created `packages/cli/src/commands/report-tool.ts` with `createReportTool` factory function for the AI agent
+- The tool uses AI SDK's `tool()` function with `inputSchema` (NOT `parameters`) and `execute` async function
+- Duplicated zod schemas from UI's catalog because CLI can't import from UI package (UI depends on CLI, not vice versa)
+- Schema duplication is intentional - CLI validates before sending, UI validates on receipt; both need the same rules
+- The `UITreeSchema` uses `z.record(z.string(), UIElementSchema)` for the elements map
+- Tool has a detailed description explaining all 10 component types and their props - this helps the AI understand how to structure reports
+- The `validateReportContent` function performs deep validation: tree structure, root element existence, element props against component schemas, and child/parent reference integrity
+- Props validation uses a switch statement mapping component types to their specific zod schemas
+- Broadcast callback is passed via factory function closure - allows session to inject its own broadcast implementation
+- Tool returns `ReportToolResult` with `{ success, message?, error? }` for clear AI feedback
+- GOTCHA: AI SDK's `tool.execute` takes a second parameter `ToolExecutionOptions` with `toolCallId` and `messages` - test helper must provide mock options
+- GOTCHA: When casting test data as `any` for execute, use `as const` on string literal types like `type: "Card" as const` to narrow types
+- Exported from `commands/index.ts`: `createReportTool`, `validateReportContent`, `ReportToolInput`, `ReportToolResult`
+- 37 new tests covering: validateReportContent (valid trees, invalid structure, invalid element structure, invalid props, relationship validation), createReportTool (definition, execute with valid/invalid content, broadcast errors), exports
+- Total: 508 CLI tests, 401 UI tests = 909 tests passing

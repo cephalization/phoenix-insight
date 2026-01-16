@@ -181,7 +181,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### cli-report-tool
 
 - content: Create `packages/cli/src/commands/report-tool.ts`. Implement AI SDK tool `generate_report` that the agent can call to update the UI report. Tool input schema: `{ title?: string, content: JSONRenderTree }`. Tool validates content against json-render catalog schema. Tool broadcasts report update to WebSocket client. Export tool factory that accepts broadcast function. Write unit tests.
-- status: pending
+- status: complete
 - dependencies: cli-agent-session, setup-json-render
 
 ---
