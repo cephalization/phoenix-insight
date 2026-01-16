@@ -2,9 +2,11 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   createReportTool,
   validateReportContent,
+  generateComponentDocs,
   type ReportToolResult,
 } from "../../src/commands/report-tool.js";
 import type { ReportCallback } from "../../src/server/session.js";
+import { catalog } from "@cephalization/phoenix-insight-ui/catalog";
 
 // ============================================================================
 // Test Data Helpers
@@ -67,6 +69,86 @@ async function executeTool(
     messages: [],
   }) as Promise<ReportToolResult>;
 }
+
+// ============================================================================
+// generateComponentDocs Tests
+// ============================================================================
+
+describe("generateComponentDocs", () => {
+  it("should generate documentation for all catalog components", () => {
+    const docs = generateComponentDocs(catalog);
+    
+    // Should include all component names
+    expect(docs).toContain("Card:");
+    expect(docs).toContain("Chart:");
+    expect(docs).toContain("Text:");
+    expect(docs).toContain("Heading:");
+    expect(docs).toContain("List:");
+    expect(docs).toContain("Table:");
+    expect(docs).toContain("Metric:");
+    expect(docs).toContain("Badge:");
+    expect(docs).toContain("Alert:");
+    expect(docs).toContain("Separator:");
+    expect(docs).toContain("Code:");
+  });
+
+  it("should include component descriptions from catalog", () => {
+    const docs = generateComponentDocs(catalog);
+    
+    // Descriptions should be included from the catalog
+    expect(docs).toContain("Container for grouping");
+    expect(docs).toContain("Text paragraph");
+    expect(docs).toContain("Section heading");
+  });
+
+  it("should include prop names for each component", () => {
+    const docs = generateComponentDocs(catalog);
+    
+    // Check prop names are included
+    expect(docs).toContain("content"); // Text, Heading, Badge, Code
+    expect(docs).toContain("items"); // List
+    expect(docs).toContain("headers"); // Table
+    expect(docs).toContain("rows"); // Table
+    expect(docs).toContain("label"); // Metric
+    expect(docs).toContain("value"); // Metric
+  });
+
+  it("should mark optional props with ? suffix", () => {
+    const docs = generateComponentDocs(catalog);
+    
+    // Optional props should have ? suffix
+    expect(docs).toContain("title?"); // Card, Alert
+    expect(docs).toContain("description?"); // Card
+    expect(docs).toContain("variant?"); // Text, Badge, Alert
+    expect(docs).toContain("level?"); // Heading
+    expect(docs).toContain("ordered?"); // List
+    expect(docs).toContain("language?"); // Code
+    expect(docs).toContain("orientation?"); // Separator
+  });
+
+  it("should note when components can have children", () => {
+    const docs = generateComponentDocs(catalog);
+    
+    // Card is the only component with hasChildren: true
+    expect(docs).toMatch(/Card:.*can have children/);
+    // Text should not have children note
+    expect(docs).not.toMatch(/Text:.*can have children/);
+  });
+
+  it("should format each component on a separate line", () => {
+    const docs = generateComponentDocs(catalog);
+    const lines = docs.split("\n");
+    
+    // Each component should be on its own line starting with "- "
+    for (const line of lines) {
+      expect(line).toMatch(/^- \w+:/);
+    }
+    
+    // Should have the same number of lines as components
+    const componentCount = Object.keys(catalog.components).length;
+    expect(lines.length).toBe(componentCount);
+  });
+});
 
 // ============================================================================
 // validateReportContent Tests
@@ -379,6 +461,27 @@ describe("createReportTool", () => {
     it("should have a description", () => {
       expect(reportTool.description).toBeDefined();
       expect(reportTool.description).toContain("report");
+    });
+
+    it("should include dynamically generated component docs in description", () => {
+      // The description should include documentation for all catalog components
+      expect(reportTool.description).toContain("Card:");
+      expect(reportTool.description).toContain("Text:");
+      expect(reportTool.description).toContain("Heading:");
+      expect(reportTool.description).toContain("List:");
+      expect(reportTool.description).toContain("Table:");
+      expect(reportTool.description).toContain("Metric:");
+      expect(reportTool.description).toContain("Badge:");
+      expect(reportTool.description).toContain("Alert:");
+      expect(reportTool.description).toContain("Separator:");
+      expect(reportTool.description).toContain("Code:");
+      expect(reportTool.description).toContain("Chart:");
+    });
+
+    it("should include component descriptions from catalog", () => {
+      // Descriptions should come from the catalog's description field
+      expect(reportTool.description).toContain("Container for grouping");
+      expect(reportTool.description).toContain("can have children");
     });
 
     it("should have input schema with title and content", () => {
