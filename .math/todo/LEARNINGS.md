@@ -407,3 +407,17 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - The `useWebSocket` hook now calls `setConnectionStatus("connecting")` before attempting connection and on close handler
 - Chat input remains disabled when disconnected or connecting (both states have `isConnected: false`)
 - 18 new tests (16 ConnectionStatusIndicator + 1 chat store + 1 ChatPanel), total 442 UI tests, 976 total tests passing
+
+## ui-error-handling
+
+- Created `ErrorBoundary` component using React's class-based error boundary pattern - functional components don't support `componentDidCatch`
+- The `getDerivedStateFromError` static method converts errors to user-friendly messages, avoiding exposure of stack traces or technical details
+- Error messages are categorized by type (TypeError, SyntaxError, RangeError) and content patterns (network, timeout, rate limit, etc.)
+- Fixed the shadcn `sonner.tsx` component which imported `next-themes` (not available in Vite apps) - replaced with simple `useSystemTheme` hook using `window.matchMedia("(prefers-color-scheme: dark)")`
+- Added `getUserFriendlyErrorMessage()` helper function in `useWebSocket.ts` that transforms technical errors into user-friendly messages
+- WebSocket errors now show toast notifications via sonner AND inline error messages in the chat (dual feedback)
+- JSON parse errors in `websocket.ts` are already handled - they create an error ServerMessage that flows through the normal error handling
+- The error boundary wraps `<App />` in `main.tsx`, providing a full-screen fallback UI with a "Try Again" button to reset the error state
+- Test for ThrowingComponent needed `never` return type annotation to satisfy TypeScript's JSX element type checking
+- Updated existing test in `useWebSocket.test.ts` that expected raw "Connection lost" error - now expects transformed "A network error occurred" message
+- Total: 470 UI tests (14 new ErrorBoundary tests + previous 456), 1004 total tests passing

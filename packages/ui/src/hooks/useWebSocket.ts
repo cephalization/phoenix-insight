@@ -4,12 +4,64 @@
  */
 
 import { useEffect, useRef, useCallback, useMemo } from "react";
+import { toast } from "sonner";
 import { WebSocketClient, type ServerMessage } from "@/lib/websocket";
 import { useChatStore } from "@/store/chat";
 import { useReportStore, type JSONRenderTree } from "@/store/report";
 
 // Default WebSocket URL (localhost:6007)
 const DEFAULT_WS_URL = "ws://localhost:6007";
+
+/**
+ * Convert technical error messages to user-friendly messages.
+ * Avoids exposing stack traces or overly technical details.
+ */
+function getUserFriendlyErrorMessage(errorMessage: string): string {
+  const lowerError = errorMessage.toLowerCase();
+
+  // Network-related errors
+  if (lowerError.includes("network") || lowerError.includes("connection")) {
+    return "A network error occurred. Please check your connection.";
+  }
+
+  // Timeout errors
+  if (lowerError.includes("timeout")) {
+    return "The request timed out. Please try again.";
+  }
+
+  // Rate limiting
+  if (lowerError.includes("rate limit") || lowerError.includes("too many requests")) {
+    return "Too many requests. Please wait a moment before trying again.";
+  }
+
+  // Authentication/authorization
+  if (lowerError.includes("unauthorized") || lowerError.includes("forbidden")) {
+    return "You don't have permission to perform this action.";
+  }
+
+  // Phoenix/API specific errors
+  if (lowerError.includes("phoenix")) {
+    return "Unable to communicate with Phoenix. Please ensure it's running.";
+  }
+
+  // Model/AI errors
+  if (lowerError.includes("model") || lowerError.includes("api key")) {
+    return "There was a problem with the AI service. Please check your configuration.";
+  }
+
+  // JSON parse errors (already handled in websocket.ts but may come through as error message)
+  if (lowerError.includes("json") || lowerError.includes("parse")) {
+    return "There was a problem processing the response data.";
+  }
+
+  // If the error message is short and doesn't contain technical jargon, use it
+  if (errorMessage.length < 100 && !errorMessage.includes("at ") && !errorMessage.includes("Error:")) {
+    return errorMessage;
+  }
+
+  // Default fallback
+  return "An unexpected error occurred. Please try again.";
+}
 
 export interface UseWebSocketOptions {
   /** WebSocket server URL (defaults to ws://localhost:6007) */
@@ -133,17 +185,22 @@ export function useWebSocket(
 
         case "error": {
           const { message: errorMessage } = message.payload;
-          // Add error as assistant message
+          // Show toast for server errors
+          toast.error("Query failed", {
+            description: getUserFriendlyErrorMessage(errorMessage),
+            duration: 5000,
+          });
+          // Add error as assistant message (inline display)
           if (currentAssistantMessageIdRef.current) {
             updateMessage(
               sessionId,
               currentAssistantMessageIdRef.current,
-              `Error: ${errorMessage}`
+              `Error: ${getUserFriendlyErrorMessage(errorMessage)}`
             );
           } else {
             addMessage(sessionId, {
               role: "assistant",
-              content: `Error: ${errorMessage}`,
+              content: `Error: ${getUserFriendlyErrorMessage(errorMessage)}`,
             });
           }
           // Reset streaming state on error
@@ -189,6 +246,11 @@ export function useWebSocket(
   const handleError = useCallback(
     (event: Event) => {
       console.error("WebSocket error:", event);
+      // Show toast notification for WebSocket errors
+      toast.error("Connection error", {
+        description: "A WebSocket error occurred. Attempting to reconnect...",
+        duration: 5000,
+      });
       // Connection state will be updated by close handler
     },
     []
@@ -253,10 +315,18 @@ export function useWebSocket(
         });
       } catch (error) {
         console.error("Failed to send query:", error);
-        // Add error message
+        const errorMsg = getUserFriendlyErrorMessage(
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        // Show toast notification
+        toast.error("Failed to send message", {
+          description: errorMsg,
+          duration: 5000,
+        });
+        // Add error message inline
         addMessage(sessionId, {
           role: "assistant",
-          content: `Failed to send message: ${error instanceof Error ? error.message : "Unknown error"}`,
+          content: `Failed to send message: ${errorMsg}`,
         });
       }
     },
