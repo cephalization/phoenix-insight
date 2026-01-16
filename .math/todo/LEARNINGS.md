@@ -162,3 +162,19 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - GOTCHA: `toHaveTextContent` normalizes whitespace - use `element?.textContent` directly for exact whitespace matching
 - Mocked streamdown in tests since it has complex dependencies and we only need to verify content is passed to it
 - All 22 ChatMessage tests + 148 existing = 170 total UI tests, build produces 288KB bundle
+
+## ui-chat-input-component
+
+- Used `pnpm dlx shadcn@latest add textarea --yes` to install the shadcn Textarea component (wasn't installed during setup-shadcn-ui)
+- Added `@testing-library/user-event` as devDependency for testing keyboard interactions (Enter to send, Shift+Enter for newline)
+- Component follows props-based approach: `onSend`, `onCancel`, `isConnected`, `isStreaming` - making it easy to integrate with useWebSocket hook later
+- Enter sends message (if valid), Shift+Enter inserts newline - implemented via `onKeyDown` handler with `e.preventDefault()` for Enter
+- Send button and Cancel button are mutually exclusive - only one shows at a time based on `isStreaming` state
+- ConnectionStatus is a separate subcomponent for the connection indicator (green/red dot with text)
+- Input is disabled when `!isConnected || isStreaming` - prevents user interaction during inappropriate states
+- Send button disabled when `value.trim().length === 0 || !isConnected || isStreaming`
+- Auto-focus textarea on mount and when streaming ends (helps UX by returning focus after assistant response)
+- Used inline SVG icons (SendIcon, StopIcon) to avoid adding icon library dependency - marked `aria-hidden="true"` for accessibility
+- GOTCHA: TypeScript `verbatimModuleSyntax` requires `import type` for type-only imports - had to separate `ChatInputProps` import
+- Tests cover: rendering, connection status indicator, input behavior, send functionality, cancel functionality, accessibility, focus behavior, edge cases
+- All 39 ChatInput tests pass, total 209 UI tests, 384 CLI tests = 593 total tests
