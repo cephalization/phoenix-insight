@@ -65,7 +65,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-chat-store
 
 - content: Create a Zustand store in `packages/ui/src/store/chat.ts` for chat state management. Define types: `Message { id, role: 'user' | 'assistant', content, timestamp }`, `ChatSession { id, messages, createdAt, title? }`. Store state: `sessions`, `currentSessionId`, `isConnected`, `isStreaming`. Actions: `addMessage`, `createSession`, `setCurrentSession`, `clearSession`. Add `packages/ui` devDependency on `zustand`. Write unit tests in `packages/ui/src/store/chat.test.ts`.
-- status: pending
+- status: complete
 - dependencies: setup-shadcn-ui
 
 ### ui-report-store
