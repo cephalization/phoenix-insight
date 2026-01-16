@@ -270,3 +270,21 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Delete action does NOT close dialog (allows deleting multiple reports without reopening)
 - All 17 ReportHistoryDialog tests + 24 ReportPanel tests continue to pass (refactoring preserved existing test coverage)
 - Total: 401 UI tests, 384 CLI tests = 785 tests passing
+
+## cli-ws-server
+
+- Added `ws` and `@types/ws` packages to `packages/cli/` for WebSocket server implementation
+- Created `packages/cli/src/server/websocket.ts` with `PhoenixWebSocketServer` class that wraps the `ws` package
+- The server uses `noServer: true` mode to handle HTTP upgrade requests manually, enabling path-based routing
+- GOTCHA: When validating incoming JSON messages, parse as `unknown` first, then narrow types to avoid TypeScript's `never` type narrowing issue
+  - Casting directly to `ClientMessage` then checking `message.type` causes TypeScript to narrow `message.type` to `never` after validation
+  - Solution: Parse as `unknown`, validate structure with type guards, then cast after validation
+- The `handleUpgrade` method filters connections by URL path (default `/ws`) - rejects connections on wrong paths by calling `socket.destroy()`
+- Client tracking uses a `Set<WebSocket>` for fast add/remove operations
+- Message protocol matches UI client types (`ClientMessage`, `ServerMessage`) from `packages/ui/src/lib/websocket.ts`
+- GOTCHA: When testing WebSocket connection rejection on wrong path, the client may receive an `error` event rather than `close` event
+  - Solution: Wait for either event using `Promise.race` pattern or combine handlers
+- `broadcastToSession` currently broadcasts to all clients - session-to-client mapping deferred to `cli-agent-session` task
+- Tests use real HTTP/WebSocket servers on random localhost ports (`:0` for auto-assignment) for realistic integration testing
+- 25 new WebSocket tests: connection lifecycle, path filtering, message handling, error cases, broadcasting, graceful shutdown
+- Total: 409 CLI tests, 401 UI tests = 810 tests passing
