@@ -362,3 +362,16 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Updated CLI help text with examples for `phoenix-insight ui`, `--port`, and `--no-open` options
 - Updated README.md with new "Web UI" section and added UI command to Command Reference table
 - 26 new tests in `test/commands/ui.test.ts`, 534 total CLI tests passing
+
+## cli-ui-integration
+
+- The integration task focused on wiring the report tool into the agent session for UI mode
+- Modified `PhoenixInsightAgentConfig` interface to accept `additionalTools?: Record<string, any>` for injecting extra tools at agent creation time
+- The `PhoenixInsightAgent.initializeTools()` merges base tools (bash, px_fetch_more_spans, px_fetch_more_trace) with additionalTools using spread operator
+- `AgentSession.getAgent()` now creates the report tool via `createReportTool()` with a callback that sends reports through the session's `sendReport()` method
+- PATTERN: Tool injection via factory callback - the report tool is created with `createReportTool((content, title) => this.sendReport(content, title))`
+- The existing CLI integration in `runUIServer()` (from cli-ui-command task) was already complete - it just needed the report tool injection in the session
+- The test expectation was updated to use `expect.objectContaining()` with `additionalTools: expect.objectContaining({ generate_report: expect.anything() })`
+- Removed unused `createReportTool` import from `cli.ts` since the tool is now created in `session.ts`
+- The integration completes the bidirectional communication: client sends queries -> agent processes -> streams text/tool_call/tool_result -> agent can call generate_report -> report sent to UI
+- All server tests pass (87 tests), typecheck passes, build succeeds
