@@ -191,7 +191,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### cli-ui-command
 
 - content: Add `ui` subcommand to `packages/cli/src/cli.ts`. Command starts HTTP server on localhost:6007, attaches WebSocket server, opens browser (optional --no-open flag). Reuse config loading. Display startup message with URL. Handle graceful shutdown on SIGINT/SIGTERM. Update CLI help text and README.md with new command documentation.
-- status: pending
+- status: complete
 - dependencies: cli-ui-server, cli-agent-session, cli-report-tool
 
 ### cli-ui-integration
