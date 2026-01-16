@@ -421,3 +421,19 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Test for ThrowingComponent needed `never` return type annotation to satisfy TypeScript's JSX element type checking
 - Updated existing test in `useWebSocket.test.ts` that expected raw "Connection lost" error - now expects transformed "A network error occurred" message
 - Total: 470 UI tests (14 new ErrorBoundary tests + previous 456), 1004 total tests passing
+
+## ui-build-config
+
+- Set `base: './'` in Vite config for relative asset paths - this is critical for serving the UI from CLI's HTTP server at arbitrary paths
+- Vite's `outDir: 'dist'` is already the default, but explicit configuration makes the intent clear
+- Enabled sourcemaps with `sourcemap: true` for production debugging - maps add ~7MB to build output but are invaluable for debugging
+- Configured `manualChunks` in rollupOptions for better caching and code splitting:
+  - `vendor-react`: React ecosystem (11KB) - changes rarely
+  - `vendor-ui`: Radix UI components (152KB) - UI library code
+  - `vendor-data`: Zustand, idb, zod (73KB) - state/data management
+  - `vendor-render`: streamdown, json-render (1.7MB) - markdown/report rendering
+- The `streamdown` library is large (~1.7MB) due to code syntax highlighting support - set `chunkSizeWarningLimit: 2000` to suppress warning
+- Content hashes in filenames (`[name]-[hash].js`) enable long-term caching - CLI's ui server serves with `max-age=31536000` for hashed assets
+- The existing `build` script (`tsc -b && vite build`) runs TypeScript build in project mode first, then Vite build - this ensures type errors are caught before bundling
+- Total bundle size: ~2.5MB JS + 45KB CSS (with sourcemaps: ~9.5MB) - gzip compressed: ~550KB + 9KB
+- All 456 UI tests pass, typecheck passes, build succeeds
