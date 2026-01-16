@@ -153,7 +153,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-report-history-dialog
 
 - content: Create `packages/ui/src/components/ReportHistoryDialog.tsx`. Modal dialog showing list of previous reports. Each item shows: title/id, creation date, associated session. Actions per item: view, delete, download as markdown. Use shadcn Dialog, ScrollArea, Button. Integrate with report store and IndexedDB.
-- status: pending
+- status: complete
 - dependencies: ui-report-panel
 
 ---
