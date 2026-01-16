@@ -11,3 +11,18 @@ class MockResizeObserver {
 }
 
 globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
+
+// Mock matchMedia for jsdom (not implemented, required by Sonner and media queries)
+Object.defineProperty(window, "matchMedia", {
+  writable: true,
+  value: (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  }),
+});
