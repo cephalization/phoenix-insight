@@ -477,3 +477,14 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Tests cover: Layout (header, panels), Chat (input, send, status), Report (panel, empty state, toolbar), WebSocket (connection), Session (dropdown, new session), Error handling
 - Documentation added to README under "UI Integration Testing" section with prerequisites, running instructions, and manual testing workflow
 - These tests are NOT for CI - they require a live Phoenix server with data on localhost:6006 and the UI server on localhost:6007
+
+## update-documentation
+
+- Created root-level `README.md` for the monorepo with: package overview table, quick start, directory structure, development setup, package scripts, UI integration testing workflow, architecture overview, key technologies, contributing guidelines
+- Updated `packages/cli/README.md` with comprehensive WebSocket protocol documentation including: client/server message type definitions, UITree structure for reports, example WebSocket session flow
+- Added "Web UI Features" section to CLI README covering: split-pane layout, chat interface details, report panel features, connection management with partysocket, IndexedDB persistence
+- Updated `packages/ui/README.md` from default Vite template to project-specific documentation with: package overview, development commands, project structure, key dependencies, architecture (state management, WebSocket, report rendering), testing setup, build process for CLI bundling, browser support
+- The UI README notes that the package is private and bundled with CLI (not published separately to npm)
+- Root README includes a table linking to both package READMEs for quick navigation
+- Documentation follows markdown best practices: code blocks with language hints, tables for option references, clear section hierarchy
+- No screenshots added as the task notes "if possible" - this would require manual capture which is beyond the scope of automated documentation
