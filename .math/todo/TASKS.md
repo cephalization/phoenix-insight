@@ -87,7 +87,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-websocket-client
 
 - content: Create WebSocket client in `packages/ui/src/lib/websocket.ts` using `partysocket` for robust connection management. Add `partysocket` as dependency to `packages/ui/`. Define message types: `ClientMessage { type: 'query' | 'cancel', payload }`, `ServerMessage { type: 'text' | 'tool_call' | 'tool_result' | 'report' | 'error' | 'done', payload }`. Wrap partysocket's `WebSocket` class which provides automatic reconnection with exponential backoff, message buffering during disconnection, and connection timeout handling. Export typed wrapper with: `connect(url)`, `disconnect()`, `send(message)`, `onMessage(handler)`, `onError(handler)`, `onClose(handler)`. Write unit tests with mock WebSocket.
-- status: pending
+- status: complete
 - dependencies: scaffold-ui-package
 
 ### ui-websocket-hook
