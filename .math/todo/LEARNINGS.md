@@ -342,3 +342,23 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Exported from `commands/index.ts`: `createReportTool`, `validateReportContent`, `ReportToolInput`, `ReportToolResult`
 - 37 new tests covering: validateReportContent (valid trees, invalid structure, invalid element structure, invalid props, relationship validation), createReportTool (definition, execute with valid/invalid content, broadcast errors), exports
 - Total: 508 CLI tests, 401 UI tests = 909 tests passing
+
+## cli-ui-command
+
+- Added `ui` subcommand to `packages/cli/src/cli.ts` using Commander's `.command()` pattern
+- The UI command uses local mode (not sandbox) because persistence is needed for session/report history via IndexedDB
+- Browser opening uses platform-specific commands: `open` (darwin), `start` (win32), `xdg-open || sensible-browser` (linux)
+- The `exec()` from `child_process` is used non-blocking - errors only logged in DEBUG mode to avoid cluttering output
+- Commander's `--no-open` pattern automatically sets `options.open = false` when the flag is present
+- The `runUIServer()` function integrates: createUIServer, createWebSocketServer, createSessionManager
+- Session ID is generated from client message or created dynamically with `session-${Date.now()}`
+- WebSocket message handlers use the session manager's `getOrCreateSession` to route messages to correct agent session
+- Query execution errors are caught and sent as WebSocket error messages to client
+- Graceful shutdown uses `isShuttingDown` flag to prevent duplicate shutdowns on rapid SIGINT
+- Shutdown order matters: WebSocket server first (stop accepting connections), then HTTP server, then session cleanup, then mode cleanup
+- The server runs indefinitely via `await new Promise(() => {})` - only exits on SIGINT/SIGTERM
+- Tests for UI command focus on helper logic (browser command generation, option parsing, shutdown behavior) rather than full integration
+- Full server integration is already tested in `server/ui.test.ts`, `server/websocket.test.ts`, and `server/session.test.ts`
+- Updated CLI help text with examples for `phoenix-insight ui`, `--port`, and `--no-open` options
+- Updated README.md with new "Web UI" section and added UI command to Command Reference table
+- 26 new tests in `test/commands/ui.test.ts`, 534 total CLI tests passing

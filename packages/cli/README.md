@@ -148,6 +148,29 @@ phoenix-insight --refresh "show me the latest errors"
 phoenix-insight --no-stream "generate report" > report.txt
 ```
 
+### Web UI
+
+Start the web-based UI for a visual chat interface and structured report display:
+
+```bash
+# Start web UI (opens browser automatically)
+phoenix-insight ui
+
+# Start on a custom port
+phoenix-insight ui --port 8080
+
+# Start without opening browser
+phoenix-insight ui --no-open
+```
+
+The web UI provides:
+
+- **Split-pane interface**: Chat panel on the left, report display on the right
+- **Real-time streaming**: See agent responses and tool usage as they happen
+- **Structured reports**: AI-generated reports with tables, metrics, and formatted content
+- **Session history**: Persist and browse previous conversations and reports
+- **WebSocket connection**: Real-time bidirectional communication with the agent
+
 ### Observability
 
 ```bash
@@ -397,6 +420,32 @@ phoenix-insight prune [options]
 | Option      | Description                              | Default | Example                         |
 | ----------- | ---------------------------------------- | ------- | ------------------------------- |
 | `--dry-run` | Preview what would be deleted without actually deleting | `false` | `phoenix-insight prune --dry-run` |
+
+### UI Command
+
+Starts a web-based UI for visual interaction with the Phoenix Insight agent.
+
+```bash
+phoenix-insight ui [options]
+```
+
+| Option          | Description                                      | Default | Example                          |
+| --------------- | ------------------------------------------------ | ------- | -------------------------------- |
+| `--port <n>`    | Port to run the UI server on                     | `6007`  | `phoenix-insight ui --port 8080` |
+| `--no-open`     | Do not automatically open browser                | `false` | `phoenix-insight ui --no-open`   |
+
+The UI server provides:
+
+- **HTTP server**: Serves the web UI on `http://localhost:6007` (configurable port)
+- **WebSocket**: Real-time bidirectional communication at `/ws`
+- **Session management**: Multiple concurrent sessions with conversation history
+- **Report generation**: Agent can generate structured reports displayed in the UI
+
+**Usage notes:**
+
+- The server binds to localhost only (127.0.0.1) for security
+- Press Ctrl+C to stop the server gracefully
+- Configuration is loaded from the standard config file and environment variables
 
 ### Help Command
 

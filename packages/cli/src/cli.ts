@@ -5,6 +5,7 @@ import * as readline from "node:readline";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
+import { exec } from "node:child_process";
 import { createSandboxMode, createLocalMode } from "./modes/index.js";
 import { createInsightAgent, runOneShotQuery } from "./agent/index.js";
 import {
@@ -22,6 +23,11 @@ import {
   shutdownObservability,
 } from "./observability/index.js";
 import { initializeConfig, getConfig, type CliArgs } from "./config/index.js";
+import { createUIServer } from "./server/ui.js";
+import { createWebSocketServer } from "./server/websocket.js";
+import { createSessionManager } from "./server/session.js";
+import { createReportTool } from "./commands/report-tool.js";
+import type { WebSocket } from "ws";
 
 // Version will be read from package.json during build
 const VERSION = "0.0.1";
@@ -198,6 +204,9 @@ Examples:
   $ phoenix-insight --local "Show me error patterns"              # Local mode with persistence
   $ phoenix-insight --local --stream "Analyze recent experiments"  # Local mode with streaming
   $ phoenix-insight --config ./my-config.json "Analyze traces"    # Use custom config file
+  $ phoenix-insight ui                                            # Start web UI on localhost:6007
+  $ phoenix-insight ui --port 8080                                # Start web UI on custom port
+  $ phoenix-insight ui --no-open                                  # Start web UI without opening browser
   $ phoenix-insight help                                          # Show this help message
 `
   )
@@ -399,6 +408,16 @@ program
     }
   });
 
+// UI Command - starts web-based UI server
+program
+  .command("ui")
+  .description("Start the web-based UI for interactive Phoenix analysis")
+  .option("--port <number>", "Port to run the UI server on", parseInt)
+  .option("--no-open", "Do not automatically open the browser")
+  .action(async (options) => {
+    await runUIServer(options);
+  });
+
 program
   .argument("[query]", "Query to run against Phoenix data")
   .option(
@@ -572,6 +591,193 @@ program
       await shutdownObservability();
     }
   });
+
+/**
+ * Open a URL in the default browser
+ */
+function openBrowser(url: string): void {
+  const platform = process.platform;
+  let command: string;
+
+  if (platform === "darwin") {
+    command = `open "${url}"`;
+  } else if (platform === "win32") {
+    command = `start "" "${url}"`;
+  } else {
+    // Linux and others - try xdg-open, fallback to sensible-browser
+    command = `xdg-open "${url}" || sensible-browser "${url}"`;
+  }
+
+  exec(command, (error) => {
+    if (error && process.env.DEBUG) {
+      console.warn(`Could not open browser: ${error.message}`);
+    }
+  });
+}
+
+/**
+ * Run the UI server with WebSocket support for agent interaction
+ */
+async function runUIServer(options: {
+  port?: number;
+  open?: boolean;
+}): Promise<void> {
+  const config = getConfig();
+  const port = options.port ?? 6007;
+  const shouldOpen = options.open !== false; // Default to opening browser
+
+  console.log("🚀 Starting Phoenix Insight UI...\n");
+
+  // Initialize observability if trace is enabled in config
+  if (config.trace) {
+    initializeObservability({
+      enabled: true,
+      baseUrl: config.baseUrl,
+      apiKey: config.apiKey,
+      projectName: "phoenix-insight-ui",
+      debug: !!process.env.DEBUG,
+    });
+  }
+
+  try {
+    // Determine the execution mode - UI always uses local mode for persistence
+    const mode: ExecutionMode = await createLocalMode();
+
+    // Create Phoenix client
+    const client = createPhoenixClient({
+      baseURL: config.baseUrl,
+      apiKey: config.apiKey,
+    });
+
+    // Create snapshot with config values
+    const snapshotOptions = {
+      baseURL: config.baseUrl,
+      apiKey: config.apiKey,
+      spansPerProject: config.limit,
+      showProgress: true,
+    };
+
+    // Always use incremental snapshot for UI to reuse existing data
+    await createIncrementalSnapshot(mode, snapshotOptions);
+
+    console.log("\n✅ Snapshot ready.\n");
+
+    // Create the UI HTTP server
+    const uiServer = await createUIServer({ port, host: "127.0.0.1" });
+
+    // Create the WebSocket server and attach to HTTP server
+    const sessionManager = createSessionManager({
+      mode,
+      client,
+      maxSteps: 25,
+    });
+
+    const wsServer = createWebSocketServer(uiServer.httpServer, {
+      path: "/ws",
+      onConnection: (ws: WebSocket) => {
+        if (process.env.DEBUG) {
+          console.log("WebSocket client connected");
+        }
+      },
+      onDisconnection: async (ws: WebSocket, code, reason) => {
+        if (process.env.DEBUG) {
+          console.log(`WebSocket client disconnected: ${code} ${reason}`);
+        }
+        // Clean up the session when client disconnects
+        await sessionManager.removeSession(ws);
+      },
+      onMessage: async (message, ws) => {
+        if (message.type === "query") {
+          const { content, sessionId: clientSessionId } = message.payload;
+          const sessionId = clientSessionId ?? `session-${Date.now()}`;
+
+          // Get or create session for this client
+          const session = sessionManager.getOrCreateSession(
+            ws,
+            sessionId,
+            (msg) => wsServer.sendToClient(ws, msg)
+          );
+
+          // Execute the query (this is async but we don't await - let it stream)
+          session.executeQuery(content).catch((error) => {
+            console.error("Error executing query:", error);
+            wsServer.sendToClient(ws, {
+              type: "error",
+              payload: {
+                message:
+                  error instanceof Error
+                    ? error.message
+                    : "An error occurred while executing the query",
+                sessionId,
+              },
+            });
+          });
+        } else if (message.type === "cancel") {
+          const session = sessionManager.getSessionForClient(ws);
+          if (session) {
+            session.cancel();
+          }
+        }
+      },
+      onError: (error, ws) => {
+        console.error("WebSocket error:", error.message);
+      },
+    });
+
+    const url = `http://localhost:${uiServer.port}`;
+
+    console.log("🌐 Phoenix Insight UI is running!");
+    console.log(`   Local:   ${url}`);
+    console.log("\n💡 Press Ctrl+C to stop the server\n");
+
+    // Open browser if not disabled
+    if (shouldOpen) {
+      openBrowser(url);
+    }
+
+    // Handle graceful shutdown
+    let isShuttingDown = false;
+    const shutdown = async (signal: string) => {
+      if (isShuttingDown) return;
+      isShuttingDown = true;
+
+      console.log(`\n\n📥 Received ${signal}, shutting down gracefully...`);
+
+      try {
+        // Close WebSocket connections first
+        await wsServer.close();
+
+        // Close the UI server
+        await uiServer.close();
+
+        // Clean up sessions
+        await sessionManager.cleanup();
+
+        // Clean up execution mode
+        await mode.cleanup();
+
+        // Shutdown observability if enabled
+        await shutdownObservability();
+
+        console.log("👋 Server stopped. Goodbye!");
+        process.exit(0);
+      } catch (error) {
+        console.error("Error during shutdown:", error);
+        process.exit(1);
+      }
+    };
+
+    process.on("SIGINT", () => shutdown("SIGINT"));
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+
+    // Keep the process running
+    await new Promise(() => {
+      // This promise never resolves - server runs until SIGINT/SIGTERM
+    });
+  } catch (error) {
+    handleError(error, "starting UI server");
+  }
+}
 
 async function runInteractiveMode(): Promise<void> {
   const config = getConfig();
