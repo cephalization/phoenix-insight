@@ -126,3 +126,22 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Test helper `simulateEvent()` iterates over listeners Map to trigger handlers - simulates WebSocket events
 - Tests cover: connection lifecycle, message sending/receiving, all server message types, handler unsubscription, error handling
 - All 119 UI tests pass (32 websocket tests + previous 87)
+
+## ui-websocket-hook
+
+- Created `useWebSocket` hook in `packages/ui/src/hooks/useWebSocket.ts` that wraps WebSocketClient and integrates with Zustand stores
+- Hook returns `{ isConnected, isStreaming, sendQuery, cancel }` - memoized with useMemo to prevent unnecessary re-renders
+- CRITICAL GOTCHA: Do NOT include `currentSessionId` in useCallback dependencies for handlers used in the useEffect dependency array
+  - When `sendQuery` calls `createSession()`, it updates the store which triggers a re-render
+  - If `currentSessionId` is in `handleMessage`'s dependencies, the useEffect re-runs and creates a NEW WebSocketClient
+  - This causes the old client to be disconnected and a new one created, losing the mock reference in tests
+  - Solution: Read `currentSessionId` from store directly inside the callback using `useChatStore.getState().currentSessionId`
+- Used refs (`clientRef`, `currentAssistantMessageIdRef`) for mutable state that shouldn't trigger re-renders
+- Streaming text messages: First chunk creates new assistant message, subsequent chunks append to existing message
+- The hook handles all ServerMessage types: text, tool_call, tool_result, report, error, done
+- Error messages update the existing assistant message if streaming, or create a new one if not
+- Testing React hooks requires `@testing-library/react` and jsdom environment (added `vitest.config.ts` with `environment: "jsdom"`)
+- Had to create a separate `vitest.config.ts` because the test environment differs from the main Vite config
+- Mock WebSocketClient was created using vi.mock() with factory that creates mock instance on each construction
+- Tests store the mock instance in module-level variable to access handlers for simulating events
+- All 29 hook tests pass, 148 total UI tests
