@@ -163,7 +163,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### cli-ws-server
 
 - content: Add `ws` package as dependency to `packages/cli/`. Create `packages/cli/src/server/websocket.ts`. Implement WebSocket server that: binds to localhost only, handles upgrade requests, manages client connections, broadcasts messages. Define server message protocol matching UI client types. Export `createWebSocketServer(httpServer)` function. Write unit tests.
-- status: pending
+- status: complete
 - dependencies: move-cli-package
 
 ### cli-ui-server
