@@ -59,7 +59,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### dynamic-report-prompt
 
 - content: Refactor `createReportTool()` in `packages/cli/src/commands/report-tool.ts` to generate its description dynamically from the catalog. Import `catalog` from `@cephalization/phoenix-insight-ui/catalog`. Create a helper function `generateComponentDocs(catalog)` that iterates over `catalog.components` and builds a description string using each component's `description` field and inferred prop names from the schema. Replace the hardcoded component list in the tool description with the dynamically generated documentation.
-- status: pending
+- status: complete
 - dependencies: cli-import-catalog-schemas
 
 ---

@@ -49,3 +49,14 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Important: The original `UIElementSchema` was missing "Chart" in its type enum - added it to maintain consistency with `VALID_COMPONENT_TYPES` array
 - Kept the `UIElementSchema`, `UITreeSchema`, and validation logic in CLI since they're tool-specific (the json-render types from UI don't include the `children` and `parentKey` fields needed for CLI validation)
 - All 534 CLI tests pass; typecheck passes for both packages
+
+## dynamic-report-prompt
+
+- Created `generateComponentDocs(catalog)` helper that iterates over `catalog.components` to build documentation dynamically
+- Zod schemas can be introspected using `instanceof z.ZodObject` and accessing `.shape` to get the object keys
+- For detecting optional props, check for `z.ZodOptional`, `z.ZodNullable`, or use `.isOptional?.()` method (note the optional chaining since not all types have this method)
+- The catalog structure provides `props` (Zod schema), `hasChildren` (boolean), and `description` (string) for each component
+- Format each component as `- ComponentName: description (props: propA, propB?, propC?; can have children)` where `?` suffix indicates optional props
+- Exported `generateComponentDocs` function for testing and potential future use
+- Added comprehensive tests: component names, descriptions, prop names, optional markers (`?`), children notes, and formatting
+- All 542 CLI tests pass; typecheck passes for both packages

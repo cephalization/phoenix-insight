@@ -10,8 +10,9 @@ import { tool } from "ai";
 import { z } from "zod";
 import type { ReportCallback } from "../server/session.js";
 
-// Import component schemas from UI package (single source of truth)
+// Import component schemas and catalog from UI package (single source of truth)
 import {
+  catalog,
   CardSchema,
   ChartSchema,
   TextSchema,
@@ -216,6 +217,48 @@ export function validateReportContent(content: unknown): {
 }
 
 // ============================================================================
+// Dynamic Component Documentation
+// ============================================================================
+
+/**
+ * Extract prop names from a Zod object schema
+ * Returns array of prop names with "?" suffix for optional props
+ */
+function extractPropNames(schema: z.ZodTypeAny): string[] {
+  // Handle ZodObject schemas
+  if (schema instanceof z.ZodObject) {
+    const shape = schema.shape;
+    return Object.entries(shape).map(([key, value]) => {
+      // Check if the prop is optional
+      const isOptional = value instanceof z.ZodOptional || 
+                         value instanceof z.ZodNullable ||
+                         (value as z.ZodTypeAny).isOptional?.();
+      return isOptional ? `${key}?` : key;
+    });
+  }
+  return [];
+}
+
+/**
+ * Generate component documentation from the catalog
+ * Iterates over catalog.components and builds a description string
+ */
+export function generateComponentDocs(
+  catalogDef: typeof catalog
+): string {
+  const lines: string[] = [];
+  
+  for (const [name, component] of Object.entries(catalogDef.components)) {
+    const propNames = extractPropNames(component.props);
+    const propsStr = propNames.length > 0 ? `props: ${propNames.join(", ")}` : "no props";
+    const childrenNote = component.hasChildren ? "; can have children" : "";
+    lines.push(`- ${name}: ${component.description} (${propsStr}${childrenNote})`);
+  }
+  
+  return lines.join("\n");
+}
+
+// ============================================================================
 // Report Tool Factory
 // ============================================================================
 
@@ -226,20 +269,12 @@ export function validateReportContent(content: unknown): {
  * @returns AI SDK tool definition for generate_report
  */
 export function createReportTool(broadcast: ReportCallback) {
+  const componentDocs = generateComponentDocs(catalog);
+  
   return tool({
     description: `Generate or update a structured report that will be displayed in the UI report panel. 
 The report uses a JSON-Render tree format with the following component types:
-- Chart: Displays a chart from array data (props: type: "bar" | "line" | "pie" | "area", dataPath: string, title?: string, height?: number)
-- Card: Container for grouping content (props: title?, description?; can have children)
-- Text: Paragraph text (props: content, variant?: "default" | "muted" | "lead")
-- Heading: Section header (props: content, level?: "1"-"6")
-- List: Bullet or numbered list (props: items: string[], ordered?: boolean)
-- Table: Data table (props: headers: string[], rows: string[][], caption?)
-- Metric: Key value display (props: label, value, change?, changeType?: "positive" | "negative" | "neutral")
-- Badge: Status indicator (props: content, variant?: "default" | "secondary" | "destructive" | "outline")
-- Alert: Important message (props: title?, description, variant?: "default" | "destructive")
-- Separator: Visual divider (props: orientation?: "horizontal" | "vertical")
-- Code: Code block (props: content, language?)
+${componentDocs}
 
 The tree structure has a 'root' key pointing to the root element and an 'elements' map of all elements.
 Each element has: key (unique id), type (component type), props (component-specific), children? (array of child keys).

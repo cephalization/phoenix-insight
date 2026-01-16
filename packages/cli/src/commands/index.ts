@@ -9,6 +9,7 @@ export {
 export {
   createReportTool,
   validateReportContent,
+  generateComponentDocs,
   type ReportToolInput,
   type ReportToolResult,
 } from "./report-tool.js";
