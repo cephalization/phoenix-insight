@@ -238,3 +238,19 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - GOTCHA: The `UITree` type from `@json-render/core` has structure `{ root: string, elements: Record<string, UIElement> }` - not `JSONRenderTree` which was a placeholder
 - The `DataProvider` from json-render is NOT needed for simple static report rendering - only required for dynamic data binding features
 - All 27 ReportRenderer tests + previous 333 = 360 total UI tests, typecheck passes
+
+## ui-report-panel
+
+- Created `ReportPanel` component that composes `ReportRenderer` with a header toolbar for title, download, and history access
+- The toolbar shows the current report title (or "No Report" fallback), a download button, and a history button that opens a dialog
+- Download functionality uses `Blob` and `URL.createObjectURL()` to trigger file download of markdown export
+- The history dialog lists all reports sorted by `createdAt` descending (newest first), showing title, date, and truncated session ID
+- Each history item has three action buttons: view (switches to report), download, and delete
+- GOTCHA: The `Report.content` is typed as `JSONRenderTree` (placeholder `Record<string, unknown>`) but `ReportRenderer` expects `UITree`
+- Had to use type assertion `content as unknown as UITree` to bridge the type gap - at runtime the content will be a valid UITree
+- GOTCHA: RadixUI ScrollArea requires `ResizeObserver` in jsdom - added mock in `vitest.setup.ts`: `globalThis.ResizeObserver = MockResizeObserver`
+- GOTCHA: When testing dialog content, the current report title appears in both header AND dialog - use `within(dialog)` to query inside dialog only
+- Added `DialogDescription` to fix accessibility warning about missing description for dialog content
+- The view action updates `currentReportId` directly via `useReportStore.setState()` and closes the dialog
+- Used same SVG icon patterns as `ChatPanel` (inline SVG with `aria-hidden="true"`)
+- All 24 ReportPanel tests pass, 384 total UI tests, typecheck passes

@@ -147,7 +147,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-report-panel
 
 - content: Create `packages/ui/src/components/ReportPanel.tsx`. Compose ReportRenderer with header toolbar. Toolbar includes: report title, download button (exports as markdown), history button (shows previous reports in dialog). Use shadcn Dialog for history view, Button for actions. Integrate with report store. Show list of cached reports with delete option.
-- status: pending
+- status: complete
 - dependencies: ui-report-renderer, ui-indexeddb-persistence
 
 ### ui-report-history-dialog
