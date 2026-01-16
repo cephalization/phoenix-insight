@@ -115,7 +115,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-chat-panel
 
 - content: Create `packages/ui/src/components/ChatPanel.tsx`. Compose ChatMessage list and ChatInput. Use shadcn ScrollArea for message container. Auto-scroll to bottom on new messages. Show empty state when no messages. Integrate with chat store and websocket hook. Display session history dropdown using shadcn DropdownMenu.
-- status: pending
+- status: complete
 - dependencies: ui-chat-message-component, ui-chat-input-component, ui-websocket-hook
 
 ---
