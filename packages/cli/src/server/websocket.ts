@@ -8,39 +8,14 @@
 
 import type { Server as HttpServer, IncomingMessage } from "node:http";
 import { WebSocketServer, WebSocket } from "ws";
+import type {
+  ClientMessage,
+  ServerMessage,
+  JSONRenderTree,
+} from "@cephalization/phoenix-insight-ui/types";
 
-// ============================================================================
-// Message Types (matching UI client types from packages/ui/src/lib/websocket.ts)
-// ============================================================================
-
-/**
- * Messages received from the UI client
- */
-export type ClientMessage =
-  | { type: "query"; payload: { content: string; sessionId?: string } }
-  | { type: "cancel"; payload: { sessionId?: string } };
-
-/**
- * Messages sent from the server to the UI client
- */
-export type ServerMessage =
-  | { type: "text"; payload: { content: string; sessionId: string } }
-  | {
-      type: "tool_call";
-      payload: { toolName: string; args: unknown; sessionId: string };
-    }
-  | {
-      type: "tool_result";
-      payload: { toolName: string; result: unknown; sessionId: string };
-    }
-  | { type: "report"; payload: { content: JSONRenderTree; sessionId: string } }
-  | { type: "error"; payload: { message: string; sessionId?: string } }
-  | { type: "done"; payload: { sessionId: string } };
-
-/**
- * JSON render tree type placeholder - matches UI client type
- */
-export type JSONRenderTree = unknown;
+// Re-export types for consumers of this module
+export type { ClientMessage, ServerMessage, JSONRenderTree };
 
 // ============================================================================
 // Event Handler Types

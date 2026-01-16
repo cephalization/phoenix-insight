@@ -43,7 +43,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### cli-import-websocket-types
 
 - content: Remove duplicate WebSocket type definitions from `packages/cli/src/server/websocket.ts`. Import `ClientMessage`, `ServerMessage`, and `JSONRenderTree` from `@cephalization/phoenix-insight-ui/types`. Keep the WebSocket server implementation code, only remove the duplicated type definitions.
-- status: pending
+- status: complete
 - dependencies: export-websocket-types
 
 ### cli-import-catalog-schemas
