@@ -32,3 +32,12 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Fixed a pre-existing bug: `registry.tsx` was missing the `registry` object export that `registry.test.tsx` expected - added the export which fixed 3 pre-existing test failures
 - Two pre-existing test issues remain unrelated to this task: (1) catalog.test.ts expects 10 components but there are 11 (Chart added later), (2) ReportRenderer.test.tsx has a mock issue with vi.mock not exposing CardRenderer
 - Verified CLI can successfully import from `@cephalization/phoenix-insight-ui/catalog` using Node ESM resolution
+
+## cli-import-websocket-types
+
+- When CLI (using `module: nodenext` resolution) imports from UI package (using `moduleResolution: bundler`), the UI barrel file must use explicit `.ts` extensions in re-exports for Node16/NodeNext compatibility
+- Fixed UI's `src/lib/types.ts` to use `from "./websocket.ts"` instead of `from "./websocket"` to satisfy CLI's stricter module resolution
+- Re-exported the imported types (`export type { ClientMessage, ServerMessage, JSONRenderTree }`) from CLI's websocket.ts so that consumers of the CLI module can still access these types
+- Removed ~30 lines of duplicated type definitions from CLI, replaced with 5-line import/re-export pattern
+- All 534 CLI tests pass; typecheck passes for both packages
+- Pre-existing UI test failures (catalog component count, ReportRenderer mock) remain unrelated to this change

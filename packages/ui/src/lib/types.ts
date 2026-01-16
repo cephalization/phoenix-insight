@@ -3,4 +3,4 @@
  * These types are shared between the UI and CLI packages.
  */
 
-export type { ClientMessage, ServerMessage, JSONRenderTree } from "./websocket";
+export type { ClientMessage, ServerMessage, JSONRenderTree } from "./websocket.ts";
