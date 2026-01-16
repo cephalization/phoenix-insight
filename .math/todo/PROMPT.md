@@ -29,12 +29,16 @@ READ THESE CAREFULLY. They are guardrails that prevent common mistakes.
 
 ### SIGN: Package Conventions
 
-- **Package name**: `@cephalization/phoenix-insight`
+- **Monorepo structure**: pnpm workspaces with `packages/cli` and `packages/ui`
+- **CLI package name**: `@cephalization/phoenix-insight`
+- **UI package name**: `@cephalization/phoenix-insight-ui` (private, not published)
 - **Package manager**: pnpm@9.15.0 (NOT npm, NOT yarn)
-- **Test location**: `test/` directory, files named `*.test.ts`
+- **Test location**: `test/` directory in each package, files named `*.test.ts`
 - **Test framework**: vitest with `describe`, `it`, `expect` pattern
 - **TypeScript**: Strict mode, follow existing tsconfig patterns
 - **Node version**: >=18 (v24 in .nvmrc)
+- **UI framework**: React 18+ with Vite, Tailwind CSS, shadcn/ui components
+- **UI state management**: Zustand for stores, IndexedDB for persistence
 
 ---
 
@@ -138,30 +142,88 @@ phoenix-insight/
 │   └── workflows/
 │       ├── ci.yml          # CI checks (test, build, typecheck)
 │       └── release.yml     # Automated npm publishing via changesets
-├── src/                    # Source code
-├── test/                   # vitest tests
-├── dist/                   # Built output (git-ignored)
-├── package.json
-├── tsconfig.json
-├── tsconfig.esm.json
-└── README.md
+├── packages/
+│   ├── cli/                # CLI package (@cephalization/phoenix-insight)
+│   │   ├── src/            # CLI source code
+│   │   │   ├── agent/      # AI agent implementation
+│   │   │   ├── commands/   # CLI commands and tools
+│   │   │   ├── config/     # Configuration handling
+│   │   │   ├── modes/      # Execution modes (sandbox/local)
+│   │   │   ├── server/     # WebSocket & HTTP server for UI
+│   │   │   ├── snapshot/   # Phoenix data snapshot
+│   │   │   └── cli.ts      # Main CLI entry point
+│   │   ├── test/           # CLI vitest tests
+│   │   ├── dist/           # Built output (git-ignored)
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   └── ui/                 # UI package (@cephalization/phoenix-insight-ui)
+│       ├── src/
+│       │   ├── components/ # React components
+│       │   ├── hooks/      # Custom React hooks
+│       │   ├── lib/        # Utilities (websocket, db, json-render)
+│       │   ├── store/      # Zustand stores
+│       │   └── App.tsx     # Main app component
+│       ├── test/           # UI vitest tests
+│       ├── dist/           # Vite build output (git-ignored)
+│       ├── package.json
+│       └── vite.config.ts
+├── package.json            # Root workspace package.json
+├── pnpm-workspace.yaml     # Workspace configuration
+└── README.md               # Root readme with monorepo overview
 ```
 
 ---
 
 ### SIGN: Dependencies to Use
 
-Key devDependencies for this task set:
-
+**Root workspace devDependencies:**
 ```json
 {
   "devDependencies": {
-    "@changesets/cli": "^2.27.0"
+    "rimraf": "^5.0.10",
+    "typescript": "^5.8.2",
+    "vitest": "^2.1.9",
+    "tsx": "^4.21.0",
+    "@types/node": "^18.19.0"
   }
 }
 ```
 
-The package already has all runtime dependencies configured.
+**CLI package additional dependencies:**
+```json
+{
+  "dependencies": {
+    "ws": "^8.0.0",
+    "@cephalization/phoenix-insight-ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.0.0"
+  }
+}
+```
+
+**UI package dependencies:**
+```json
+{
+  "dependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "zustand": "^4.0.0",
+    "idb": "^8.0.0",
+    "react-markdown": "^9.0.0",
+    "@json-render/core": "latest",
+    "@json-render/react": "latest"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.0.0",
+    "@tailwindcss/vite": "^4.0.0",
+    "tailwindcss": "^4.0.0",
+    "vite": "^6.0.0"
+  }
+}
+```
+
+The CLI package already has all its existing runtime dependencies configured.
 
 ---
 
@@ -216,17 +278,24 @@ If your task adds or modifies **user-facing features**, update `README.md`:
 
 ## Quick Reference
 
-| Action          | Command                                             |
-| --------------- | --------------------------------------------------- |
-| Install deps    | `pnpm install`                                      |
-| Run tests       | `pnpm test` (runs `vitest run --typecheck`)         |
-| Build           | `pnpm build` (runs `tsc --build tsconfig.esm.json`) |
-| Type check      | `pnpm typecheck` (runs `tsc --noEmit`)              |
-| Dev run         | `pnpm dev` (runs `tsx src/cli.ts`)                  |
-| Clean           | `pnpm clean` (removes dist and tsbuildinfo)         |
-| Add changeset   | `pnpm changeset` (interactive version bump)         |
-| Stage all       | `git add -A`                                        |
-| Commit          | `git commit -m "feat(phoenix-insight): ..."`        |
+| Action              | Command                                                            |
+| ------------------- | ------------------------------------------------------------------ |
+| Install deps        | `pnpm install`                                                     |
+| Run all tests       | `pnpm -r test` (runs vitest in all packages)                       |
+| Build all           | `pnpm -r build` (builds all packages in dependency order)          |
+| Type check all      | `pnpm -r typecheck` (runs tsc --noEmit in all packages)            |
+| Clean all           | `pnpm -r clean` (removes dist and build artifacts)                 |
+| Dev CLI             | `pnpm --filter @cephalization/phoenix-insight dev`                 |
+| Dev UI              | `pnpm --filter @cephalization/phoenix-insight-ui dev`              |
+| Test CLI only       | `pnpm --filter @cephalization/phoenix-insight test`                |
+| Test UI only        | `pnpm --filter @cephalization/phoenix-insight-ui test`             |
+| Build CLI only      | `pnpm --filter @cephalization/phoenix-insight build`               |
+| Build UI only       | `pnpm --filter @cephalization/phoenix-insight-ui build`            |
+| Add changeset       | `pnpm changeset` (interactive version bump)                        |
+| Stage all           | `git add -A`                                                       |
+| Commit              | `git commit -m "feat(phoenix-insight): ..."`                       |
+| Start UI server     | `phoenix-insight ui` (after build, serves on localhost:6007)       |
+| Add shadcn component| `pnpm --filter @cephalization/phoenix-insight-ui dlx shadcn@latest add <component>` |
 
 ---
 
@@ -235,6 +304,20 @@ If your task adds or modifies **user-facing features**, update `README.md`:
 - **Tasks**: `todo/TASKS.md` - Task list with status tracking
 - **Learnings**: `todo/LEARNINGS.md` - Accumulated knowledge from previous tasks
 - **Changesets docs**: https://github.com/changesets/changesets
+- **shadcn/ui docs**: https://ui.shadcn.com/docs
+- **Vite docs**: https://vite.dev/guide/
+- **json-render docs**: https://github.com/vercel-labs/json-render
+- **Zustand docs**: https://zustand-demo.pmnd.rs/
+
+## Key Technical Decisions
+
+1. **Monorepo**: pnpm workspaces with `packages/cli` and `packages/ui`
+2. **UI bundled with CLI**: UI dist is served by CLI's HTTP server, not published separately
+3. **WebSocket protocol**: Bidirectional streaming for chat + report updates
+4. **State persistence**: IndexedDB for sessions/reports, survives browser refresh
+5. **json-render**: AI generates JSON matching catalog schema, UI renders with shadcn components
+6. **Localhost only**: UI server binds to 127.0.0.1, no external access
+7. **Report tool**: Agent explicitly calls `generate_report` tool to update right pane
 
 ---
 
