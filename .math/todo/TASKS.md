@@ -27,7 +27,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### monorepo-init
 
 - content: Initialize pnpm workspace at repo root. Create `pnpm-workspace.yaml` with `packages/*` glob. Move shared devDependencies (rimraf, typescript, vitest, tsx, @types/node) to root `package.json`. Create root scripts for `clean`, `build`, `test`, and `typecheck` that run across all packages using `pnpm -r`. Update `.gitignore` for monorepo structure. Ensure pnpm@9.15.0 is used.
-- status: pending
+- status: complete
 - dependencies: none
 
 ### move-cli-package
