@@ -7,7 +7,10 @@
     "clean": "pnpm -r run clean",
     "build": "pnpm -r run build",
     "test": "pnpm -r run test",
-    "typecheck": "pnpm -r run typecheck"
+    "typecheck": "pnpm -r run typecheck",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "pnpm build && changeset publish"
   },
   "author": "oss@arize.com",
   "license": "Apache-2.0",
@@ -20,6 +23,7 @@
     "url": "https://github.com/cephalization/phoenix-insight/issues"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.8",
     "@types/node": "^18.19.0",
     "rimraf": "^5.0.10",
     "tsx": "^4.21.0",

@@ -241,7 +241,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### update-ci-workflows
 
 - content: Update `.github/workflows/ci.yml` to handle monorepo structure. Run tests for all packages. Build all packages. Add caching for pnpm store. Update release workflow if needed for publishing CLI package only. Ensure workflows use `pnpm -r` commands.
-- status: pending
+- status: complete
 - dependencies: cli-bundle-ui
 
 ---
