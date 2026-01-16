@@ -740,6 +740,49 @@ pnpm test test/modes/sandbox.test.ts
 pnpm typecheck
 ```
 
+#### UI Integration Testing
+
+The web UI has manual integration tests using [agent-browser](https://github.com/vercel-labs/agent-browser) for browser automation. These tests are NOT run in CI because they require a live Phoenix server with data.
+
+**Prerequisites:**
+
+1. Phoenix server running on `localhost:6006` with data
+2. Run from the monorepo root
+
+**Running UI tests:**
+
+```bash
+# From monorepo root - builds packages and runs UI integration tests
+pnpm test:ui
+```
+
+The test:ui script will:
+1. Build the UI package
+2. Build the CLI package (which bundles the UI)
+3. Expect a running Phoenix server at localhost:6006
+4. Expect the UI server to be running at localhost:6007 (start with `phoenix-insight ui`)
+5. Run browser automation tests that verify:
+   - Layout renders correctly (chat panel, report panel)
+   - Chat input is functional
+   - WebSocket connection works
+   - Session management works
+   - Report panel displays correctly
+
+**Manual testing workflow:**
+
+```bash
+# Terminal 1: Start Phoenix
+phoenix serve
+
+# Terminal 2: Start the UI server
+cd packages/cli && pnpm dev ui
+
+# Terminal 3: Run UI tests
+pnpm test:ui
+```
+
+**Note:** If tests skip with "Phoenix server not running" or "UI server not running", ensure both servers are accessible before running tests.
+
 ### Contributing & Releases
 
 Contributions are welcome! This project uses [changesets](https://github.com/changesets/changesets) for version management and automated releases.
