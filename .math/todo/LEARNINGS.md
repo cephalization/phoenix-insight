@@ -375,3 +375,20 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Removed unused `createReportTool` import from `cli.ts` since the tool is now created in `session.ts`
 - The integration completes the bidirectional communication: client sends queries -> agent processes -> streams text/tool_call/tool_result -> agent can call generate_report -> report sent to UI
 - All server tests pass (87 tests), typecheck passes, build succeeds
+
+## ui-responsive-design
+
+- Created `useMediaQuery` hook in `packages/ui/src/hooks/useMediaQuery.ts` for responsive breakpoint detection
+- The hook uses `window.matchMedia()` API with event listener for changes - returns boolean for query match
+- Exported convenience hooks: `useIsDesktop()` (>= 768px) and `useIsMobile()` (< 768px) matching Tailwind's `md` breakpoint
+- Updated `App.tsx` with conditional rendering: `DesktopLayout` (resizable panels) vs `MobileLayout` (tabs navigation)
+- Mobile layout uses shadcn Tabs component with bottom navigation for easy thumb reach - tabs are placed at bottom of screen
+- Tab triggers have `min-h-[44px]` for touch-friendly tap targets per Apple's HIG recommendations
+- Added inline SVG icons (MessageIcon, FileTextIcon) for tab labels to improve visual clarity
+- GOTCHA: The vitest setup file needs `window.matchMedia` mock for jsdom since Sonner (toast) calls it on mount
+- Added matchMedia mock to `vitest.setup.ts` that returns a minimal MediaQueryList implementation
+- For App.test.tsx, mocked the `useIsDesktop` hook at module level with `vi.mock()` and a mutable `mockIsDesktop` variable
+- The mock approach is more reliable than mocking `window.matchMedia` because hooks cache initial values
+- Tests verify: desktop shows resizable panels (data-slot="resizable-handle"), mobile shows tabs (role="tablist")
+- Tests also verify tab switching, touch target sizing, and both panels being accessible in each mode
+- All 424 UI tests pass including 13 new App tests and 10 new useMediaQuery hook tests

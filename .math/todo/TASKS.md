@@ -207,7 +207,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-responsive-design
 
 - content: Ensure UI is fully responsive. On mobile (< 768px), stack panels vertically with tabs to switch between chat and report. Use CSS media queries or Tailwind responsive utilities. Test at various breakpoints. Ensure touch-friendly tap targets. Add shadcn Tabs component for mobile panel switching.
-- status: pending
+- status: complete
 - dependencies: ui-chat-panel, ui-report-panel
 
 ### ui-connection-status
