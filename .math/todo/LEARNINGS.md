@@ -86,3 +86,12 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Tests in UI package go in `src/store/*.test.ts` pattern (alongside source) per TASKS.md, unlike CLI which uses `test/` directory
 - All 24 test cases cover: session CRUD, message add/update, session clearing, connection state flags, edge cases
 - Zustand store is lightweight - no middleware needed for basic state management (persist middleware will be added later with IndexedDB)
+
+## ui-report-store
+
+- Defined `JSONRenderTree` as `Record<string, unknown>` placeholder - will be properly typed when `@json-render/core` is installed in the `setup-json-render` task
+- The `setReport` action has dual behavior: creates new report for new sessions, updates existing report for same session (preserving id and createdAt)
+- When updating an existing report without providing a title, the original title is preserved using nullish coalescing: `title: title ?? existingReport.title`
+- Report store follows same patterns as chat store: `generateId()`, state reset in tests, `getCurrentReport` helper
+- All 25 tests cover: creation, updates, session lookup, deletion with currentReportId handling, list operations, edge cases
+- Report-session relationship is 1:1 (one report per session), enforced by `setReport` update logic

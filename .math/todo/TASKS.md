@@ -71,7 +71,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-report-store
 
 - content: Create a Zustand store in `packages/ui/src/store/report.ts` for report state management. Define types: `Report { id, sessionId, content: JSONRenderTree, createdAt, title? }`. Store state: `reports`, `currentReportId`. Actions: `setReport` (replaces current report, caches previous), `getReportBySession`, `deleteReport`, `listReports`. Write unit tests in `packages/ui/src/store/report.test.ts`.
-- status: pending
+- status: complete
 - dependencies: setup-shadcn-ui
 
 ### ui-indexeddb-persistence
