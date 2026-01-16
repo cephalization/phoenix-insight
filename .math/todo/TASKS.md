@@ -86,7 +86,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 
 ### ui-websocket-client
 
-- content: Create WebSocket client in `packages/ui/src/lib/websocket.ts`. Define message types: `ClientMessage { type: 'query' | 'cancel', payload }`, `ServerMessage { type: 'text' | 'tool_call' | 'tool_result' | 'report' | 'error' | 'done', payload }`. Implement `WebSocketClient` class with: `connect(url)`, `disconnect()`, `send(message)`, `onMessage(handler)`, `onError(handler)`, `onClose(handler)`. Handle reconnection with exponential backoff. Write unit tests with mock WebSocket.
+- content: Create WebSocket client in `packages/ui/src/lib/websocket.ts` using `partysocket` for robust connection management. Add `partysocket` as dependency to `packages/ui/`. Define message types: `ClientMessage { type: 'query' | 'cancel', payload }`, `ServerMessage { type: 'text' | 'tool_call' | 'tool_result' | 'report' | 'error' | 'done', payload }`. Wrap partysocket's `WebSocket` class which provides automatic reconnection with exponential backoff, message buffering during disconnection, and connection timeout handling. Export typed wrapper with: `connect(url)`, `disconnect()`, `send(message)`, `onMessage(handler)`, `onError(handler)`, `onClose(handler)`. Write unit tests with mock WebSocket.
 - status: pending
 - dependencies: scaffold-ui-package
 
@@ -102,7 +102,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 
 ### ui-chat-message-component
 
-- content: Create `packages/ui/src/components/ChatMessage.tsx`. Display message with role indicator (user/assistant), timestamp, and content. User messages aligned right with different background. Assistant messages aligned left. Support markdown rendering in assistant messages using `react-markdown` (add as dependency). Show streaming indicator for in-progress messages. Style with Tailwind, use shadcn patterns.
+- content: Create `packages/ui/src/components/ChatMessage.tsx`. Display message with role indicator (user/assistant), timestamp, and content. User messages aligned right with different background. Assistant messages aligned left. Support markdown rendering using `streamdown` (add as dependency) which is optimized for AI streaming - handles incomplete/unterminated markdown blocks gracefully. Configure streamdown with Tailwind styles via `@source` directive in globals.css. Show streaming indicator for in-progress messages. Style with Tailwind, use shadcn patterns.
 - status: pending
 - dependencies: ui-app-layout
 
@@ -248,17 +248,17 @@ Each agent picks the next pending task, implements it, and marks it complete.
 
 ## Phase 12: Testing & Documentation
 
-### agent-browser-testing
+### setup-ui-testing
 
-- content: Write visual/integration tests using `agent-browser` CLI (install globally if needed: `pnpm add -g agent-browser`). Create test script `packages/ui/test/visual.test.ts` that: starts UI server, uses agent-browser to navigate to localhost:6007, verifies layout renders, tests sending a message, verifies report panel updates. Tests should work with live Phoenix backend on localhost:6006.
+- content: Add `agent-browser` as a workspace-level devDependency in root `package.json`. Create a `test:ui` script in root `package.json` that builds the UI, starts the CLI server, and runs UI integration tests. This script is for manual invocation only (not CI) since it requires a live Phoenix server on localhost:6006. Create `test/ui-integration.test.ts` at workspace root with basic test structure that uses agent-browser to: navigate to localhost:6007, verify layout renders, test sending a message, verify report panel updates. Document in README that `pnpm test:ui` requires Phoenix running.
 - status: pending
 - dependencies: cli-ui-integration
 
 ### update-documentation
 
-- content: Update `packages/cli/README.md` with: new `ui` command documentation, WebSocket protocol description, UI features overview. Add screenshots if possible. Document configuration options. Update root README.md with monorepo structure explanation and links to package READMEs.
+- content: Update `packages/cli/README.md` with: new `ui` command documentation, WebSocket protocol description, UI features overview. Add screenshots if possible. Document configuration options. Update root README.md with monorepo structure explanation and links to package READMEs. Document `pnpm test:ui` manual testing workflow and requirement for live Phoenix server.
 - status: pending
-- dependencies: agent-browser-testing
+- dependencies: setup-ui-testing
 
 ### final-verification
 
