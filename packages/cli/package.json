@@ -17,14 +17,14 @@
     "access": "public"
   },
   "files": [
-    "dist",
-    "src",
-    "package.json"
+    "dist"
   ],
   "scripts": {
     "clean": "rimraf dist tsconfig.esm.tsbuildinfo tsconfig.tsbuildinfo",
-    "prebuild": "pnpm run clean",
-    "build": "tsc --build tsconfig.esm.json",
+    "prebuild": "pnpm run clean && pnpm run verify-ui-dist",
+    "verify-ui-dist": "node -e \"const fs = require('fs'); const path = require('path'); const uiDist = path.resolve(__dirname, '../ui/dist/index.html'); if (!fs.existsSync(uiDist)) { console.error('ERROR: UI dist not found. Build UI package first with: pnpm --filter @cephalization/phoenix-insight-ui build'); process.exit(1); } console.log('UI dist verified:', uiDist);\"",
+    "build": "tsc --build tsconfig.esm.json && pnpm run copy-ui-dist",
+    "copy-ui-dist": "node -e \"const fs = require('fs'); const path = require('path'); const src = path.resolve(__dirname, '../ui/dist'); const dest = path.resolve(__dirname, 'dist/ui'); fs.cpSync(src, dest, { recursive: true }); console.log('UI dist copied to:', dest);\"",
     "start": "node dist/cli.js",
     "dev": "tsx src/cli.ts",
     "typecheck": "tsc --noEmit",
