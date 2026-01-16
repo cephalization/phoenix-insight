@@ -195,3 +195,17 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - All inline SVG icons marked `aria-hidden="true"` for accessibility
 - 36 tests cover: rendering, empty state, message display, chat input integration, session dropdown, session management, websocket integration, edge cases
 - All 245 UI tests pass, 629 total tests (245 UI + 384 CLI)
+
+## setup-json-render
+
+- Added `@json-render/core`, `@json-render/react`, and `zod` as dependencies to `packages/ui/`
+- `zod` is required as a peer dependency for json-render's schema validation - must be added explicitly
+- The `createCatalog` function from `@json-render/core` creates a typed catalog with component definitions
+- Each component definition has: `props` (zod schema), `hasChildren` (boolean), and optional `description` (string for AI prompts)
+- Only `Card` component has `hasChildren: true` since it's the container component for nesting other elements
+- The catalog exports: the catalog itself, individual component schemas (for reuse), type for the catalog, and UITree/UIElement types from json-render
+- `catalog.validateElement()` and `catalog.validateTree()` methods validate against the schema and return `{ success, data?, error? }`
+- Elements require a `key` field (unique identifier), `type` (component name), `props` (validated against schema), and optional `children`/`parentKey`
+- UITree structure: `{ root: string, elements: Record<string, UIElement> }` - flat element map with root key reference
+- Test file created alongside source at `src/lib/json-render/catalog.test.ts` with 53 tests covering all schemas and validation
+- All 298 UI tests pass, build produces 288KB bundle (same as before - json-render tree-shakes well)

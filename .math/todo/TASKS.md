@@ -125,7 +125,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### setup-json-render
 
 - content: Add `@json-render/core` and `@json-render/react` as dependencies to `packages/ui/`. Create a catalog in `packages/ui/src/lib/json-render/catalog.ts` that defines allowed components. Initial components: Card, Text, Heading, List, Table, Metric, Badge, Alert, Separator, Code. Use zod schemas for props validation. Export the catalog.
-- status: pending
+- status: complete
 - dependencies: setup-shadcn-ui
 
 ### json-render-shadcn-registry
