@@ -126,6 +126,7 @@ export function ChatPanel({ className }: ChatPanelProps) {
   // Chat store selectors
   const sessions = useChatStore((state) => state.sessions);
   const currentSessionId = useChatStore((state) => state.currentSessionId);
+  const connectionStatus = useChatStore((state) => state.connectionStatus);
   const getCurrentSession = useChatStore((state) => state.getCurrentSession);
   const createSession = useChatStore((state) => state.createSession);
   const setCurrentSession = useChatStore((state) => state.setCurrentSession);
@@ -290,6 +291,7 @@ export function ChatPanel({ className }: ChatPanelProps) {
         onCancel={cancel}
         isConnected={isConnected}
         isStreaming={isStreaming}
+        connectionStatus={connectionStatus}
         className="border-t"
       />
     </div>

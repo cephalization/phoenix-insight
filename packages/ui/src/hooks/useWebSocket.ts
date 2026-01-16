@@ -49,7 +49,7 @@ export function useWebSocket(
   const addMessage = useChatStore((state) => state.addMessage);
   const updateMessage = useChatStore((state) => state.updateMessage);
   const createSession = useChatStore((state) => state.createSession);
-  const setIsConnected = useChatStore((state) => state.setIsConnected);
+  const setConnectionStatus = useChatStore((state) => state.setConnectionStatus);
   const setIsStreaming = useChatStore((state) => state.setIsStreaming);
 
   // Report store selectors
@@ -170,18 +170,20 @@ export function useWebSocket(
 
   // Handle connection open
   const handleOpen = useCallback(() => {
-    setIsConnected(true);
-  }, [setIsConnected]);
+    setConnectionStatus("connected");
+  }, [setConnectionStatus]);
 
   // Handle connection close
   const handleClose = useCallback(() => {
-    setIsConnected(false);
+    // Set to connecting first (partysocket will auto-reconnect)
+    // The status will be updated to disconnected if reconnection fails
+    setConnectionStatus("connecting");
     // If we were streaming, reset state
     if (currentAssistantMessageIdRef.current) {
       currentAssistantMessageIdRef.current = null;
       setIsStreaming(false);
     }
-  }, [setIsConnected, setIsStreaming]);
+  }, [setConnectionStatus, setIsStreaming]);
 
   // Handle connection error
   const handleError = useCallback(
@@ -205,6 +207,8 @@ export function useWebSocket(
 
     // Auto-connect if enabled
     if (autoConnect) {
+      // Set connecting status before attempting connection
+      setConnectionStatus("connecting");
       client.connect();
     }
 
@@ -216,8 +220,9 @@ export function useWebSocket(
       unsubError();
       client.disconnect();
       clientRef.current = null;
+      // Don't set disconnected on cleanup - the component is unmounting
     };
-  }, [url, autoConnect, handleMessage, handleOpen, handleClose, handleError]);
+  }, [url, autoConnect, handleMessage, handleOpen, handleClose, handleError, setConnectionStatus]);
 
   // Send a query to the server
   const sendQuery = useCallback(

@@ -21,11 +21,14 @@ export interface ChatSession {
   title?: string;
 }
 
+export type ConnectionStatus = "connected" | "connecting" | "disconnected";
+
 export interface ChatState {
   sessions: ChatSession[];
   currentSessionId: string | null;
   isConnected: boolean;
   isStreaming: boolean;
+  connectionStatus: ConnectionStatus;
 }
 
 export interface ChatActions {
@@ -40,6 +43,7 @@ export interface ChatActions {
   deleteSession: (sessionId: string) => void;
   setIsConnected: (isConnected: boolean) => void;
   setIsStreaming: (isStreaming: boolean) => void;
+  setConnectionStatus: (status: ConnectionStatus) => void;
   getCurrentSession: () => ChatSession | null;
 }
 
@@ -57,6 +61,7 @@ export const useChatStore = create<ChatStore>()(
     currentSessionId: null,
     isConnected: false,
     isStreaming: false,
+    connectionStatus: "disconnected" as ConnectionStatus,
 
   // Actions
   addMessage: (sessionId, message) => {
@@ -145,6 +150,14 @@ export const useChatStore = create<ChatStore>()(
 
   setIsStreaming: (isStreaming) => {
     set({ isStreaming });
+  },
+
+  setConnectionStatus: (connectionStatus) => {
+    // Also update isConnected for backward compatibility
+    set({ 
+      connectionStatus,
+      isConnected: connectionStatus === "connected",
+    });
   },
 
   getCurrentSession: () => {

@@ -9,6 +9,7 @@ describe("useChatStore", () => {
       currentSessionId: null,
       isConnected: false,
       isStreaming: false,
+      connectionStatus: "disconnected",
     });
   });
 
@@ -303,6 +304,23 @@ describe("useChatStore", () => {
 
       useChatStore.getState().setIsStreaming(false);
       expect(useChatStore.getState().isStreaming).toBe(false);
+    });
+
+    it("setConnectionStatus updates connectionStatus and isConnected states", () => {
+      expect(useChatStore.getState().connectionStatus).toBe("disconnected");
+      expect(useChatStore.getState().isConnected).toBe(false);
+
+      useChatStore.getState().setConnectionStatus("connecting");
+      expect(useChatStore.getState().connectionStatus).toBe("connecting");
+      expect(useChatStore.getState().isConnected).toBe(false);
+
+      useChatStore.getState().setConnectionStatus("connected");
+      expect(useChatStore.getState().connectionStatus).toBe("connected");
+      expect(useChatStore.getState().isConnected).toBe(true);
+
+      useChatStore.getState().setConnectionStatus("disconnected");
+      expect(useChatStore.getState().connectionStatus).toBe("disconnected");
+      expect(useChatStore.getState().isConnected).toBe(false);
     });
   });
 });

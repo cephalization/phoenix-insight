@@ -33,6 +33,7 @@ vi.mock("@/store/chat", () => ({
       currentSessionId: null,
       isConnected: true,
       isStreaming: false,
+      connectionStatus: "connected",
       getCurrentSession: () => null,
       createSession: vi.fn(),
       setCurrentSession: vi.fn(),

@@ -56,6 +56,7 @@ function resetStores() {
     currentSessionId: null,
     isConnected: false,
     isStreaming: false,
+    connectionStatus: "disconnected",
   });
 }
 
@@ -528,6 +529,7 @@ describe("ChatPanel", () => {
         ...defaultWebSocketReturn,
         isConnected: true,
       });
+      useChatStore.setState({ connectionStatus: "connected", isConnected: true });
 
       render(<ChatPanel />);
 
@@ -539,10 +541,23 @@ describe("ChatPanel", () => {
         ...defaultWebSocketReturn,
         isConnected: false,
       });
+      useChatStore.setState({ connectionStatus: "disconnected", isConnected: false });
 
       render(<ChatPanel />);
 
       expect(screen.getByText("Disconnected")).toBeInTheDocument();
+    });
+
+    it("reflects connecting state in UI", () => {
+      mockUseWebSocket.mockReturnValue({
+        ...defaultWebSocketReturn,
+        isConnected: false,
+      });
+      useChatStore.setState({ connectionStatus: "connecting", isConnected: false });
+
+      render(<ChatPanel />);
+
+      expect(screen.getByText("Connecting...")).toBeInTheDocument();
     });
   });
 
