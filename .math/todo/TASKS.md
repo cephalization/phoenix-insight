@@ -33,7 +33,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### move-cli-package
 
 - content: Use `git mv` to move all CLI files from repo root to `packages/cli/`. This includes: `src/`, `test/`, `package.json`, `tsconfig.json`, `tsconfig.esm.json`, `README.md`, and `.changeset/`. Update `package.json` paths. Update import paths if needed. Ensure the package name stays `@cephalization/phoenix-insight`. Verify `pnpm install` works and `pnpm -r test` passes.
-- status: pending
+- status: complete
 - dependencies: monorepo-init
 
 ---
