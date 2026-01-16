@@ -62,10 +62,10 @@ function createMockSocket(): MockPartySocket {
   return socket;
 }
 
-// Mock PartySocket
+// Mock PartySocket's WebSocket export
 vi.mock("partysocket", () => {
   return {
-    default: vi.fn().mockImplementation(() => createMockSocket()),
+    WebSocket: vi.fn().mockImplementation(() => createMockSocket()),
   };
 });
 
