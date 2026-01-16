@@ -209,3 +209,18 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - UITree structure: `{ root: string, elements: Record<string, UIElement> }` - flat element map with root key reference
 - Test file created alongside source at `src/lib/json-render/catalog.test.ts` with 53 tests covering all schemas and validation
 - All 298 UI tests pass, build produces 288KB bundle (same as before - json-render tree-shakes well)
+
+## json-render-shadcn-registry
+
+- The `ComponentRegistry` type from `@json-render/react` is `Record<string, ComponentRenderer<any>>` where `ComponentRenderer` is a React component
+- Each renderer receives `ComponentRenderProps<T>` with `element` (UIElement with props), `children` (ReactNode), `onAction`, and `loading`
+- Access props via `element.props` (not directly passed) - this is the json-render pattern
+- Installed shadcn Table component (`pnpm dlx shadcn@latest add table`) since it wasn't in the initial component list
+- For typings, import schemas from catalog as `z.infer<typeof CardSchema>` etc. for props type narrowing
+- Used type-only imports for schemas (`import type { CardSchema... }`) to satisfy TypeScript's `verbatimModuleSyntax`
+- Heading levels are strings ("1"-"6") not numbers, per the catalog schema - cast Tag as union type for JSX
+- Metric component uses custom Card composition (not the catalog Card) to display label/value/change with appropriate styling
+- Code component uses `data-language` attribute for potential future syntax highlighting integration
+- Tests use `createElement<T>()` helper to construct typed UIElement objects for component testing
+- All 35 registry tests pass covering: component exports, all 10 renderers, variants, edge cases
+- Build output unchanged at ~288KB - registry adds minimal bundle size

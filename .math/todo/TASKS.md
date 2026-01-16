@@ -131,7 +131,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### json-render-shadcn-registry
 
 - content: Create component registry in `packages/ui/src/lib/json-render/registry.tsx` that maps json-render component types to shadcn implementations. Map: Card→shadcn Card, Text→Typography p, Heading→Typography h1-h6, List→ul/ol with styling, Table→shadcn Table, Metric→custom Card with value display, Badge→shadcn Badge, Alert→shadcn Alert, Separator→shadcn Separator, Code→styled pre/code. Export registry object.
-- status: pending
+- status: complete
 - dependencies: setup-json-render
 
 ### ui-report-renderer
