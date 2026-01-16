@@ -197,7 +197,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### cli-ui-integration
 
 - content: Wire up all server components in UI command. Create agent session on WebSocket connection. Route incoming queries to agent. Stream text chunks, tool calls, tool results back to client. Send report tool outputs as report messages. Handle client disconnect (cleanup session). Test end-to-end with manual verification.
-- status: pending
+- status: complete
 - dependencies: cli-ui-command
 
 ---

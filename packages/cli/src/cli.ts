@@ -26,7 +26,6 @@ import { initializeConfig, getConfig, type CliArgs } from "./config/index.js";
 import { createUIServer } from "./server/ui.js";
 import { createWebSocketServer } from "./server/websocket.js";
 import { createSessionManager } from "./server/session.js";
-import { createReportTool } from "./commands/report-tool.js";
 import type { WebSocket } from "ws";
 
 // Version will be read from package.json during build

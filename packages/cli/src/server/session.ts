@@ -13,6 +13,7 @@ import {
 } from "../agent/index.js";
 import type { ExecutionMode } from "../modes/types.js";
 import type { PhoenixClient } from "@arizeai/phoenix-client";
+import { createReportTool } from "../commands/report-tool.js";
 
 // ============================================================================
 // Types
@@ -108,14 +109,22 @@ export class AgentSession {
   }
 
   /**
-   * Initialize the agent lazily
+   * Initialize the agent lazily, including the report tool for UI mode
    */
   private async getAgent(): Promise<PhoenixInsightAgent> {
     if (!this.agent) {
+      // Create the report tool with a callback to send reports to the client
+      const reportTool = createReportTool((content, title) => {
+        this.sendReport(content, title);
+      });
+
       const config: PhoenixInsightAgentConfig = {
         mode: this.mode,
         client: this.client,
         maxSteps: this.maxSteps,
+        additionalTools: {
+          generate_report: reportTool,
+        },
       };
       this.agent = await createInsightAgent(config);
     }

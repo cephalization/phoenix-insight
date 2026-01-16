@@ -33,6 +33,8 @@ export interface PhoenixInsightAgentConfig {
   client: PhoenixClient;
   /** Maximum number of agent steps before stopping (default: 25) */
   maxSteps?: number;
+  /** Additional tools to include in the agent (e.g., report tool for UI mode) */
+  additionalTools?: Record<string, any>;
 }
 
 /**
@@ -43,12 +45,14 @@ export class PhoenixInsightAgent {
   private client: PhoenixClient;
   private maxSteps: number;
   private tools: Record<string, any> | null = null;
+  private additionalTools: Record<string, any>;
   private model = anthropic("claude-sonnet-4-5");
 
   constructor(config: PhoenixInsightAgentConfig) {
     this.mode = config.mode;
     this.client = config.client;
     this.maxSteps = config.maxSteps || 25;
+    this.additionalTools = config.additionalTools || {};
   }
 
   /**
@@ -141,6 +145,7 @@ export class PhoenixInsightAgent {
       bash: bashTool,
       px_fetch_more_spans: pxFetchMoreSpans,
       px_fetch_more_trace: pxFetchMoreTrace,
+      ...this.additionalTools,
     };
 
     return this.tools;

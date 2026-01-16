@@ -214,11 +214,16 @@ describe("AgentSession", () => {
     it("should create an agent lazily on first query", async () => {
       await session.executeQuery("test query");
 
-      expect(createInsightAgent).toHaveBeenCalledWith({
-        mode: mockMode,
-        client: mockClient,
-        maxSteps: 25,
-      });
+      expect(createInsightAgent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mode: mockMode,
+          client: mockClient,
+          maxSteps: 25,
+          additionalTools: expect.objectContaining({
+            generate_report: expect.anything(),
+          }),
+        })
+      );
     });
 
     it("should reuse the agent for subsequent queries", async () => {
