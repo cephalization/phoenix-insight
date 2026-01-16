@@ -49,7 +49,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### setup-shadcn-ui
 
 - content: Initialize shadcn/ui in `packages/ui/` using `pnpm dlx shadcn@latest init`. Choose Neutral as base color. Install essential components: button, card, input, scroll-area, separator, resizable, tabs, dialog, dropdown-menu, alert, badge, skeleton, sonner (toast). Verify components render correctly by creating a simple test in `App.tsx`.
-- status: pending
+- status: complete
 - dependencies: scaffold-ui-package
 
 ---
