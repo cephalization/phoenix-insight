@@ -145,3 +145,20 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Mock WebSocketClient was created using vi.mock() with factory that creates mock instance on each construction
 - Tests store the mock instance in module-level variable to access handlers for simulating events
 - All 29 hook tests pass, 148 total UI tests
+
+## ui-chat-message-component
+
+- Installed `streamdown` package for streaming-optimized markdown rendering - it handles incomplete/unterminated markdown blocks gracefully
+- The `@source` directive in Tailwind v4 CSS allows including external files for class detection: `@source "../../../node_modules/streamdown/dist/*.js";`
+- Streamdown is in root `node_modules/` not `packages/ui/node_modules/` due to pnpm workspace hoisting
+- Component uses shadcn patterns: `cn()` utility for conditional classes, Tailwind utility classes
+- User messages are plain text (no markdown), aligned right with `bg-primary text-primary-foreground`
+- Assistant messages use Streamdown for markdown, aligned left with `bg-muted text-foreground`
+- The streaming indicator uses CSS animation with staggered delays: `[animation-delay:0ms]`, `[animation-delay:150ms]`, `[animation-delay:300ms]`
+- Added `@testing-library/jest-dom` for DOM matchers (toBeInTheDocument, toHaveClass, toHaveTextContent, etc.)
+- IMPORTANT: Added `@testing-library/jest-dom` to `types` array in `tsconfig.app.json` to fix TypeScript errors for test files in `src/`
+- Created `vitest.setup.ts` to import jest-dom matchers: `import "@testing-library/jest-dom/vitest";`
+- Updated `vitest.config.ts` with `setupFiles: ["./vitest.setup.ts"]`
+- GOTCHA: `toHaveTextContent` normalizes whitespace - use `element?.textContent` directly for exact whitespace matching
+- Mocked streamdown in tests since it has complex dependencies and we only need to verify content is passed to it
+- All 22 ChatMessage tests + 148 existing = 170 total UI tests, build produces 288KB bundle
