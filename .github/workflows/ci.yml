@@ -35,5 +35,13 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      - name: Build
+      - name: Build all packages
         run: pnpm build
+
+      - name: Verify build artifacts
+        run: |
+          # Verify CLI build output exists
+          test -f packages/cli/dist/cli.js || (echo "CLI dist not found" && exit 1)
+          # Verify UI dist was bundled with CLI
+          test -f packages/cli/dist/ui/index.html || (echo "UI dist not bundled in CLI" && exit 1)
+          echo "Build artifacts verified successfully"

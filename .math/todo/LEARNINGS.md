@@ -450,3 +450,15 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - The workspace dependency `workspace:*` is correctly resolved by pnpm - it doesn't need to be published since UI is private and bundled
 - GOTCHA: Node.js -e inline scripts don't support backticks in error messages - use plain quotes for command suggestions
 - Build copies ~2.5MB of UI assets into CLI dist; total CLI package size increases but ensures self-contained distribution
+
+## update-ci-workflows
+
+- Moved `.changeset/` from `packages/cli/.changeset/` to repo root - changesets should be at the monorepo root to manage versioning across all packages
+- Added `@changesets/cli` as a root devDependency and removed it from CLI package - centralized changeset management at workspace level
+- Added new root scripts: `changeset` (add changesets), `version` (bump versions), `release` (build + publish)
+- The release workflow now uses `pnpm release` which builds all packages before publishing - this ensures UI is bundled with CLI
+- CI workflow already worked because root scripts use `pnpm -r run` which runs commands in all workspace packages
+- Added build artifact verification step to CI: checks that `cli.js` exists and UI dist is bundled in `packages/cli/dist/ui/`
+- pnpm's `cache: 'pnpm'` in `setup-node` action is sufficient for caching the pnpm store - no additional caching setup needed
+- Private packages (`"private": true` in package.json) are automatically skipped by `changeset publish` - no need to explicitly ignore them
+- The `workspace:*` protocol in dependencies is resolved by pnpm and doesn't affect npm publishing since UI is bundled, not published separately
