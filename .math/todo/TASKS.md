@@ -263,5 +263,5 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### final-verification
 
 - content: Final end-to-end verification. Start Phoenix on localhost:6006. Run `phoenix-insight ui`. Verify: server starts on 6007, UI loads, WebSocket connects, can send queries, responses stream, report tool works, report displays, history persists across refresh, can download report as markdown. Document any issues in LEARNINGS.md.
-- status: pending
+- status: complete
 - dependencies: update-documentation

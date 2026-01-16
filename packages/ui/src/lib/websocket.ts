@@ -4,7 +4,7 @@
  * disconnection, and connection timeout handling.
  */
 
-import PartySocket from "partysocket";
+import { WebSocket as PartyWebSocket } from "partysocket";
 
 // ============================================================================
 // Message Types
@@ -70,7 +70,7 @@ export interface WebSocketClientOptions {
  * Uses partysocket under the hood for automatic reconnection with exponential backoff.
  */
 export class WebSocketClient {
-  private socket: PartySocket | null = null;
+  private socket: PartyWebSocket | null = null;
   private messageHandlers: Set<MessageHandler> = new Set();
   private errorHandlers: Set<ErrorHandler> = new Set();
   private closeHandlers: Set<CloseHandler> = new Set();
@@ -96,20 +96,33 @@ export class WebSocketClient {
       return;
     }
 
-    this.socket = new PartySocket({
-      host: this.options.url,
-      // PartySocket handles reconnection internally
+    // Convert http/https URL to ws/wss URL and append /ws path
+    let wsUrl = this.options.url;
+    if (wsUrl.startsWith("http://")) {
+      wsUrl = "ws://" + wsUrl.slice(7);
+    } else if (wsUrl.startsWith("https://")) {
+      wsUrl = "wss://" + wsUrl.slice(8);
+    }
+    // Append /ws path if not already present
+    if (!wsUrl.endsWith("/ws")) {
+      wsUrl = wsUrl.replace(/\/?$/, "/ws");
+    }
+
+    this.socket = new PartyWebSocket(wsUrl, [], {
+      // PartyWebSocket handles reconnection internally
       maxRetries: this.options.maxRetries,
       minReconnectionDelay: this.options.minReconnectionDelay,
       maxReconnectionDelay: this.options.maxReconnectionDelay,
       connectionTimeout: this.options.connectionTimeout,
     });
 
-    this.socket.addEventListener("open", () => {
+    const socket = this.socket;
+
+    socket.addEventListener("open", () => {
       this.openHandlers.forEach((handler) => handler());
     });
 
-    this.socket.addEventListener("message", (event: MessageEvent) => {
+    socket.addEventListener("message", (event: MessageEvent) => {
       try {
         const message = JSON.parse(event.data) as ServerMessage;
         this.messageHandlers.forEach((handler) => handler(message));
@@ -123,11 +136,11 @@ export class WebSocketClient {
       }
     });
 
-    this.socket.addEventListener("error", (event: Event) => {
+    socket.addEventListener("error", (event: Event) => {
       this.errorHandlers.forEach((handler) => handler(event));
     });
 
-    this.socket.addEventListener("close", (event: CloseEvent) => {
+    socket.addEventListener("close", (event: CloseEvent) => {
       this.closeHandlers.forEach((handler) => handler(event));
     });
   }

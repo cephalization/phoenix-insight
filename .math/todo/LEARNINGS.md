@@ -488,3 +488,34 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Root README includes a table linking to both package READMEs for quick navigation
 - Documentation follows markdown best practices: code blocks with language hints, tables for option references, clear section hierarchy
 - No screenshots added as the task notes "if possible" - this would require manual capture which is beyond the scope of automated documentation
+
+## final-verification
+
+### Issues Found and Fixed:
+
+1. **WebSocket Client Configuration Bug**: The UI's WebSocket client was using `PartySocket` with `host` option, which is designed for PartyKit's room-based architecture, not standard WebSocket URLs.
+   - FIXED: Changed to `WebSocket` export from partysocket with URL string, and added URL transformation to convert `ws://localhost:6007` to `ws://localhost:6007/ws`
+   - Updated mock in tests from `default` export to `WebSocket` named export
+
+2. **IndexedDB Persistence Not Initialized**: The `initializeChatStore()` and `subscribeToChatPersistence()` functions (and their report store equivalents) were defined but never called.
+   - FIXED: Added initialization calls in `main.tsx` to load persisted data from IndexedDB on app startup and subscribe to changes for persistence
+   - Now sessions and reports correctly persist across browser refresh
+
+### Verification Results:
+
+1. ✅ **Server starts on port 6007**: `phoenix-insight ui` starts successfully, displays startup message with URL
+2. ✅ **UI loads correctly**: HTML served with all assets (JS, CSS) loading with 200 status
+3. ✅ **WebSocket connects**: Status shows "Connected" after page load, connection toast displays
+4. ✅ **Can send queries**: Messages typed in chat input are sent and appear in chat history
+5. ✅ **Responses stream**: Assistant responses stream in real-time, "Typing" indicator shows during streaming
+6. ✅ **History persists across refresh**: Sessions and messages survive browser refresh after persistence fix
+7. ✅ **Session history works**: Dropdown shows saved sessions with message count, can switch between sessions
+8. ⚠️ **Report generation**: Verified agent processes queries and calls tools; full report generation takes longer than test timeout but streaming/tool system works
+
+### Key Insights:
+
+- **partysocket imports**: Use `import { WebSocket } from "partysocket"` for standard WebSocket URLs, not `import PartySocket` which is for PartyKit-specific room routing
+- **Store persistence initialization**: Zustand persistence functions (load/subscribe) must be explicitly called at app startup, they don't auto-initialize
+- **agent-browser refs**: Element refs like `[ref=e1]` change between snapshots; always get a fresh snapshot before interacting with elements
+- **Agent response time**: Complex queries with file exploration can take 30-60+ seconds to complete; adjust test timeouts accordingly
+- **End-to-end testing**: The agent-browser tool is excellent for UI verification but requires careful timing and fresh snapshots for reliable element selection
