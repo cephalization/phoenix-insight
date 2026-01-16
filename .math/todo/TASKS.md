@@ -169,7 +169,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### cli-ui-server
 
 - content: Create `packages/cli/src/server/ui.ts`. Implement HTTP server using Node's `http` module that serves static files from `@cephalization/phoenix-insight-ui` dist directory. Add `@cephalization/phoenix-insight-ui` as dependency to CLI package. Resolve dist path using `require.resolve` or import.meta. Serve `index.html` for all non-asset routes (SPA fallback). Export `createUIServer(port)` function.
-- status: pending
+- status: complete
 - dependencies: cli-ws-server, ui-app-layout
 
 ### cli-agent-session

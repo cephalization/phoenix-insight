@@ -49,6 +49,7 @@
     "url": "https://github.com/cephalization/phoenix-insight/issues"
   },
   "dependencies": {
+    "@cephalization/phoenix-insight-ui": "workspace:*",
     "@ai-sdk/anthropic": "^3.0.0",
     "@arizeai/phoenix-client": "^5.6.1",
     "@arizeai/phoenix-otel": "^0.3.4",
