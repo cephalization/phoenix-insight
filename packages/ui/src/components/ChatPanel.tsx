@@ -173,7 +173,7 @@ export function ChatPanel({ className }: ChatPanelProps) {
   };
 
   return (
-    <div className={cn("flex h-full flex-col", className)}>
+    <div className={cn("flex h-full flex-col overflow-hidden", className)}>
       {/* Header with session history dropdown */}
       <div className="flex shrink-0 items-center justify-between border-b px-4 py-2">
         <span className="text-sm font-medium">
@@ -248,10 +248,10 @@ export function ChatPanel({ className }: ChatPanelProps) {
       </div>
 
       {/* Message list with ScrollArea */}
-      <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
+      <ScrollArea ref={scrollAreaRef} className="min-h-0 flex-1 p-4">
         {messages.length === 0 ? (
           /* Empty state */
-          <div className="flex h-full flex-col items-center justify-center text-center">
+          <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
             <div className="mb-4 rounded-full bg-muted p-4">
               <MessageIcon className="h-8 w-8 text-muted-foreground" />
             </div>

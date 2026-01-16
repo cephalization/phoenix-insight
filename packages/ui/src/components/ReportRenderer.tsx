@@ -5,7 +5,12 @@
  * Supports loading states, empty states, and streaming indicators.
  */
 
-import { Renderer } from "@json-render/react";
+import {
+  ActionProvider,
+  DataProvider,
+  Renderer,
+  VisibilityProvider,
+} from "@json-render/react";
 import type { UITree } from "@json-render/core";
 import { registry } from "@/lib/json-render/registry";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,7 +28,7 @@ export interface ReportRendererProps {
  */
 function EmptyState() {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center">
+    <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 p-8 text-center">
       <div className="rounded-full bg-muted p-6">
         <FileText className="h-12 w-12 text-muted-foreground" />
       </div>
@@ -156,18 +161,24 @@ export function ReportRenderer({
 
   // Have report - render it
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex flex-col">
       {/* Streaming indicator at top when updating */}
       {isStreaming && <StreamingIndicator />}
 
       {/* Report content */}
-      <div className="flex-1 overflow-auto p-4">
-        <Renderer
-          tree={report}
-          registry={registry}
-          loading={isStreaming}
-          fallback={FallbackComponent}
-        />
+      <div className="p-4">
+        <DataProvider>
+          <VisibilityProvider>
+            <ActionProvider>
+              <Renderer
+                tree={report}
+                registry={registry}
+                loading={isStreaming}
+                fallback={FallbackComponent}
+              />
+            </ActionProvider>
+          </VisibilityProvider>
+        </DataProvider>
       </div>
     </div>
   );

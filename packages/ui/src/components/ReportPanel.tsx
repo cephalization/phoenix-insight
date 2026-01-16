@@ -128,7 +128,7 @@ export function ReportPanel({ className, isStreaming = false }: ReportPanelProps
   };
 
   return (
-    <div className={cn("flex h-full flex-col", className)}>
+    <div className={cn("flex h-full flex-col overflow-hidden", className)}>
       {/* Header toolbar */}
       <div className="flex shrink-0 items-center justify-between border-b px-4 py-2">
         <span className="truncate text-sm font-medium">
@@ -165,7 +165,7 @@ export function ReportPanel({ className, isStreaming = false }: ReportPanelProps
       </div>
 
       {/* Report content */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="min-h-0 flex-1">
         <ReportRenderer
           report={currentReport ? (currentReport.content as unknown as UITree) : null}
           isStreaming={isStreaming}

@@ -1,15 +1,31 @@
-import { useState } from "react"
+import React, { useState } from "react";
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
-} from "@/components/ui/resizable"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Toaster } from "@/components/ui/sonner"
-import { ChatPanel } from "@/components/ChatPanel"
-import { ReportPanel } from "@/components/ReportPanel"
-import { ConnectionStatusIndicator } from "@/components/ConnectionStatusIndicator"
-import { useIsDesktop } from "@/hooks/useMediaQuery"
+} from "@/components/ui/resizable";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Toaster } from "@/components/ui/sonner";
+import { ChatPanel } from "@/components/ChatPanel";
+import { ReportPanel } from "@/components/ReportPanel";
+import { ConnectionStatusIndicator } from "@/components/ConnectionStatusIndicator";
+import { useIsDesktop } from "@/hooks/useMediaQuery";
+
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error(error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return <div>Something went wrong.</div>;
+    }
+    return this.props.children;
+  }
+}
 
 /**
  * Message icon for chat tab
@@ -29,7 +45,7 @@ function MessageIcon({ className }: { className?: string }) {
     >
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
-  )
+  );
 }
 
 /**
@@ -54,7 +70,7 @@ function FileTextIcon({ className }: { className?: string }) {
       <line x1="16" y1="17" x2="8" y2="17" />
       <line x1="10" y1="9" x2="8" y2="9" />
     </svg>
-  )
+  );
 }
 
 /**
@@ -65,24 +81,28 @@ function DesktopLayout() {
     <ResizablePanelGroup orientation="horizontal" className="h-full">
       {/* Left panel - Chat interface */}
       <ResizablePanel defaultSize={50} minSize={30}>
-        <ChatPanel className="h-full" />
+        <ErrorBoundary>
+          <ChatPanel className="h-full" />
+        </ErrorBoundary>
       </ResizablePanel>
 
       <ResizableHandle withHandle />
 
       {/* Right panel - Report display */}
       <ResizablePanel defaultSize={50} minSize={30}>
-        <ReportPanel className="h-full" />
+        <ErrorBoundary>
+          <ReportPanel className="h-full" />
+        </ErrorBoundary>
       </ResizablePanel>
     </ResizablePanelGroup>
-  )
+  );
 }
 
 /**
  * Mobile layout with tabbed navigation between Chat and Report
  */
 function MobileLayout() {
-  const [activeTab, setActiveTab] = useState<string>("chat")
+  const [activeTab, setActiveTab] = useState<string>("chat");
 
   return (
     <Tabs
@@ -92,10 +112,14 @@ function MobileLayout() {
     >
       {/* Tab content - takes remaining space */}
       <TabsContent value="chat" className="mt-0 flex-1 overflow-hidden">
-        <ChatPanel className="h-full" />
+        <ErrorBoundary>
+          <ChatPanel className="h-full" />
+        </ErrorBoundary>
       </TabsContent>
       <TabsContent value="report" className="mt-0 flex-1 overflow-hidden">
-        <ReportPanel className="h-full" />
+        <ErrorBoundary>
+          <ReportPanel className="h-full" />
+        </ErrorBoundary>
       </TabsContent>
 
       {/* Tab list at bottom for easy thumb reach */}
@@ -116,11 +140,11 @@ function MobileLayout() {
         </TabsTrigger>
       </TabsList>
     </Tabs>
-  )
+  );
 }
 
 function App() {
-  const isDesktop = useIsDesktop()
+  const isDesktop = useIsDesktop();
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
@@ -136,7 +160,7 @@ function App() {
         {isDesktop ? <DesktopLayout /> : <MobileLayout />}
       </main>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
