@@ -74,3 +74,15 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Left placeholder comments for where ChatPanel and ReportPanel components will be integrated
 - The Toaster component is included at the app level for toast notifications throughout the app
 - TypeScript check passes, build produces 288KB JS bundle (smaller than demo since unused imports removed)
+
+## ui-chat-store
+
+- Zustand v5 was installed (latest version) - uses the `create` function with standard patterns
+- Store tests need to reset state in `beforeEach` using `useChatStore.setState()` to prevent test pollution
+- Added `updateMessage` action not in original spec but needed for streaming responses (append content to existing assistant message)
+- Added `deleteSession` action for session management (switching away from deleted session defaults to last remaining)
+- Added `getCurrentSession` convenience method that uses `get()` to access current state
+- ID generation uses `Date.now()` + random string for uniqueness without external dependencies
+- Tests in UI package go in `src/store/*.test.ts` pattern (alongside source) per TASKS.md, unlike CLI which uses `test/` directory
+- All 24 test cases cover: session CRUD, message add/update, session clearing, connection state flags, edge cases
+- Zustand store is lightweight - no middleware needed for basic state management (persist middleware will be added later with IndexedDB)
