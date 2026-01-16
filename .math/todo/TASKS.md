@@ -33,7 +33,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### export-catalog-types
 
 - content: Export component catalog and schemas from UI package. Add `./catalog` export entry in `packages/ui/package.json` pointing to `src/lib/json-render/catalog.ts`. Ensure `catalog`, all individual schemas (CardSchema, TextSchema, etc.), and types (`UITree`, `UIElement`, `PhoenixInsightCatalog`) are exported.
-- status: pending
+- status: complete
 - dependencies: none
 
 ---
