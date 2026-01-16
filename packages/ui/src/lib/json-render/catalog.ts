@@ -94,6 +94,16 @@ const CodeSchema = z.object({
 });
 
 /**
+ * Chart component - displays a chart from array data
+ */
+const ChartSchema = z.object({
+  type: z.enum(["bar", "line", "pie", "area"]),
+  dataPath: z.string(),
+  title: z.string().nullable(),
+  height: z.number().nullable(),
+});
+
+/**
  * The Phoenix Insight UI catalog
  *
  * Defines all components that AI can generate for reports.
@@ -107,6 +117,12 @@ export const catalog = createCatalog({
       hasChildren: true,
       description:
         "Container for grouping related content with optional title and description",
+    },
+    Chart: {
+      props: ChartSchema,
+      hasChildren: false,
+      description:
+        "Chart display from array data with optional title and height",
     },
     Text: {
       props: TextSchema,
@@ -127,7 +143,8 @@ export const catalog = createCatalog({
     Table: {
       props: TableSchema,
       hasChildren: false,
-      description: "Tabular data display with headers, rows, and optional caption",
+      description:
+        "Tabular data display with headers, rows, and optional caption",
     },
     Metric: {
       props: MetricSchema,
@@ -138,8 +155,7 @@ export const catalog = createCatalog({
     Badge: {
       props: BadgeSchema,
       hasChildren: false,
-      description:
-        "Inline status or category indicator with variant styling",
+      description: "Inline status or category indicator with variant styling",
     },
     Alert: {
       props: AlertSchema,
@@ -163,6 +179,7 @@ export const catalog = createCatalog({
 // Export individual schemas for use in other parts of the application
 export {
   CardSchema,
+  ChartSchema,
   TextSchema,
   HeadingSchema,
   ListSchema,

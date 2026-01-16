@@ -23,6 +23,16 @@ const CardPropsSchema = z.object({
 });
 
 /**
+ * Chart component - displays a chart from array data
+ */
+const ChartPropsSchema = z.object({
+  type: z.enum(["bar", "line", "pie", "area"]),
+  dataPath: z.string(),
+  title: z.string().nullable(),
+  height: z.number().nullable(),
+});
+
+/**
  * Text component - for paragraphs and inline text
  */
 const TextPropsSchema = z.object({
@@ -169,6 +179,7 @@ export interface ReportToolResult {
  */
 const VALID_COMPONENT_TYPES = [
   "Card",
+  "Chart",
   "Text",
   "Heading",
   "List",
@@ -191,6 +202,8 @@ function getPropsSchemaForType(
   switch (type) {
     case "Card":
       return CardPropsSchema;
+    case "Chart":
+      return ChartPropsSchema;
     case "Text":
       return TextPropsSchema;
     case "Heading":
@@ -298,6 +311,7 @@ export function createReportTool(broadcast: ReportCallback) {
   return tool({
     description: `Generate or update a structured report that will be displayed in the UI report panel. 
 The report uses a JSON-Render tree format with the following component types:
+- Chart: Displays a chart from array data (props: type: "bar" | "line" | "pie" | "area", dataPath: string, title?: string, height?: number)
 - Card: Container for grouping content (props: title?, description?; can have children)
 - Text: Paragraph text (props: content, variant?: "default" | "muted" | "lead")
 - Heading: Section header (props: content, level?: "1"-"6")
@@ -347,7 +361,9 @@ Use this tool when you want to present structured analysis results, metrics, tab
       } catch (error) {
         return {
           success: false,
-          error: `Failed to broadcast report: ${error instanceof Error ? error.message : String(error)}`,
+          error: `Failed to broadcast report: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
         };
       }
     },
