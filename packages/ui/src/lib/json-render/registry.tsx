@@ -5,10 +5,7 @@
  * Each component receives ComponentRenderProps from @json-render/react.
  */
 
-import type {
-  ComponentRegistry,
-  ComponentRenderProps,
-} from "@json-render/react";
+import type { ComponentRenderProps } from "@json-render/react";
 import { useData } from "@json-render/react";
 import { getByPath } from "@json-render/core";
 import type { z } from "zod";
@@ -450,26 +447,6 @@ function ChartRenderer({
     </div>
   );
 }
-
-/**
- * The Phoenix Insight UI component registry
- *
- * Maps catalog component types to their React implementations.
- * Used with @json-render/react's Renderer component.
- */
-export const registry: ComponentRegistry = {
-  Card: CardRenderer,
-  Text: TextRenderer,
-  Heading: HeadingRenderer,
-  List: ListRenderer,
-  Table: TableRenderer,
-  Metric: MetricRenderer,
-  Badge: BadgeRenderer,
-  Alert: AlertRenderer,
-  Separator: SeparatorRenderer,
-  Code: CodeRenderer,
-  Chart: ChartRenderer,
-};
 
 // Export individual components for direct use if needed
 export {

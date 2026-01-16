@@ -12,7 +12,7 @@ import {
   VisibilityProvider,
 } from "@json-render/react";
 import type { UITree } from "@json-render/core";
-import { registry } from "@/lib/json-render/registry";
+import { registry } from "@/lib/json-render/registryManifest";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText } from "lucide-react";
 
