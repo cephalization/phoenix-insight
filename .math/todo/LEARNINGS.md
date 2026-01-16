@@ -178,3 +178,20 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - GOTCHA: TypeScript `verbatimModuleSyntax` requires `import type` for type-only imports - had to separate `ChatInputProps` import
 - Tests cover: rendering, connection status indicator, input behavior, send functionality, cancel functionality, accessibility, focus behavior, edge cases
 - All 39 ChatInput tests pass, total 209 UI tests, 384 CLI tests = 593 total tests
+
+## ui-chat-panel
+
+- Component composes ChatMessage list, ChatInput, and session history dropdown into a full chat interface
+- Uses shadcn ScrollArea for scrollable message list and DropdownMenu for session history
+- Auto-scroll implemented with `useRef` and `useEffect` that calls `scrollIntoView({ behavior: "smooth" })` on messages change
+- GOTCHA: jsdom doesn't implement `scrollIntoView` - had to add mock in `vitest.setup.ts`: `Element.prototype.scrollIntoView = () => {}`
+- Session dropdown shows in header: displays current session title, allows creating new sessions, switching between sessions, and deleting sessions
+- Current session is highlighted in dropdown with `bg-accent` class applied conditionally
+- Sessions sorted by `createdAt` descending (newest first) using `[...sessions].sort((a, b) => b.createdAt - a.createdAt)`
+- Delete button uses `e.stopPropagation()` to prevent dropdown item click from triggering session switch
+- GOTCHA: When current session title appears in both header and dropdown, tests using `getByText` fail with "multiple elements found" - use `getAllByText` instead
+- Streaming indicator logic: only show on last message when `isStreaming && message.role === "assistant" && index === messages.length - 1`
+- Empty state displays centered message icon with "No messages yet" text when `messages.length === 0`
+- All inline SVG icons marked `aria-hidden="true"` for accessibility
+- 36 tests cover: rendering, empty state, message display, chat input integration, session dropdown, session management, websocket integration, edge cases
+- All 245 UI tests pass, 629 total tests (245 UI + 384 CLI)
