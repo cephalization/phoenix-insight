@@ -437,3 +437,16 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - The existing `build` script (`tsc -b && vite build`) runs TypeScript build in project mode first, then Vite build - this ensures type errors are caught before bundling
 - Total bundle size: ~2.5MB JS + 45KB CSS (with sourcemaps: ~9.5MB) - gzip compressed: ~550KB + 9KB
 - All 456 UI tests pass, typecheck passes, build succeeds
+
+## cli-bundle-ui
+
+- The CLI package already had `@cephalization/phoenix-insight-ui` as a workspace dependency from cli-ui-server task
+- pnpm automatically builds dependencies in correct order - UI builds before CLI because CLI depends on UI
+- Added `verify-ui-dist` script that runs during prebuild to verify UI dist exists before starting CLI compilation
+- Added `copy-ui-dist` script that copies UI dist into `dist/ui` during build for npm distribution
+- The `files` array was simplified to just `["dist"]` since UI is now bundled within dist/ui
+- Updated `resolveUIDistPath()` in `server/ui.ts` to check for bundled UI dist first (`dist/ui`), then fallback to node_modules resolution
+- This 3-tier resolution works for: (1) npm install (bundled dist/ui), (2) monorepo dev (node_modules), (3) pre-link dev (relative path)
+- The workspace dependency `workspace:*` is correctly resolved by pnpm - it doesn't need to be published since UI is private and bundled
+- GOTCHA: Node.js -e inline scripts don't support backticks in error messages - use plain quotes for command suggestions
+- Build copies ~2.5MB of UI assets into CLI dist; total CLI package size increases but ensures self-contained distribution

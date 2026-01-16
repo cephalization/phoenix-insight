@@ -49,9 +49,22 @@ function getMimeType(filePath: string): string {
 
 /**
  * Resolve the UI package dist directory path.
- * Uses import.meta.resolve to find the package location in node_modules.
+ * 
+ * Resolution order:
+ * 1. Bundled dist/ui (copied during build, used for npm published package)
+ * 2. import.meta.resolve (finds package in node_modules, used for development)
+ * 3. Relative path fallback (for development before packages are linked)
  */
 export function resolveUIDistPath(): string {
+  const __dirname = fileURLToPath(new URL(".", import.meta.url));
+  
+  // First check for bundled UI dist (copied during CLI build)
+  // This is the path when installed from npm
+  const bundledPath = resolve(__dirname, "../ui");
+  if (existsSync(bundledPath) && existsSync(join(bundledPath, "index.html"))) {
+    return bundledPath;
+  }
+  
   try {
     // Resolve the UI package's package.json using import.meta.resolve
     // import.meta.resolve returns a file URL (file:///...)
@@ -63,7 +76,6 @@ export function resolveUIDistPath(): string {
     return join(packageDir, "dist");
   } catch {
     // Fallback: try to resolve relative to this file (for development)
-    const __dirname = fileURLToPath(new URL(".", import.meta.url));
     return resolve(__dirname, "../../../ui/dist");
   }
 }

@@ -235,7 +235,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### cli-bundle-ui
 
 - content: Update `packages/cli/package.json` to include `@cephalization/phoenix-insight-ui` as dependency. Ensure UI package builds before CLI package. Update CLI build script to verify UI dist exists. Add `files` array to include correct paths for npm publish. Test that `pnpm -r build` builds both packages in correct order.
-- status: pending
+- status: complete
 - dependencies: ui-build-config, cli-ui-integration
 
 ### update-ci-workflows
