@@ -109,7 +109,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-chat-input-component
 
 - content: Create `packages/ui/src/components/ChatInput.tsx`. Textarea input with send button. Support Enter to send (Shift+Enter for newline). Disable input when streaming or disconnected. Show connection status indicator. Use shadcn Button, Textarea (or Input if no Textarea - may need to add). Include cancel button visible during streaming.
-- status: pending
+- status: complete
 - dependencies: ui-app-layout
 
 ### ui-chat-panel
