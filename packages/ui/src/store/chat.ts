@@ -1,4 +1,10 @@
 import { create } from "zustand";
+import { subscribeWithSelector } from "zustand/middleware";
+import {
+  saveSession as dbSaveSession,
+  loadSessions as dbLoadSessions,
+  deleteSession as dbDeleteSession,
+} from "@/lib/db";
 
 // Types
 export interface Message {
@@ -44,12 +50,13 @@ const generateId = (): string => {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 };
 
-export const useChatStore = create<ChatStore>((set, get) => ({
-  // State
-  sessions: [],
-  currentSessionId: null,
-  isConnected: false,
-  isStreaming: false,
+export const useChatStore = create<ChatStore>()(
+  subscribeWithSelector((set, get) => ({
+    // State
+    sessions: [],
+    currentSessionId: null,
+    isConnected: false,
+    isStreaming: false,
 
   // Actions
   addMessage: (sessionId, message) => {
@@ -147,4 +154,68 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       state.sessions.find((s) => s.id === state.currentSessionId) ?? null
     );
   },
-}));
+})));
+
+// ============================================
+// IndexedDB Persistence Integration
+// ============================================
+
+/**
+ * Initialize chat store from IndexedDB
+ * Call this on app startup to load persisted sessions
+ */
+export async function initializeChatStore(): Promise<void> {
+  try {
+    const sessions = await dbLoadSessions();
+    if (sessions.length > 0) {
+      useChatStore.setState({
+        sessions,
+        currentSessionId: sessions[sessions.length - 1].id,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to load chat sessions from IndexedDB:", error);
+  }
+}
+
+/**
+ * Subscribe to store changes and persist to IndexedDB
+ * Returns an unsubscribe function
+ */
+export function subscribeToChatPersistence(): () => void {
+  const unsubscribe = useChatStore.subscribe(
+    (state) => state.sessions,
+    async (sessions, previousSessions) => {
+      const currentIds = new Set(sessions.map((s) => s.id));
+      const prevIds = new Set(previousSessions.map((s) => s.id));
+
+      // Handle deleted sessions
+      for (const id of prevIds) {
+        if (!currentIds.has(id)) {
+          try {
+            await dbDeleteSession(id);
+          } catch (error) {
+            console.error(`Failed to delete session ${id} from IndexedDB:`, error);
+          }
+        }
+      }
+
+      // Handle new or updated sessions
+      for (const session of sessions) {
+        // Check if session is new or has been modified
+        const prevSession = previousSessions.find((s) => s.id === session.id);
+        if (!prevSession || JSON.stringify(prevSession) !== JSON.stringify(session)) {
+          try {
+            await dbSaveSession(session);
+          } catch (error) {
+            console.error(`Failed to save session ${session.id} to IndexedDB:`, error);
+          }
+        }
+      }
+
+    },
+    { fireImmediately: false }
+  );
+
+  return unsubscribe;
+}

@@ -1,4 +1,10 @@
 import { create } from "zustand";
+import { subscribeWithSelector } from "zustand/middleware";
+import {
+  saveReport as dbSaveReport,
+  loadReports as dbLoadReports,
+  deleteReport as dbDeleteReport,
+} from "@/lib/db";
 
 // JSONRenderTree type - will be properly typed when @json-render/core is added
 // For now, define as a flexible JSON structure that json-render expects
@@ -33,10 +39,11 @@ const generateId = (): string => {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 };
 
-export const useReportStore = create<ReportStore>((set, get) => ({
-  // State
-  reports: [],
-  currentReportId: null,
+export const useReportStore = create<ReportStore>()(
+  subscribeWithSelector((set, get) => ({
+    // State
+    reports: [],
+    currentReportId: null,
 
   // Actions
   setReport: (reportData) => {
@@ -114,4 +121,67 @@ export const useReportStore = create<ReportStore>((set, get) => ({
     if (!state.currentReportId) return null;
     return state.reports.find((r) => r.id === state.currentReportId) ?? null;
   },
-}));
+})));
+
+// ============================================
+// IndexedDB Persistence Integration
+// ============================================
+
+/**
+ * Initialize report store from IndexedDB
+ * Call this on app startup to load persisted reports
+ */
+export async function initializeReportStore(): Promise<void> {
+  try {
+    const reports = await dbLoadReports();
+    if (reports.length > 0) {
+      useReportStore.setState({
+        reports,
+        currentReportId: reports[reports.length - 1].id,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to load reports from IndexedDB:", error);
+  }
+}
+
+/**
+ * Subscribe to store changes and persist to IndexedDB
+ * Returns an unsubscribe function
+ */
+export function subscribeToReportPersistence(): () => void {
+  const unsubscribe = useReportStore.subscribe(
+    (state) => state.reports,
+    async (reports, previousReports) => {
+      const currentIds = new Set(reports.map((r) => r.id));
+      const prevIds = new Set(previousReports.map((r) => r.id));
+
+      // Handle deleted reports
+      for (const id of prevIds) {
+        if (!currentIds.has(id)) {
+          try {
+            await dbDeleteReport(id);
+          } catch (error) {
+            console.error(`Failed to delete report ${id} from IndexedDB:`, error);
+          }
+        }
+      }
+
+      // Handle new or updated reports
+      for (const report of reports) {
+        // Check if report is new or has been modified
+        const prevReport = previousReports.find((r) => r.id === report.id);
+        if (!prevReport || JSON.stringify(prevReport) !== JSON.stringify(report)) {
+          try {
+            await dbSaveReport(report);
+          } catch (error) {
+            console.error(`Failed to save report ${report.id} to IndexedDB:`, error);
+          }
+        }
+      }
+    },
+    { fireImmediately: false }
+  );
+
+  return unsubscribe;
+}

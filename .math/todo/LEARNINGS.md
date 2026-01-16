@@ -95,3 +95,19 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Report store follows same patterns as chat store: `generateId()`, state reset in tests, `getCurrentReport` helper
 - All 25 tests cover: creation, updates, session lookup, deletion with currentReportId handling, list operations, edge cases
 - Report-session relationship is 1:1 (one report per session), enforced by `setReport` update logic
+
+## ui-indexeddb-persistence
+
+- Used `idb` library (v8.x) for IndexedDB with TypeScript - provides typed wrapper around IndexedDB API
+- Added `fake-indexeddb` as devDependency for unit testing - provides in-memory IndexedDB implementation for Node.js/vitest
+- GOTCHA: `fake-indexeddb/auto` must be imported FIRST in test files to polyfill `indexedDB` global before any other imports
+- GOTCHA: Using `deleteDatabase()` with fake-indexeddb caused tests to hang indefinitely - instead use `clearAllData()` which clears object stores directly
+- Database schema uses `DBSchema` interface from idb for type safety on object stores and indexes
+- Created `sessionId` index on reports store using `createIndex("sessionId", "sessionId", { unique: false })` for efficient report-by-session lookups
+- Integrated with Zustand stores using `subscribeWithSelector` middleware - enables subscribing to specific state slices for efficient persistence
+- `subscribeToChatPersistence()` and `subscribeToReportPersistence()` functions return unsubscribe callbacks for cleanup
+- Uses JSON.stringify comparison to detect actual data changes before persisting (avoids unnecessary IndexedDB writes)
+- `initializeChatStore()` and `initializeReportStore()` async functions load data from IndexedDB on app startup
+- `exportReportAsMarkdown()` recursively walks JSONRenderTree and converts to markdown with proper heading levels, lists, tables, etc.
+- Tests cover all CRUD operations, edge cases, markdown export for all json-render component types (38 tests total)
+- All 87 UI tests pass, typecheck succeeds, build produces 288KB bundle

@@ -77,7 +77,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-indexeddb-persistence
 
 - content: Create IndexedDB persistence layer in `packages/ui/src/lib/db.ts` using `idb` library. Add `idb` as dependency. Create database `phoenix-insight-ui` with object stores: `sessions` (keyPath: id), `reports` (keyPath: id, index: sessionId). Implement functions: `saveSession`, `loadSessions`, `deleteSession`, `saveReport`, `loadReports`, `deleteReport`, `exportReportAsMarkdown`. Integrate with chat and report stores via `persist` middleware or manual sync. Write unit tests.
-- status: pending
+- status: complete
 - dependencies: ui-chat-store, ui-report-store
 
 ---
