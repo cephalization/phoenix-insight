@@ -5,7 +5,12 @@
  * Each component receives ComponentRenderProps from @json-render/react.
  */
 
-import type { ComponentRegistry, ComponentRenderProps } from "@json-render/react";
+import type {
+  ComponentRegistry,
+  ComponentRenderProps,
+} from "@json-render/react";
+import { useData } from "@json-render/react";
+import { getByPath } from "@json-render/core";
 import type { z } from "zod";
 import type {
   CardSchema,
@@ -18,6 +23,7 @@ import type {
   AlertSchema,
   SeparatorSchema,
   CodeSchema,
+  ChartSchema,
 } from "./catalog";
 
 // shadcn/ui components
@@ -251,6 +257,201 @@ function CodeRenderer({
 }
 
 /**
+ * Chart component - displays charts from array data
+ * Supports bar, line, area, and pie chart types
+ */
+function ChartRenderer({
+  element,
+}: ComponentRenderProps<z.infer<typeof ChartSchema>>) {
+  const { type, dataPath, title, height } = element.props;
+  const { data } = useData();
+  const chartData = getByPath(data, dataPath) as
+    | Array<{ label: string; value: number }>
+    | undefined;
+
+  if (!chartData || !Array.isArray(chartData) || chartData.length === 0) {
+    return (
+      <div className="flex items-center justify-center p-5 text-muted-foreground">
+        No data available
+      </div>
+    );
+  }
+
+  const maxValue = Math.max(...chartData.map((d) => d.value));
+  const chartHeight = height ?? 120;
+
+  // Pie chart rendering
+  if (type === "pie") {
+    const total = chartData.reduce((sum, d) => sum + d.value, 0);
+    const colors = [
+      "bg-primary",
+      "bg-secondary",
+      "bg-accent",
+      "bg-muted",
+      "bg-destructive",
+    ];
+
+    return (
+      <Card className="mb-4">
+        <CardContent className="pt-6">
+          {title && <h4 className="mb-4 text-sm font-semibold">{title}</h4>}
+          <div className="flex flex-col gap-2">
+            {chartData.map((d, i) => {
+              const percentage = total > 0 ? (d.value / total) * 100 : 0;
+              return (
+                <div key={i} className="flex items-center gap-3">
+                  <div
+                    className={`h-3 w-3 rounded-full ${
+                      colors[i % colors.length]
+                    }`}
+                  />
+                  <span className="flex-1 text-sm">{d.label}</span>
+                  <span className="text-sm font-medium">
+                    {percentage.toFixed(1)}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Bar chart rendering (default)
+  if (type === "bar") {
+    return (
+      <Card className="mb-4">
+        <CardContent className="pt-6">
+          {title && <h4 className="mb-4 text-sm font-semibold">{title}</h4>}
+          <div className="flex items-end gap-2" style={{ height: chartHeight }}>
+            {chartData.map((d, i) => (
+              <div key={i} className="flex flex-1 flex-col items-center gap-1">
+                <div
+                  className="w-full rounded-t bg-foreground transition-all"
+                  style={{
+                    height: `${maxValue > 0 ? (d.value / maxValue) * 100 : 0}%`,
+                    minHeight: 4,
+                  }}
+                />
+                <span className="text-xs text-muted-foreground">{d.label}</span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Line chart rendering
+  if (type === "line") {
+    const points = chartData.map((d, i) => {
+      const x = (i / (chartData.length - 1 || 1)) * 100;
+      const y = maxValue > 0 ? 100 - (d.value / maxValue) * 100 : 100;
+      return `${x},${y}`;
+    });
+
+    return (
+      <Card className="mb-4">
+        <CardContent className="pt-6">
+          {title && <h4 className="mb-4 text-sm font-semibold">{title}</h4>}
+          <div style={{ height: chartHeight }}>
+            <svg
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              className="h-full w-full"
+            >
+              <polyline
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                vectorEffect="non-scaling-stroke"
+                points={points.join(" ")}
+                className="text-foreground"
+              />
+              {chartData.map((_, i) => {
+                const x = (i / (chartData.length - 1 || 1)) * 100;
+                const y =
+                  maxValue > 0
+                    ? 100 - (chartData[i].value / maxValue) * 100
+                    : 100;
+                return (
+                  <circle
+                    key={i}
+                    cx={x}
+                    cy={y}
+                    r="3"
+                    vectorEffect="non-scaling-stroke"
+                    className="fill-background stroke-foreground"
+                    strokeWidth="2"
+                  />
+                );
+              })}
+            </svg>
+          </div>
+          <div className="mt-2 flex justify-between">
+            {chartData.map((d, i) => (
+              <span key={i} className="text-xs text-muted-foreground">
+                {d.label}
+              </span>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Area chart rendering
+  if (type === "area") {
+    const points = chartData.map((d, i) => {
+      const x = (i / (chartData.length - 1 || 1)) * 100;
+      const y = maxValue > 0 ? 100 - (d.value / maxValue) * 100 : 100;
+      return `${x},${y}`;
+    });
+    const areaPath = `0,100 ${points.join(" ")} 100,100`;
+
+    return (
+      <Card className="mb-4">
+        <CardContent className="pt-6">
+          {title && <h4 className="mb-4 text-sm font-semibold">{title}</h4>}
+          <div style={{ height: chartHeight }}>
+            <svg
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              className="h-full w-full"
+            >
+              <polygon points={areaPath} className="fill-foreground/20" />
+              <polyline
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                vectorEffect="non-scaling-stroke"
+                points={points.join(" ")}
+                className="text-foreground"
+              />
+            </svg>
+          </div>
+          <div className="mt-2 flex justify-between">
+            {chartData.map((d, i) => (
+              <span key={i} className="text-xs text-muted-foreground">
+                {d.label}
+              </span>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Fallback for unknown types
+  return (
+    <div className="flex items-center justify-center p-5 text-muted-foreground">
+      Unsupported chart type: {type}
+    </div>
+  );
+}
+
+/**
  * The Phoenix Insight UI component registry
  *
  * Maps catalog component types to their React implementations.
@@ -267,6 +468,7 @@ export const registry: ComponentRegistry = {
   Alert: AlertRenderer,
   Separator: SeparatorRenderer,
   Code: CodeRenderer,
+  Chart: ChartRenderer,
 };
 
 // Export individual components for direct use if needed
@@ -281,4 +483,5 @@ export {
   AlertRenderer,
   SeparatorRenderer,
   CodeRenderer,
+  ChartRenderer,
 };
