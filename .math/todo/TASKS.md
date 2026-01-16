@@ -43,7 +43,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### scaffold-ui-package
 
 - content: Create `packages/ui/` directory. Scaffold a new Vite React app using `pnpm create vite packages/ui --template react-ts`. Configure `package.json` with name `@cephalization/phoenix-insight-ui`, set `"private": true`. Add Tailwind CSS via `@tailwindcss/vite` plugin. Configure tsconfig with path alias `@/*` pointing to `./src/*`. Update `vite.config.ts` with react and tailwindcss plugins and path resolution. Create `src/index.css` with `@import "tailwindcss"`. Verify `pnpm dev` starts the Vite dev server.
-- status: pending
+- status: complete
 - dependencies: move-cli-package
 
 ### setup-shadcn-ui

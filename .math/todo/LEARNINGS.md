@@ -36,3 +36,16 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - No import paths needed to be changed because all internal imports use relative paths
 - All 384 tests pass, build succeeds - the move was transparent to the codebase
 - Next tasks will need to create `packages/ui/` for the UI package
+
+## scaffold-ui-package
+
+- Used `pnpm create vite packages/ui --template react-ts` to scaffold the base Vite React TypeScript app
+- Updated package.json with name `@cephalization/phoenix-insight-ui`, added `"private": true`, and scripts for `clean`, `test`, `typecheck`
+- Added `--passWithNoTests` to the test script since the scaffolded project has no test files initially - prevents CI failures
+- Tailwind v4 uses the new `@tailwindcss/vite` plugin and `@import "tailwindcss"` in CSS instead of the old `@tailwind` directives
+- Configured path alias `@/*` pointing to `./src/*` in both `tsconfig.app.json` (TypeScript) and `vite.config.ts` (Vite bundler) for consistent module resolution
+- Removed the default Vite demo code (App.css, counter logic) and replaced with a minimal Tailwind-styled App.tsx
+- The scaffold creates `tsconfig.json`, `tsconfig.app.json` (for src), and `tsconfig.node.json` (for config files) - path aliases go in tsconfig.app.json
+- vite.config.ts needs `resolve.alias` for runtime resolution, while tsconfig.app.json `paths` handles TypeScript compilation
+- There's a peer dependency warning for @types/node version but it doesn't affect functionality
+- Next task (setup-shadcn-ui) should run `pnpm dlx shadcn@latest init` from within packages/ui directory
