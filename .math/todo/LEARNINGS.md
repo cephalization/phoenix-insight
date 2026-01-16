@@ -254,3 +254,19 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - The view action updates `currentReportId` directly via `useReportStore.setState()` and closes the dialog
 - Used same SVG icon patterns as `ChatPanel` (inline SVG with `aria-hidden="true"`)
 - All 24 ReportPanel tests pass, 384 total UI tests, typecheck passes
+
+## ui-report-history-dialog
+
+- Extracted the report history dialog from `ReportPanel` into a standalone `ReportHistoryDialog` component for better modularity
+- The component supports both controlled mode (`open`/`onOpenChange` props) and trigger mode (`trigger` prop for DialogTrigger)
+- Refactored `ReportPanel` to use the new component - simplified from 330 lines to ~160 lines by removing inline dialog code
+- GOTCHA: When testing text that spans multiple elements in React (like "Session: session-..."), use a function matcher instead of regex
+  - The DOM has separate text nodes that don't match regex patterns
+  - Solution: `getByText((_content, element) => element?.textContent?.includes("Session:") === true)`
+- The dialog handlers use `useCallback` with store actions for memoization - no store state in dependency arrays
+- Report list is sorted by `createdAt` descending (newest first) and highlights the current report with `border-primary bg-accent`
+- Action buttons (view, download, delete) use same icon patterns from ReportPanel - kept for consistency
+- View action both updates store state AND calls `onOpenChange(false)` to close dialog
+- Delete action does NOT close dialog (allows deleting multiple reports without reopening)
+- All 17 ReportHistoryDialog tests + 24 ReportPanel tests continue to pass (refactoring preserved existing test coverage)
+- Total: 401 UI tests, 384 CLI tests = 785 tests passing
