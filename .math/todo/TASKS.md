@@ -93,7 +93,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-websocket-hook
 
 - content: Create React hook `packages/ui/src/hooks/useWebSocket.ts` that wraps WebSocketClient. Hook returns: `{ isConnected, isStreaming, sendQuery, cancel }`. Integrate with chat store to append streamed messages. Integrate with report store to update report when `report` message received. Handle connection lifecycle with React useEffect. Write unit tests.
-- status: pending
+- status: complete
 - dependencies: ui-websocket-client, ui-chat-store, ui-report-store
 
 ---
