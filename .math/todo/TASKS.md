@@ -257,7 +257,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### update-documentation
 
 - content: Update `packages/cli/README.md` with: new `ui` command documentation, WebSocket protocol description, UI features overview. Add screenshots if possible. Document configuration options. Update root README.md with monorepo structure explanation and links to package READMEs. Document `pnpm test:ui` manual testing workflow and requirement for live Phoenix server.
-- status: pending
+- status: complete
 - dependencies: setup-ui-testing
 
 ### final-verification

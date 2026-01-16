@@ -1,73 +1,141 @@
-# React + TypeScript + Vite
+# Phoenix Insight UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Web-based user interface for the Phoenix Insight CLI.
 
-Currently, two official plugins are available:
+> **Note**: This package is private and bundled with the CLI. It is not published to npm separately.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Overview
 
-## React Compiler
+The UI provides a visual interface for interacting with the Phoenix Insight agent:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Split-pane layout**: Chat interface on the left, report display on the right
+- **Real-time streaming**: See agent responses as they're generated
+- **Structured reports**: AI-generated reports with tables, metrics, and formatted content
+- **Session management**: Persist and switch between conversations
+- **Offline persistence**: Sessions and reports saved to IndexedDB
 
-## Expanding the ESLint configuration
+## Development
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+```bash
+# Install dependencies (from monorepo root)
+pnpm install
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# Start development server
+pnpm --filter @cephalization/phoenix-insight-ui dev
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+# Run tests
+pnpm --filter @cephalization/phoenix-insight-ui test
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Build for production
+pnpm --filter @cephalization/phoenix-insight-ui build
+
+# Type check
+pnpm --filter @cephalization/phoenix-insight-ui typecheck
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Project Structure
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+├── components/           # React components
+│   ├── ui/               # shadcn/ui base components
+│   ├── ChatMessage.tsx   # Individual chat message
+│   ├── ChatInput.tsx     # Message input with send/cancel
+│   ├── ChatPanel.tsx     # Complete chat interface
+│   ├── ReportRenderer.tsx    # json-render based report display
+│   ├── ReportPanel.tsx   # Report panel with toolbar
+│   ├── ReportHistoryDialog.tsx
+│   ├── ConnectionStatusIndicator.tsx
+│   └── ErrorBoundary.tsx
+├── hooks/                # Custom React hooks
+│   ├── useWebSocket.ts   # WebSocket connection management
+│   └── useMediaQuery.ts  # Responsive breakpoint detection
+├── lib/                  # Utilities
+│   ├── db.ts             # IndexedDB persistence
+│   ├── websocket.ts      # WebSocket client (partysocket)
+│   ├── json-render/      # Report rendering
+│   │   ├── catalog.ts    # Component schema definitions
+│   │   └── registry.tsx  # shadcn component mappings
+│   └── utils.ts          # cn() and other helpers
+├── store/                # Zustand state management
+│   ├── chat.ts           # Chat sessions and messages
+│   └── report.ts         # Report state
+├── App.tsx               # Main app layout
+├── main.tsx              # Entry point
+└── index.css             # Tailwind styles
+```
+
+## Key Dependencies
+
+- **React 18**: UI framework
+- **Vite**: Build tool and dev server
+- **Tailwind CSS 4**: Styling
+- **shadcn/ui**: Component library (Radix-based)
+- **Zustand**: State management
+- **idb**: IndexedDB wrapper for persistence
+- **partysocket**: WebSocket with auto-reconnect
+- **streamdown**: Streaming-optimized markdown rendering
+- **json-render**: Structured UI rendering from JSON
+
+## Architecture
+
+### State Management
+
+Two Zustand stores manage application state:
+
+- `chat.ts`: Sessions, messages, connection status, streaming state
+- `report.ts`: Reports, current report ID, report history
+
+Both stores persist to IndexedDB via `db.ts` subscriptions.
+
+### WebSocket Communication
+
+The UI communicates with the CLI server over WebSocket:
+
+1. **Connection**: `useWebSocket` hook manages connection lifecycle
+2. **Messages**: Typed client/server messages in `websocket.ts`
+3. **Reconnection**: partysocket handles automatic reconnection with backoff
+
+### Report Rendering
+
+Reports use [json-render](https://github.com/vercel-labs/json-render):
+
+1. Agent calls `generate_report` tool with UITree structure
+2. CLI sends report over WebSocket
+3. `ReportRenderer` uses json-render with shadcn component registry
+4. Components: Card, Text, Heading, List, Table, Metric, Badge, Alert, Separator, Code
+
+## Testing
+
+Tests are in `src/**/*.test.ts` (colocated with source):
+
+```bash
+# Run all UI tests
+pnpm --filter @cephalization/phoenix-insight-ui test
+
+# Watch mode
+pnpm --filter @cephalization/phoenix-insight-ui test -- --watch
+```
+
+The test setup includes:
+- jsdom environment
+- @testing-library/react for component tests
+- @testing-library/jest-dom for DOM matchers
+- fake-indexeddb for IndexedDB mocking
+
+## Building for CLI
+
+When the CLI is built, the UI dist is copied into the CLI package:
+
+1. `pnpm build` triggers UI build first (pnpm workspace dependency order)
+2. CLI's build copies `packages/ui/dist/` to `packages/cli/dist/ui/`
+3. CLI's HTTP server serves these files when `phoenix-insight ui` runs
+
+## Browser Support
+
+The UI targets modern browsers with ES2020+ support:
+- Chrome/Edge 88+
+- Firefox 78+
+- Safari 14+
+
+IndexedDB and WebSocket are required for full functionality.
