@@ -49,3 +49,16 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - vite.config.ts needs `resolve.alias` for runtime resolution, while tsconfig.app.json `paths` handles TypeScript compilation
 - There's a peer dependency warning for @types/node version but it doesn't affect functionality
 - Next task (setup-shadcn-ui) should run `pnpm dlx shadcn@latest init` from within packages/ui directory
+
+## setup-shadcn-ui
+
+- Shadcn/ui requires the path alias to be defined in the root `tsconfig.json` file, not just in `tsconfig.app.json` - it doesn't look at referenced configs
+- Added `compilerOptions.baseUrl` and `compilerOptions.paths` to `packages/ui/tsconfig.json` to satisfy shadcn's validation
+- Used non-interactive init with: `pnpm dlx shadcn@latest init --template vite --base-color neutral --yes --src-dir`
+- `react-resizable-panels` v4.x has a breaking change: exports are now `Group`, `Panel`, `Separator` instead of `PanelGroup`, `Panel`, `PanelResizeHandle`
+- The `direction` prop on ResizablePanelGroup was renamed to `orientation` in react-resizable-panels v4
+- Had to manually fix `packages/ui/src/components/ui/resizable.tsx` to use the correct import names and prop names
+- Installed 13 components: button, card, input, scroll-area, separator, resizable, tabs, dialog, dropdown-menu, alert, badge, skeleton, sonner
+- Shadcn adds `tw-animate-css` package for animation utilities and uses Tailwind v4's `@theme inline` for CSS variables
+- Created a demo App.tsx that showcases all installed components to verify they work correctly
+- All components render and type-check correctly; build produces 399KB JS bundle
