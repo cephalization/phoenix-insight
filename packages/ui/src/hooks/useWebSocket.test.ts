@@ -439,7 +439,8 @@ describe("useWebSocket", () => {
           });
         });
 
-        // Receive error
+        // Receive error - error messages are transformed to user-friendly format
+        // "Connection" triggers network error message
         act(() => {
           mockClient.messageHandler?.({
             type: "error",
@@ -449,7 +450,8 @@ describe("useWebSocket", () => {
 
         const messages = useChatStore.getState().sessions[0].messages;
         expect(messages).toHaveLength(1);
-        expect(messages[0].content).toBe("Error: Connection lost");
+        // Network-related errors get transformed to user-friendly message
+        expect(messages[0].content).toBe("Error: A network error occurred. Please check your connection.");
       });
 
       it("resets streaming state on error", () => {

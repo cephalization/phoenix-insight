@@ -219,7 +219,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-error-handling
 
 - content: Implement comprehensive error handling in UI. Show toast for WebSocket errors. Display inline error messages for failed queries. Handle JSON parse errors gracefully. Add error boundary component wrapping main app. Show user-friendly messages, not stack traces.
-- status: pending
+- status: complete
 - dependencies: ui-connection-status
 
 ---
