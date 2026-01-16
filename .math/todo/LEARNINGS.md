@@ -62,3 +62,15 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Shadcn adds `tw-animate-css` package for animation utilities and uses Tailwind v4's `@theme inline` for CSS variables
 - Created a demo App.tsx that showcases all installed components to verify they work correctly
 - All components render and type-check correctly; build produces 399KB JS bundle
+
+## ui-app-layout
+
+- Replaced the component showcase App.tsx from setup-shadcn-ui with the actual app layout
+- The layout uses `h-screen` with flexbox to fill full viewport height: header with `shrink-0` and main content with `flex-1`
+- ResizablePanelGroup uses `orientation="horizontal"` (not `direction`) for side-by-side panels
+- Each ResizablePanel has `defaultSize={50}` (percentage) and `minSize={30}` to prevent panels from being too small
+- Added sub-headers to each panel ("Chat" and "Report") to help users understand the interface
+- The main content area uses `overflow-hidden` to ensure resizable panels work correctly
+- Left placeholder comments for where ChatPanel and ReportPanel components will be integrated
+- The Toaster component is included at the app level for toast notifications throughout the app
+- TypeScript check passes, build produces 288KB JS bundle (smaller than demo since unused imports removed)

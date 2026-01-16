@@ -59,7 +59,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-app-layout
 
 - content: Create the main app layout in `packages/ui/src/App.tsx`. Implement a responsive split-pane view using shadcn's `ResizablePanelGroup`, `ResizablePanel`, and `ResizableHandle` components. Left panel (min 30%) is for chat interface, right panel (min 30%) is for report display. Include a header with app title. Use CSS to make layout full viewport height. Export `App` as default.
-- status: pending
+- status: complete
 - dependencies: setup-shadcn-ui
 
 ### ui-chat-store
