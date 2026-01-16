@@ -111,3 +111,18 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - `exportReportAsMarkdown()` recursively walks JSONRenderTree and converts to markdown with proper heading levels, lists, tables, etc.
 - Tests cover all CRUD operations, edge cases, markdown export for all json-render component types (38 tests total)
 - All 87 UI tests pass, typecheck succeeds, build produces 288KB bundle
+
+## ui-websocket-client
+
+- Used `partysocket` library for WebSocket with automatic reconnection, exponential backoff, message buffering, and connection timeout
+- The WebSocketClient wrapper class provides typed message handling with `ClientMessage` and `ServerMessage` discriminated unions
+- `ClientMessage` types: `query` (with content and optional sessionId), `cancel` (with optional sessionId)
+- `ServerMessage` types: `text`, `tool_call`, `tool_result`, `report`, `error`, `done` - each with appropriate payloads
+- Event handlers (onMessage, onError, onClose, onOpen) return unsubscribe functions for cleanup
+- JSON parse errors in message handling are gracefully converted to error messages rather than throwing
+- The `JSONRenderTree` type is placeholder `unknown` until json-render package is integrated
+- For testing, mocked `partysocket` module with vi.mock() - mock implementation must include addEventListener/send/close methods
+- GOTCHA: Mock must be created with methods in constructor, not added after - partysocket calls addEventListener immediately on construction
+- Test helper `simulateEvent()` iterates over listeners Map to trigger handlers - simulates WebSocket events
+- Tests cover: connection lifecycle, message sending/receiving, all server message types, handler unsubscription, error handling
+- All 119 UI tests pass (32 websocket tests + previous 87)
