@@ -462,3 +462,18 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - pnpm's `cache: 'pnpm'` in `setup-node` action is sufficient for caching the pnpm store - no additional caching setup needed
 - Private packages (`"private": true` in package.json) are automatically skipped by `changeset publish` - no need to explicitly ignore them
 - The `workspace:*` protocol in dependencies is resolved by pnpm and doesn't affect npm publishing since UI is bundled, not published separately
+
+## setup-ui-testing
+
+- Added `agent-browser` as a workspace-level devDependency - it provides CLI-based browser automation perfect for testing web UIs
+- The `agent-browser` package includes a native Rust binary that is auto-downloaded during `postinstall` - no additional setup needed
+- Created root-level `vitest.config.ts` for UI integration tests with 60s timeout (browser automation tests are slow)
+- The `test:ui` script builds all packages first (`pnpm build`) then runs vitest with the root config
+- Tests use `execSync` to run `pnpm exec agent-browser <command>` synchronously - simpler than async approach for sequential browser operations
+- PATTERN: Helper functions `agentBrowser(command)` and `agentBrowserJson(command)` wrap CLI calls for cleaner test code
+- PATTERN: Check prerequisites at test start (`isPhoenixRunning()`, `isUIServerRunning()`) and set `skipTests = true` to gracefully skip when dependencies unavailable
+- The `agent-browser snapshot -i` command returns interactive elements with refs (e.g., `[ref=@e1]`) that can be used for deterministic element selection
+- GOTCHA: Using refs like `@e1` from snapshots is more reliable than CSS selectors since they're tied to the exact element from the snapshot
+- Tests cover: Layout (header, panels), Chat (input, send, status), Report (panel, empty state, toolbar), WebSocket (connection), Session (dropdown, new session), Error handling
+- Documentation added to README under "UI Integration Testing" section with prerequisites, running instructions, and manual testing workflow
+- These tests are NOT for CI - they require a live Phoenix server with data on localhost:6006 and the UI server on localhost:6007

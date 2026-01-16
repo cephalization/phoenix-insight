@@ -14,6 +14,9 @@ importers:
       '@types/node':
         specifier: ^18.19.0
         version: 18.19.130
+      agent-browser:
+        specifier: ^0.5.0
+        version: 0.5.0
       rimraf:
         specifier: ^5.0.10
         version: 5.0.10
@@ -1918,6 +1921,10 @@ packages:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
 
+  agent-browser@0.5.0:
+    resolution: {integrity: sha512-i0NGFBMwLMk7Q47vkyI8/DNxBmf3t5O+meq25rCJgxl4UbphwbnGamMmB/ZZBLLifXGYcU/joUnFEOxmV691zw==}
+    hasBin: true
+
   agentkeepalive@4.6.0:
     resolution: {integrity: sha512-kja8j7PjmncONqaTsB8fQ+wE2mSU2DJ9D4XKoJ5PFWIdRMa6SLSN1ff4mOr4jCbfRSsxR4keIiySJU0N9T5hIQ==}
     engines: {node: '>= 8.0.0'}
@@ -3439,6 +3446,11 @@ packages:
   pify@4.0.1:
     resolution: {integrity: sha512-uB80kBFb/tfd68bVleG9T5GGsGPjJrLAUpR5PZIrhBnIaRTQRjqdJSsIKkOP6OAIFbj7GOrcudc5pNjZ+geV2g==}
     engines: {node: '>=6'}
+
+  playwright-core@1.57.0:
+    resolution: {integrity: sha512-agTcKlMw/mjBWOnD6kFZttAAGHgi/Nw0CZ2o6JqWSbMlI219lAFLZZCyqByTsvVAJq5XA5H8cA6PrvBRpBWEuQ==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   plimit-lit@1.6.1:
     resolution: {integrity: sha512-B7+VDyb8Tl6oMJT9oSO2CW8XC/T4UcJGrwOVoNGwOQsQYhlpfajmrMj5xeejqaASq3V/EqThyOeATEOMuSEXiA==}
@@ -6004,6 +6016,15 @@ snapshots:
 
   agent-base@7.1.4: {}
 
+  agent-browser@0.5.0:
+    dependencies:
+      playwright-core: 1.57.0
+      ws: 8.19.0
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   agentkeepalive@4.6.0:
     dependencies:
       humanize-ms: 1.2.1
@@ -7823,6 +7844,8 @@ snapshots:
   picomatch@4.0.3: {}
 
   pify@4.0.1: {}
+
+  playwright-core@1.57.0: {}
 
   plimit-lit@1.6.1:
     dependencies:

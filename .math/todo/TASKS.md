@@ -251,7 +251,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### setup-ui-testing
 
 - content: Add `agent-browser` as a workspace-level devDependency in root `package.json`. Create a `test:ui` script in root `package.json` that builds the UI, starts the CLI server, and runs UI integration tests. This script is for manual invocation only (not CI) since it requires a live Phoenix server on localhost:6006. Create `test/ui-integration.test.ts` at workspace root with basic test structure that uses agent-browser to: navigate to localhost:6007, verify layout renders, test sending a message, verify report panel updates. Document in README that `pnpm test:ui` requires Phoenix running.
-- status: pending
+- status: complete
 - dependencies: cli-ui-integration
 
 ### update-documentation
