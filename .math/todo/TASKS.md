@@ -175,7 +175,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### cli-agent-session
 
 - content: Create `packages/cli/src/server/session.ts`. Implement `AgentSession` class that manages a single WebSocket client's agent interaction. Reuse existing agent creation logic from cli.ts. Handle: query execution, streaming responses to client, tool call notifications, report generation via new tool. Maintain conversation history within session. Write unit tests.
-- status: pending
+- status: complete
 - dependencies: cli-ws-server
 
 ### cli-report-tool

@@ -305,3 +305,22 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - `createUIServer()` returns a Promise with a `UIServer` object containing `httpServer`, `port`, `host`, `distPath`, and `close()` method
 - 24 tests covering: initialization, static file serving, SPA fallback, caching, security (path traversal), and server lifecycle
 - Total: 433 CLI tests, 401 UI tests = 834 tests passing
+
+## cli-agent-session
+
+- Created `packages/cli/src/server/session.ts` with `AgentSession` class for managing WebSocket client agent interactions
+- `AgentSession` wraps `PhoenixInsightAgent` and provides session-specific broadcasting via a `BroadcastCallback` function
+- Agent is created lazily on first query via `createInsightAgent()` and cached for session reuse
+- Streaming implemented by iterating over `agent.stream()` result's `textStream` async iterator and sending each chunk
+- Tool call and result notifications sent via `onStepFinish` callback passed to agent's stream method
+- Conversation history maintained as `ConversationMessage[]` array with role, content, and timestamp
+- Cancellation uses `AbortController` - check `abortController.signal.aborted` before each stream iteration and in `onStepFinish`
+- `sendReport()` method and `getReportCallback()` factory for the report tool (to be implemented in cli-report-tool task)
+- `SessionManager` class manages multiple sessions with WebSocket-to-session mapping
+- Session ID used as key for session lookup; WebSocket client mapped separately to support multiple clients per session
+- PATTERN: For testing async streams with mocks, use a `Promise<void>` that the test controls (`resolveStream()`) to pause/resume the stream
+- GOTCHA: When testing streaming, need small `setTimeout` delays for async operations to start before checking `executing` state
+- Tests mock `createInsightAgent` module with vi.mock() and return controlled mock agent objects
+- Message collectors (`createMessageCollector()`) gather all broadcast messages for assertion
+- 38 tests covering: AgentSession (constructor, id, executing, history, executeQuery, cancel, sendReport, clearHistory, cleanup), SessionManager (getOrCreateSession, getSessionForClient, getSession, removeSession, sessionCount, cleanup)
+- Total: 471 CLI tests (38 new), 401 UI tests = 872 tests passing
