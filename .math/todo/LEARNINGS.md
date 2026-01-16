@@ -288,3 +288,20 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Tests use real HTTP/WebSocket servers on random localhost ports (`:0` for auto-assignment) for realistic integration testing
 - 25 new WebSocket tests: connection lifecycle, path filtering, message handling, error cases, broadcasting, graceful shutdown
 - Total: 409 CLI tests, 401 UI tests = 810 tests passing
+
+## cli-ui-server
+
+- Created `packages/cli/src/server/ui.ts` that serves the UI package's static dist directory
+- Added `@cephalization/phoenix-insight-ui` as a workspace dependency to CLI package: `"@cephalization/phoenix-insight-ui": "workspace:*"`
+- Used `import.meta.resolve()` to locate the UI package's dist directory - returns a file URL that must be converted with `fileURLToPath()`
+- Fallback path resolution looks for `../../ui/dist` relative to the server file (for development before packages are linked)
+- SPA fallback logic: URLs with file extensions (`.js`, `.css`, etc.) are treated as assets, all others serve `index.html`
+- GOTCHA: When using port 0 for random port assignment, must get the actual port AFTER the server starts listening via `httpServer.address().port`
+- Directory traversal protection via path sanitization: decode URL, resolve full path, verify it starts with the base dist directory
+- Encoded directory traversal attempts (like `%2e%2e%2f` for `../`) that resolve outside dist directory return 400 Bad Request
+- Cache-Control headers: `no-cache` for `index.html` (always get latest for SPA), `max-age=31536000` for hashed assets
+- MIME types map covers common web assets: html, css, js, json, svg, images, fonts, and source maps
+- Server only binds to `127.0.0.1` (localhost) by default for security - no external network access
+- `createUIServer()` returns a Promise with a `UIServer` object containing `httpServer`, `port`, `host`, `distPath`, and `close()` method
+- 24 tests covering: initialization, static file serving, SPA fallback, caching, security (path traversal), and server lifecycle
+- Total: 433 CLI tests, 401 UI tests = 834 tests passing

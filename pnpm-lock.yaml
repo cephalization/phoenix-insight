@@ -35,6 +35,9 @@ importers:
       '@arizeai/phoenix-otel':
         specifier: ^0.3.4
         version: 0.3.4
+      '@cephalization/phoenix-insight-ui':
+        specifier: workspace:*
+        version: link:../ui
       '@opentelemetry/api':
         specifier: 1.9.0
         version: 1.9.0
