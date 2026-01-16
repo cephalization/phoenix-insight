@@ -137,7 +137,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-report-renderer
 
 - content: Create `packages/ui/src/components/ReportRenderer.tsx`. Import json-render Renderer, DataProvider, catalog, and registry. Accept `report` prop (JSONRenderTree or null). Render report using json-render Renderer with shadcn components. Show empty state when no report. Show loading skeleton when report is streaming. Write component tests.
-- status: pending
+- status: complete
 - dependencies: json-render-shadcn-registry, ui-report-store
 
 ---

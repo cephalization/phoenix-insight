@@ -224,3 +224,17 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Tests use `createElement<T>()` helper to construct typed UIElement objects for component testing
 - All 35 registry tests pass covering: component exports, all 10 renderers, variants, edge cases
 - Build output unchanged at ~288KB - registry adds minimal bundle size
+
+## ui-report-renderer
+
+- Created `ReportRenderer` component that wraps json-render's `Renderer` component with loading/empty states
+- The component accepts `report: UITree | null` and `isStreaming?: boolean` props
+- Three main states: (1) empty state with icon when no report and not streaming, (2) loading skeleton when streaming without content, (3) report content when report exists
+- Used `Renderer` from `@json-render/react` with the registry from `json-render-shadcn-registry` task - straightforward integration
+- Loading skeleton mimics the structure of a typical report: title, cards, metrics grid, and table placeholder
+- Streaming indicator shows animated bouncing dots with staggered delays using Tailwind's `[animation-delay:]` utility
+- Created `FallbackComponent` for unknown component types - useful during development and when AI generates unrecognized components
+- Tests mock `@json-render/react`'s Renderer and the registry to isolate component logic from json-render internals
+- GOTCHA: The `UITree` type from `@json-render/core` has structure `{ root: string, elements: Record<string, UIElement> }` - not `JSONRenderTree` which was a placeholder
+- The `DataProvider` from json-render is NOT needed for simple static report rendering - only required for dynamic data binding features
+- All 27 ReportRenderer tests + previous 333 = 360 total UI tests, typecheck passes
