@@ -49,7 +49,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### cli-import-catalog-schemas
 
 - content: Remove duplicate Zod schemas from `packages/cli/src/commands/report-tool.ts` (lines 20-110 approximately). Import all component schemas (`CardSchema`, `TextSchema`, etc.) from `@cephalization/phoenix-insight-ui/catalog`. Update `getPropsSchemaForType()` to use the imported schemas. Keep the `UITreeSchema`, `UIElementSchema`, and validation logic in CLI since they're specific to the tool's validation needs.
-- status: pending
+- status: complete
 - dependencies: export-catalog-types
 
 ---

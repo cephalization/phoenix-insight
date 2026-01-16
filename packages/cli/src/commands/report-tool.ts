@@ -10,112 +10,30 @@ import { tool } from "ai";
 import { z } from "zod";
 import type { ReportCallback } from "../server/session.js";
 
-// ============================================================================
-// JSON-Render Schema Definitions
-// ============================================================================
-
-/**
- * Card component - container for grouping related content
- */
-const CardPropsSchema = z.object({
-  title: z.string().optional(),
-  description: z.string().optional(),
-});
-
-/**
- * Chart component - displays a chart from array data
- */
-const ChartPropsSchema = z.object({
-  type: z.enum(["bar", "line", "pie", "area"]),
-  dataPath: z.string(),
-  title: z.string().nullable(),
-  height: z.number().nullable(),
-});
-
-/**
- * Text component - for paragraphs and inline text
- */
-const TextPropsSchema = z.object({
-  content: z.string(),
-  variant: z.enum(["default", "muted", "lead"]).optional(),
-});
-
-/**
- * Heading component - for section headers (h1-h6)
- */
-const HeadingPropsSchema = z.object({
-  content: z.string(),
-  level: z.enum(["1", "2", "3", "4", "5", "6"]).optional(),
-});
-
-/**
- * List component - ordered and unordered lists
- */
-const ListPropsSchema = z.object({
-  items: z.array(z.string()),
-  ordered: z.boolean().optional(),
-});
-
-/**
- * Table component - tabular data display
- */
-const TablePropsSchema = z.object({
-  headers: z.array(z.string()),
-  rows: z.array(z.array(z.string())),
-  caption: z.string().optional(),
-});
-
-/**
- * Metric component - displays a key metric value
- */
-const MetricPropsSchema = z.object({
-  label: z.string(),
-  value: z.string(),
-  change: z.string().optional(),
-  changeType: z.enum(["positive", "negative", "neutral"]).optional(),
-});
-
-/**
- * Badge component - inline status or category indicator
- */
-const BadgePropsSchema = z.object({
-  content: z.string(),
-  variant: z
-    .enum(["default", "secondary", "destructive", "outline"])
-    .optional(),
-});
-
-/**
- * Alert component - important messages or warnings
- */
-const AlertPropsSchema = z.object({
-  title: z.string().optional(),
-  description: z.string(),
-  variant: z.enum(["default", "destructive"]).optional(),
-});
-
-/**
- * Separator component - visual divider
- */
-const SeparatorPropsSchema = z.object({
-  orientation: z.enum(["horizontal", "vertical"]).optional(),
-});
-
-/**
- * Code component - code blocks with syntax highlighting
- */
-const CodePropsSchema = z.object({
-  content: z.string(),
-  language: z.string().optional(),
-});
+// Import component schemas from UI package (single source of truth)
+import {
+  CardSchema,
+  ChartSchema,
+  TextSchema,
+  HeadingSchema,
+  ListSchema,
+  TableSchema,
+  MetricSchema,
+  BadgeSchema,
+  AlertSchema,
+  SeparatorSchema,
+  CodeSchema,
+} from "@cephalization/phoenix-insight-ui/catalog";
 
 /**
  * UIElement schema - a single element in the render tree
+ * Kept in CLI for tool-specific validation needs
  */
 const UIElementSchema = z.object({
   key: z.string(),
   type: z.enum([
     "Card",
+    "Chart",
     "Text",
     "Heading",
     "List",
@@ -201,27 +119,27 @@ function getPropsSchemaForType(
 ): z.ZodType<Record<string, unknown>> {
   switch (type) {
     case "Card":
-      return CardPropsSchema;
+      return CardSchema;
     case "Chart":
-      return ChartPropsSchema;
+      return ChartSchema;
     case "Text":
-      return TextPropsSchema;
+      return TextSchema;
     case "Heading":
-      return HeadingPropsSchema;
+      return HeadingSchema;
     case "List":
-      return ListPropsSchema;
+      return ListSchema;
     case "Table":
-      return TablePropsSchema;
+      return TableSchema;
     case "Metric":
-      return MetricPropsSchema;
+      return MetricSchema;
     case "Badge":
-      return BadgePropsSchema;
+      return BadgeSchema;
     case "Alert":
-      return AlertPropsSchema;
+      return AlertSchema;
     case "Separator":
-      return SeparatorPropsSchema;
+      return SeparatorSchema;
     case "Code":
-      return CodePropsSchema;
+      return CodeSchema;
   }
 }
 
