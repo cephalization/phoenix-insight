@@ -48,6 +48,7 @@ describe("snapshot orchestrator", () => {
       writeFile: vi.fn().mockResolvedValue(undefined),
       exec: vi.fn().mockResolvedValue({ stdout: "", stderr: "", exitCode: 0 }),
       getBashTool: vi.fn().mockResolvedValue({}),
+      getSnapshotRoot: vi.fn().mockReturnValue("/phoenix/"),
       cleanup: vi.fn().mockResolvedValue(undefined),
     };
 

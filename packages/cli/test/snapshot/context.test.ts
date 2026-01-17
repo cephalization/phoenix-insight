@@ -144,6 +144,7 @@ describe("generateContext", () => {
         return { stdout: "", stderr: "", exitCode: 0 };
       }),
       getBashTool: vi.fn(),
+      getSnapshotRoot: vi.fn().mockReturnValue("/phoenix/"),
       cleanup: vi.fn(),
     };
   });

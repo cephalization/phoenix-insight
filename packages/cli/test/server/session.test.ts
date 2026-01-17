@@ -37,6 +37,7 @@ function createMockMode(): ExecutionMode {
       description: "Execute bash commands",
       execute: vi.fn(),
     }),
+    getSnapshotRoot: vi.fn().mockReturnValue("/phoenix/"),
     cleanup: vi.fn().mockResolvedValue(undefined),
   };
 }

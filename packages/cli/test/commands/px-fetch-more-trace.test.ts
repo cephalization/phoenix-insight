@@ -25,6 +25,7 @@ describe("fetchMoreTrace", () => {
         stderr: "",
       }),
       getBashTool: vi.fn(),
+      getSnapshotRoot: vi.fn().mockReturnValue("/phoenix/"),
       cleanup: vi.fn(),
     };
 

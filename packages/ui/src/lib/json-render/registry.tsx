@@ -6,8 +6,6 @@
  */
 
 import type { ComponentRenderProps } from "@json-render/react";
-import { useData } from "@json-render/react";
-import { getByPath } from "@json-render/core";
 import type { z } from "zod";
 import type {
   CardSchema,
@@ -89,15 +87,15 @@ function TextRenderer({
 function HeadingRenderer({
   element,
 }: ComponentRenderProps<z.infer<typeof HeadingSchema>>) {
-  const { content, level = "2" } = element.props;
+  const { content, level = 2 } = element.props;
 
-  const headingClasses: Record<string, string> = {
-    "1": "scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl",
-    "2": "scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0",
-    "3": "scroll-m-20 text-2xl font-semibold tracking-tight",
-    "4": "scroll-m-20 text-xl font-semibold tracking-tight",
-    "5": "scroll-m-20 text-lg font-semibold tracking-tight",
-    "6": "scroll-m-20 text-base font-semibold tracking-tight",
+  const headingClasses: Record<number, string> = {
+    1: "scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl",
+    2: "scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0",
+    3: "scroll-m-20 text-2xl font-semibold tracking-tight",
+    4: "scroll-m-20 text-xl font-semibold tracking-tight",
+    5: "scroll-m-20 text-lg font-semibold tracking-tight",
+    6: "scroll-m-20 text-base font-semibold tracking-tight",
   };
 
   const Tag = `h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
@@ -260,11 +258,10 @@ function CodeRenderer({
 function ChartRenderer({
   element,
 }: ComponentRenderProps<z.infer<typeof ChartSchema>>) {
-  const { type, dataPath, title, height } = element.props;
-  const { data } = useData();
-  const chartData = getByPath(data, dataPath) as
-    | Array<{ label: string; value: number }>
-    | undefined;
+  // TODO: refactor to use useData from @json-render/react
+  // need to figure out where to put data from dataPath
+  // probably endpoints from the server with memory cache
+  const { type, data: chartData, title, height } = element.props;
 
   if (!chartData || !Array.isArray(chartData) || chartData.length === 0) {
     return (
@@ -317,13 +314,18 @@ function ChartRenderer({
 
   // Bar chart rendering (default)
   if (type === "bar") {
+    console.log("chartData", chartData);
     return (
       <Card className="mb-4">
         <CardContent className="pt-6">
           {title && <h4 className="mb-4 text-sm font-semibold">{title}</h4>}
           <div className="flex items-end gap-2" style={{ height: chartHeight }}>
             {chartData.map((d, i) => (
-              <div key={i} className="flex flex-1 flex-col items-center gap-1">
+              <div
+                key={i}
+                className="flex flex-1 flex-col h-full items-center gap-1"
+              >
+                <span>{d.value}</span>
                 <div
                   className="w-full rounded-t bg-foreground transition-all"
                   style={{
@@ -447,24 +449,6 @@ function ChartRenderer({
     </div>
   );
 }
-
-/**
- * Component registry mapping component types to their renderers.
- * Used by json-render to look up components by type name.
- */
-export const registry = {
-  Card: CardRenderer,
-  Chart: ChartRenderer,
-  Text: TextRenderer,
-  Heading: HeadingRenderer,
-  List: ListRenderer,
-  Table: TableRenderer,
-  Metric: MetricRenderer,
-  Badge: BadgeRenderer,
-  Alert: AlertRenderer,
-  Separator: SeparatorRenderer,
-  Code: CodeRenderer,
-};
 
 // Export individual components for direct use if needed
 export {

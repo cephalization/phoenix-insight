@@ -33,6 +33,7 @@ describe("fetchDatasets", () => {
       }),
       exec: vi.fn(),
       getBashTool: vi.fn().mockResolvedValue({}),
+      getSnapshotRoot: vi.fn().mockReturnValue("/phoenix/"),
       cleanup: vi.fn(),
     };
 

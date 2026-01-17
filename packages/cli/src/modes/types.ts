@@ -25,6 +25,14 @@ export interface ExecutionMode {
   getBashTool(): Promise<any>; // Tool type from AI SDK
 
   /**
+   * Get the absolute root path of the Phoenix snapshot directory
+   * - For sandbox mode: returns "/phoenix/"
+   * - For local mode: returns the actual filesystem path (e.g., ~/.phoenix-insight/snapshots/<id>/phoenix/)
+   * @returns The absolute path to the snapshot root directory
+   */
+  getSnapshotRoot(): string;
+
+  /**
    * Clean up resources
    */
   cleanup(): Promise<void>;

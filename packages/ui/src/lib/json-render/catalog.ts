@@ -29,7 +29,7 @@ const TextSchema = z.object({
  */
 const HeadingSchema = z.object({
   content: z.string(),
-  level: z.enum(["1", "2", "3", "4", "5", "6"]).optional(),
+  level: z.coerce.number().int().min(1).max(6).optional(),
 });
 
 /**
@@ -98,7 +98,7 @@ const CodeSchema = z.object({
  */
 const ChartSchema = z.object({
   type: z.enum(["bar", "line", "pie", "area"]),
-  dataPath: z.string(),
+  data: z.array(z.object({ label: z.string(), value: z.number() })),
   title: z.string().nullable(),
   height: z.number().nullable(),
 });

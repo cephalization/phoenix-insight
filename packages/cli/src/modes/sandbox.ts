@@ -12,9 +12,18 @@ export class SandboxMode implements ExecutionMode {
   private bash: any; // Will be typed as Bash from just-bash
   private initialized = false;
   private bashToolPromise: Promise<any> | null = null;
+  private readonly snapshotRoot = "/phoenix/";
 
   constructor() {
     // We'll initialize in the init method since we need async imports
+  }
+
+  /**
+   * Get the absolute root path of the Phoenix snapshot directory
+   * For sandbox mode, this is always the virtual path "/phoenix/"
+   */
+  getSnapshotRoot(): string {
+    return this.snapshotRoot;
   }
 
   private async init() {

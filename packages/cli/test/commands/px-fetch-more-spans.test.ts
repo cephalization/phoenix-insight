@@ -28,6 +28,7 @@ describe("fetchMoreSpans", () => {
       writeFile: vi.fn().mockResolvedValue(undefined),
       exec: vi.fn(),
       getBashTool: vi.fn(),
+      getSnapshotRoot: vi.fn().mockReturnValue("/phoenix/"),
       cleanup: vi.fn().mockResolvedValue(undefined),
     };
   });

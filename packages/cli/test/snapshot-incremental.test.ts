@@ -100,6 +100,7 @@ describe("Incremental Snapshot", () => {
         return { stdout: "", stderr: "", exitCode: 0 };
       }),
       getBashTool: vi.fn(async () => ({})),
+      getSnapshotRoot: vi.fn().mockReturnValue("/phoenix/"),
       cleanup: vi.fn(async () => {}),
     };
   });
