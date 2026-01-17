@@ -48,9 +48,9 @@ export const configSchema = z.object({
 
   /**
    * Enable tracing of the agent to Phoenix
-   * @default false
+   * @default true
    */
-  trace: z.boolean().default(false),
+  trace: z.boolean().default(true),
 });
 
 /**

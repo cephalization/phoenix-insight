@@ -9,6 +9,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { ChatPanel } from "@/components/ChatPanel";
 import { ReportPanel } from "@/components/ReportPanel";
 import { ConnectionStatusIndicator } from "@/components/ConnectionStatusIndicator";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }> {
@@ -147,19 +149,24 @@ function App() {
   const isDesktop = useIsDesktop();
 
   return (
-    <div className="flex h-screen flex-col bg-background text-foreground">
-      <Toaster />
-      {/* Header */}
-      <header className="flex h-14 shrink-0 items-center justify-between border-b px-4">
-        <h1 className="text-lg font-semibold">Phoenix Insight</h1>
-        <ConnectionStatusIndicator />
-      </header>
+    <ThemeProvider>
+      <div className="flex h-screen flex-col bg-background text-foreground">
+        <Toaster />
+        {/* Header */}
+        <header className="flex h-14 shrink-0 items-center justify-between border-b px-4">
+          <h1 className="text-lg font-semibold">Phoenix Insight</h1>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <ConnectionStatusIndicator />
+          </div>
+        </header>
 
-      {/* Main content - responsive layout */}
-      <main className="flex-1 overflow-hidden">
-        {isDesktop ? <DesktopLayout /> : <MobileLayout />}
-      </main>
-    </div>
+        {/* Main content - responsive layout */}
+        <main className="flex-1 overflow-hidden">
+          {isDesktop ? <DesktopLayout /> : <MobileLayout />}
+        </main>
+      </div>
+    </ThemeProvider>
   );
 }
 

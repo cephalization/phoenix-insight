@@ -314,7 +314,6 @@ function ChartRenderer({
 
   // Bar chart rendering (default)
   if (type === "bar") {
-    console.log("chartData", chartData);
     return (
       <Card className="mb-4">
         <CardContent className="pt-6">
