@@ -38,12 +38,13 @@
     "llmops",
     "ai"
   ],
-  "author": "oss@arize.com",
+  "author": "Tony Powell <powell.anthonyd@proton.me>",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/cephalization/phoenix-insight#readme",
+  "homepage": "https://github.com/cephalization/phoenix-insight/tree/main/packages/cli#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cephalization/phoenix-insight.git"
+    "url": "git+https://github.com/cephalization/phoenix-insight.git",
+    "directory": "packages/cli"
   },
   "bugs": {
     "url": "https://github.com/cephalization/phoenix-insight/issues"
@@ -62,6 +63,9 @@
     "ws": "^8.19.0",
     "zod": "^4.3.5"
   },
+  "bundledDependencies": [
+    "@cephalization/phoenix-insight-ui"
+  ],
   "devDependencies": {
     "@faker-js/faker": "^10.2.0",
     "@types/ws": "^8.18.1",
