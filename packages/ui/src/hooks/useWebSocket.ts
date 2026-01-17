@@ -30,7 +30,10 @@ function getUserFriendlyErrorMessage(errorMessage: string): string {
   }
 
   // Rate limiting
-  if (lowerError.includes("rate limit") || lowerError.includes("too many requests")) {
+  if (
+    lowerError.includes("rate limit") ||
+    lowerError.includes("too many requests")
+  ) {
     return "Too many requests. Please wait a moment before trying again.";
   }
 
@@ -55,7 +58,11 @@ function getUserFriendlyErrorMessage(errorMessage: string): string {
   }
 
   // If the error message is short and doesn't contain technical jargon, use it
-  if (errorMessage.length < 100 && !errorMessage.includes("at ") && !errorMessage.includes("Error:")) {
+  if (
+    errorMessage.length < 100 &&
+    !errorMessage.includes("at ") &&
+    !errorMessage.includes("Error:")
+  ) {
     return errorMessage;
   }
 
@@ -100,8 +107,14 @@ export function useWebSocket(
   const currentSessionId = useChatStore((state) => state.currentSessionId);
   const addMessage = useChatStore((state) => state.addMessage);
   const updateMessage = useChatStore((state) => state.updateMessage);
+  const addToolCall = useChatStore((state) => state.addToolCall);
+  const updateToolCallResult = useChatStore(
+    (state) => state.updateToolCallResult
+  );
   const createSession = useChatStore((state) => state.createSession);
-  const setConnectionStatus = useChatStore((state) => state.setConnectionStatus);
+  const setConnectionStatus = useChatStore(
+    (state) => state.setConnectionStatus
+  );
   const setIsStreaming = useChatStore((state) => state.setIsStreaming);
 
   // Report store selectors
@@ -113,9 +126,10 @@ export function useWebSocket(
       // Get or create session for this message
       // Note: We read currentSessionId from store directly to avoid
       // including it in dependencies which would cause effect re-runs
-      const sessionId = "sessionId" in message.payload
-        ? (message.payload as { sessionId: string }).sessionId
-        : useChatStore.getState().currentSessionId;
+      const sessionId =
+        "sessionId" in message.payload
+          ? (message.payload as { sessionId: string }).sessionId
+          : useChatStore.getState().currentSessionId;
 
       if (!sessionId) {
         console.warn("Received message without session context:", message);
@@ -154,8 +168,9 @@ export function useWebSocket(
         }
 
         case "tool_call": {
-          // Tool calls are informational - could display in UI
-          // For now, we just ensure streaming state is set
+          const { toolName, args } = message.payload;
+
+          // Ensure we have an assistant message to attach the tool call to
           if (!currentAssistantMessageIdRef.current) {
             const newMessage = addMessage(sessionId, {
               role: "assistant",
@@ -164,11 +179,38 @@ export function useWebSocket(
             currentAssistantMessageIdRef.current = newMessage.id;
             setIsStreaming(true);
           }
+
+          // Get current content length to track position for inline rendering
+          const currentSession = useChatStore
+            .getState()
+            .sessions.find((s) => s.id === sessionId);
+          const currentMessage = currentSession?.messages.find(
+            (m) => m.id === currentAssistantMessageIdRef.current
+          );
+          const contentPosition = currentMessage?.content?.length ?? 0;
+
+          // Add the tool call to the current message with position info
+          addToolCall(
+            sessionId,
+            currentAssistantMessageIdRef.current,
+            { toolName, args },
+            contentPosition
+          );
           break;
         }
 
         case "tool_result": {
-          // Tool results are informational - streaming continues
+          const { toolName, result } = message.payload;
+
+          // Update the tool call with its result
+          if (currentAssistantMessageIdRef.current) {
+            updateToolCallResult(
+              sessionId,
+              currentAssistantMessageIdRef.current,
+              toolName,
+              result
+            );
+          }
           break;
         }
 
@@ -220,6 +262,8 @@ export function useWebSocket(
     [
       addMessage,
       updateMessage,
+      addToolCall,
+      updateToolCallResult,
       setIsStreaming,
       setReport,
     ]
@@ -243,18 +287,15 @@ export function useWebSocket(
   }, [setConnectionStatus, setIsStreaming]);
 
   // Handle connection error
-  const handleError = useCallback(
-    (event: Event) => {
-      console.error("WebSocket error:", event);
-      // Show toast notification for WebSocket errors
-      toast.error("Connection error", {
-        description: "A WebSocket error occurred. Attempting to reconnect...",
-        duration: 5000,
-      });
-      // Connection state will be updated by close handler
-    },
-    []
-  );
+  const handleError = useCallback((event: Event) => {
+    console.error("WebSocket error:", event);
+    // Show toast notification for WebSocket errors
+    toast.error("Connection error", {
+      description: "A WebSocket error occurred. Attempting to reconnect...",
+      duration: 5000,
+    });
+    // Connection state will be updated by close handler
+  }, []);
 
   // Initialize WebSocket client and set up event handlers
   useEffect(() => {
@@ -284,7 +325,15 @@ export function useWebSocket(
       clientRef.current = null;
       // Don't set disconnected on cleanup - the component is unmounting
     };
-  }, [url, autoConnect, handleMessage, handleOpen, handleClose, handleError, setConnectionStatus]);
+  }, [
+    url,
+    autoConnect,
+    handleMessage,
+    handleOpen,
+    handleClose,
+    handleError,
+    setConnectionStatus,
+  ]);
 
   // Send a query to the server
   const sendQuery = useCallback(

@@ -1,6 +1,7 @@
 import { Streamdown } from "streamdown";
 import { cn } from "@/lib/utils";
-import type { Message } from "@/store/chat";
+import type { Message, ToolCall } from "@/store/chat";
+import { ToolCallPill } from "./ToolCallPill";
 
 export interface ChatMessageProps {
   /** The message to display */
@@ -20,21 +21,100 @@ function formatTimestamp(timestamp: number): string {
 }
 
 /**
+ * Represents a segment of content to render - either text or a tool call
+ */
+type ContentSegment =
+  | { type: "text"; content: string }
+  | { type: "toolCall"; toolCall: ToolCall };
+
+/**
+ * Parses message content and tool calls into interleaved segments for rendering.
+ * Uses tool call contentPosition to split text at the right places.
+ */
+function parseContentSegments(
+  content: string,
+  toolCalls?: ToolCall[]
+): ContentSegment[] {
+  // If no tool calls, return just the content (including empty content)
+  if (!toolCalls || toolCalls.length === 0) {
+    return [{ type: "text", content }];
+  }
+
+  // Sort tool calls by position (ascending)
+  const sortedToolCalls = [...toolCalls].sort((a, b) => {
+    const posA = a.contentPosition ?? 0;
+    const posB = b.contentPosition ?? 0;
+    return posA - posB;
+  });
+
+  // Check if we have position data - if not, fall back to showing all tool calls at the end
+  const hasPositionData = sortedToolCalls.some(
+    (tc) => tc.contentPosition !== undefined
+  );
+  if (!hasPositionData) {
+    const segments: ContentSegment[] = [];
+    if (content) {
+      segments.push({ type: "text", content });
+    }
+    for (const toolCall of sortedToolCalls) {
+      segments.push({ type: "toolCall", toolCall });
+    }
+    return segments;
+  }
+
+  // Build interleaved segments based on positions
+  const segments: ContentSegment[] = [];
+  let lastPosition = 0;
+
+  for (const toolCall of sortedToolCalls) {
+    const position = toolCall.contentPosition ?? lastPosition;
+
+    // Add text segment before this tool call (if any)
+    if (position > lastPosition) {
+      const textContent = content.slice(lastPosition, position);
+      if (textContent) {
+        segments.push({ type: "text", content: textContent });
+      }
+    }
+
+    // Add the tool call
+    segments.push({ type: "toolCall", toolCall });
+    lastPosition = position;
+  }
+
+  // Add remaining text after last tool call
+  if (lastPosition < content.length) {
+    const remainingContent = content.slice(lastPosition);
+    if (remainingContent) {
+      segments.push({ type: "text", content: remainingContent });
+    }
+  }
+
+  return segments;
+}
+
+/**
  * ChatMessage component displays a single chat message.
  * - User messages are aligned right with primary background
  * - Assistant messages are aligned left with muted background
  * - Uses streamdown for markdown rendering (optimized for streaming)
+ * - Tool calls are rendered inline where they occurred in the stream
  * - Shows a streaming indicator for in-progress messages
  */
-export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) {
+export function ChatMessage({
+  message,
+  isStreaming = false,
+}: ChatMessageProps) {
   const isUser = message.role === "user";
+
+  // Parse content into segments with interleaved tool calls
+  const segments = isUser
+    ? [{ type: "text" as const, content: message.content }]
+    : parseContentSegments(message.content, message.toolCalls);
 
   return (
     <div
-      className={cn(
-        "flex w-full",
-        isUser ? "justify-end" : "justify-start"
-      )}
+      className={cn("flex w-full", isUser ? "justify-end" : "justify-start")}
     >
       <div
         className={cn(
@@ -48,31 +128,42 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
         <div
           className={cn(
             "mb-1 flex items-center gap-2 text-xs",
-            isUser ? "justify-end text-primary-foreground/70" : "text-muted-foreground"
+            isUser
+              ? "justify-end text-primary-foreground/70"
+              : "text-muted-foreground"
           )}
         >
-          <span className="font-medium">
-            {isUser ? "You" : "Assistant"}
-          </span>
+          <span className="font-medium">{isUser ? "You" : "Assistant"}</span>
           <span>{formatTimestamp(message.timestamp)}</span>
         </div>
 
-        {/* Message content */}
-        <div
-          className={cn(
-            "prose prose-sm max-w-none",
-            isUser
-              ? "prose-invert"
-              : "prose-neutral dark:prose-invert"
-          )}
-        >
-          {isUser ? (
-            // User messages are plain text (no markdown)
-            <p className="m-0 whitespace-pre-wrap">{message.content}</p>
-          ) : (
-            // Assistant messages use streamdown for markdown rendering
-            <Streamdown>{message.content}</Streamdown>
-          )}
+        {/* Interleaved content and tool calls */}
+        <div className="space-y-2">
+          {segments.map((segment, index) => {
+            if (segment.type === "text") {
+              return (
+                <div
+                  key={`text-${index}`}
+                  className={cn(
+                    "prose prose-sm max-w-none",
+                    isUser ? "prose-invert" : "prose-neutral dark:prose-invert"
+                  )}
+                >
+                  {isUser ? (
+                    <p className="m-0 whitespace-pre-wrap">{segment.content}</p>
+                  ) : (
+                    <Streamdown>{segment.content}</Streamdown>
+                  )}
+                </div>
+              );
+            } else {
+              return (
+                <div key={`tool-${segment.toolCall.id}`} className="my-2">
+                  <ToolCallPill toolCall={segment.toolCall} />
+                </div>
+              );
+            }
+          })}
         </div>
 
         {/* Streaming indicator */}

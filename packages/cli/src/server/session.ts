@@ -234,6 +234,10 @@ export class AgentSession {
     // Add user message to history
     this.addToHistory("user", query);
 
+    // Track if we need to add a separator before the next text chunk
+    // This happens when a step finishes that had text (meaning the next step's text should be on a new line)
+    let needsStepSeparator = false;
+
     try {
       const agent = await this.getAgent();
 
@@ -248,15 +252,24 @@ export class AgentSession {
           // Send tool call notifications
           if (step.toolCalls?.length) {
             for (const toolCall of step.toolCalls) {
-              this.sendToolCall(toolCall.toolName, toolCall.args);
+              // AI SDK tool calls use 'input' property (not 'args') for the parsed arguments
+              const args = toolCall.input ?? {};
+              this.sendToolCall(toolCall.toolName, args);
             }
           }
 
           // Send tool result notifications
           if (step.toolResults?.length) {
             for (const toolResult of step.toolResults) {
-              this.sendToolResult(toolResult.toolName, toolResult.result);
+              // AI SDK v6 uses 'output' property (not 'result') for the tool result
+              this.sendToolResult(toolResult.toolName, toolResult.output);
             }
+          }
+
+          // If this step had text content, the next step's text should start on a new line
+          // This ensures proper separation between different "thoughts" from the agent
+          if (step.text && step.text.trim().length > 0) {
+            needsStepSeparator = true;
           }
         },
       });
@@ -268,6 +281,15 @@ export class AgentSession {
         if (this.abortController?.signal.aborted) {
           break;
         }
+
+        // Add step separator if needed (when previous step had text and this is new text)
+        if (needsStepSeparator && chunk.trim().length > 0) {
+          const separator = "\n\n";
+          fullResponse += separator;
+          this.sendText(separator);
+          needsStepSeparator = false;
+        }
+
         fullResponse += chunk;
         this.sendText(chunk);
       }
