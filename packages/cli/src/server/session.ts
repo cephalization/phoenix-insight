@@ -52,10 +52,7 @@ export interface AgentSessionOptions {
 /**
  * Report generation callback that can be passed to tools
  */
-export type ReportCallback = (
-  content: JSONRenderTree,
-  title?: string
-) => void;
+export type ReportCallback = (content: JSONRenderTree, title?: string) => void;
 
 // ============================================================================
 // AgentSession Class
@@ -234,64 +231,56 @@ export class AgentSession {
     // Add user message to history
     this.addToHistory("user", query);
 
-    // Track if we need to add a separator before the next text chunk
-    // This happens when a step finishes that had text (meaning the next step's text should be on a new line)
-    let needsStepSeparator = false;
-
     try {
       const agent = await this.getAgent();
 
       // Use streaming for responses
-      const result = await agent.stream(query, {
-        onStepFinish: (step: any) => {
-          // Check if cancelled
-          if (this.abortController?.signal.aborted) {
-            return;
-          }
+      const result = await agent.stream(query, {});
 
-          // Send tool call notifications
-          if (step.toolCalls?.length) {
-            for (const toolCall of step.toolCalls) {
-              // AI SDK tool calls use 'input' property (not 'args') for the parsed arguments
-              const args = toolCall.input ?? {};
-              this.sendToolCall(toolCall.toolName, args);
-            }
-          }
-
-          // Send tool result notifications
-          if (step.toolResults?.length) {
-            for (const toolResult of step.toolResults) {
-              // AI SDK v6 uses 'output' property (not 'result') for the tool result
-              this.sendToolResult(toolResult.toolName, toolResult.output);
-            }
-          }
-
-          // If this step had text content, the next step's text should start on a new line
-          // This ensures proper separation between different "thoughts" from the agent
-          if (step.text && step.text.trim().length > 0) {
-            needsStepSeparator = true;
-          }
-        },
-      });
-
-      // Stream text chunks to the client
+      // Stream using fullStream to get real-time tool call/result events
+      // This ensures tool calls are sent BEFORE execution, not after
       let fullResponse = "";
-      for await (const chunk of result.textStream) {
+      let lastStepHadText = false;
+
+      for await (const part of result.fullStream) {
         // Check if cancelled
         if (this.abortController?.signal.aborted) {
           break;
         }
 
-        // Add step separator if needed (when previous step had text and this is new text)
-        if (needsStepSeparator && chunk.trim().length > 0) {
-          const separator = "\n\n";
-          fullResponse += separator;
-          this.sendText(separator);
-          needsStepSeparator = false;
-        }
+        switch (part.type) {
+          case "text-delta":
+            // Add step separator if needed (when previous step had text)
+            if (lastStepHadText && part.text.trim().length > 0) {
+              const separator = "\n\n";
+              fullResponse += separator;
+              this.sendText(separator);
+              lastStepHadText = false;
+            }
+            fullResponse += part.text;
+            this.sendText(part.text);
+            break;
 
-        fullResponse += chunk;
-        this.sendText(chunk);
+          case "tool-call":
+            // Send tool call notification immediately when the model calls the tool
+            // This happens BEFORE the tool executes
+            // AI SDK v6 uses 'input' property for the parsed arguments
+            this.sendToolCall(part.toolName, part.input ?? {});
+            break;
+
+          case "tool-result":
+            // Send tool result when execution completes
+            // AI SDK v6 uses 'output' property for the result
+            this.sendToolResult(part.toolName, part.output);
+            break;
+
+          case "text-end":
+            // A text block ended - if there was content, mark for separator
+            if (fullResponse.trim().length > 0) {
+              lastStepHadText = true;
+            }
+            break;
+        }
       }
 
       // Wait for the full response to complete
@@ -309,8 +298,7 @@ export class AgentSession {
     } catch (error) {
       // Don't send error if we were cancelled
       if (!this.abortController?.signal.aborted) {
-        const message =
-          error instanceof Error ? error.message : String(error);
+        const message = error instanceof Error ? error.message : String(error);
         this.sendError(`Query failed: ${message}`);
       }
     } finally {
@@ -359,9 +347,7 @@ export class AgentSession {
 /**
  * Create a new AgentSession
  */
-export function createAgentSession(
-  options: AgentSessionOptions
-): AgentSession {
+export function createAgentSession(options: AgentSessionOptions): AgentSession {
   return new AgentSession(options);
 }
 
