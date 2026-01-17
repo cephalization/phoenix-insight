@@ -1,5 +1,11 @@
 # @cephalization/phoenix-insight
 
+## 1.0.1
+
+### Patch Changes
+
+- 0e50d4b: fix: Bundle UI package within CLI
+
 ## 1.0.0
 
 ### Major Changes
