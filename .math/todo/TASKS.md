@@ -69,5 +69,5 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### verify-type-sharing
 
 - content: Run `pnpm -r typecheck` and `pnpm -r test` to verify all type imports resolve correctly and no regressions were introduced. Fix any TypeScript errors or test failures. Verify the CLI can still validate reports and the UI can still receive them by checking existing tests pass.
-- status: pending
+- status: complete
 - dependencies: dynamic-report-prompt

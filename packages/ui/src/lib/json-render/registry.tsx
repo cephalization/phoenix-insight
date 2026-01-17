@@ -454,6 +454,7 @@ function ChartRenderer({
  */
 export const registry = {
   Card: CardRenderer,
+  Chart: ChartRenderer,
   Text: TextRenderer,
   Heading: HeadingRenderer,
   List: ListRenderer,
