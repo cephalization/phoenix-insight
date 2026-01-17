@@ -310,10 +310,11 @@ describe("AgentSession", () => {
     it("should send tool call notifications", async () => {
       mockAgent.stream.mockImplementation(async (_query, options) => {
         // Simulate a step with tool calls
+        // AI SDK v6 uses 'input' property (not 'args') for the parsed arguments
         options?.onStepFinish?.({
           toolCalls: [
-            { toolName: "bash", args: { command: "ls -la" } },
-            { toolName: "px_fetch_more_spans", args: { project: "test" } },
+            { toolName: "bash", input: { command: "ls -la" } },
+            { toolName: "px_fetch_more_spans", input: { project: "test" } },
           ],
         });
 
@@ -345,9 +346,10 @@ describe("AgentSession", () => {
     it("should send tool result notifications", async () => {
       mockAgent.stream.mockImplementation(async (_query, options) => {
         // Simulate a step with tool results
+        // AI SDK v6 uses 'output' property (not 'result') for the tool result
         options?.onStepFinish?.({
           toolResults: [
-            { toolName: "bash", result: { stdout: "file.txt", exitCode: 0 } },
+            { toolName: "bash", output: { stdout: "file.txt", exitCode: 0 } },
           ],
         });
 

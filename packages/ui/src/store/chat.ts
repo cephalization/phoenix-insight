@@ -7,11 +7,23 @@ import {
 } from "@/lib/db";
 
 // Types
+export interface ToolCall {
+  id: string;
+  toolName: string;
+  args: unknown;
+  result?: unknown;
+  status: "pending" | "completed" | "error";
+  timestamp: number;
+  /** Position in the message content where this tool call appeared (for inline rendering) */
+  contentPosition?: number;
+}
+
 export interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: number;
+  toolCalls?: ToolCall[];
 }
 
 export interface ChatSession {
@@ -36,7 +48,23 @@ export interface ChatActions {
     sessionId: string,
     message: Omit<Message, "id" | "timestamp">
   ) => Message;
-  updateMessage: (sessionId: string, messageId: string, content: string) => void;
+  updateMessage: (
+    sessionId: string,
+    messageId: string,
+    content: string
+  ) => void;
+  addToolCall: (
+    sessionId: string,
+    messageId: string,
+    toolCall: Omit<ToolCall, "id" | "timestamp" | "status" | "contentPosition">,
+    contentPosition?: number
+  ) => ToolCall;
+  updateToolCallResult: (
+    sessionId: string,
+    messageId: string,
+    toolName: string,
+    result: unknown
+  ) => void;
   createSession: (title?: string) => ChatSession;
   setCurrentSession: (sessionId: string | null) => void;
   clearSession: (sessionId: string) => void;
@@ -63,111 +91,166 @@ export const useChatStore = create<ChatStore>()(
     isStreaming: false,
     connectionStatus: "disconnected" as ConnectionStatus,
 
-  // Actions
-  addMessage: (sessionId, message) => {
-    const newMessage: Message = {
-      ...message,
-      id: generateId(),
-      timestamp: Date.now(),
-    };
-
-    set((state) => ({
-      sessions: state.sessions.map((session) =>
-        session.id === sessionId
-          ? { ...session, messages: [...session.messages, newMessage] }
-          : session
-      ),
-    }));
-
-    return newMessage;
-  },
-
-  updateMessage: (sessionId, messageId, content) => {
-    set((state) => ({
-      sessions: state.sessions.map((session) =>
-        session.id === sessionId
-          ? {
-              ...session,
-              messages: session.messages.map((msg) =>
-                msg.id === messageId ? { ...msg, content } : msg
-              ),
-            }
-          : session
-      ),
-    }));
-  },
-
-  createSession: (title?: string) => {
-    const newSession: ChatSession = {
-      id: generateId(),
-      messages: [],
-      createdAt: Date.now(),
-      title,
-    };
-
-    set((state) => ({
-      sessions: [...state.sessions, newSession],
-      currentSessionId: newSession.id,
-    }));
-
-    return newSession;
-  },
-
-  setCurrentSession: (sessionId) => {
-    set({ currentSessionId: sessionId });
-  },
-
-  clearSession: (sessionId) => {
-    set((state) => ({
-      sessions: state.sessions.map((session) =>
-        session.id === sessionId ? { ...session, messages: [] } : session
-      ),
-    }));
-  },
-
-  deleteSession: (sessionId) => {
-    set((state) => {
-      const newSessions = state.sessions.filter(
-        (session) => session.id !== sessionId
-      );
-      const newCurrentId =
-        state.currentSessionId === sessionId
-          ? newSessions.length > 0
-            ? newSessions[newSessions.length - 1].id
-            : null
-          : state.currentSessionId;
-
-      return {
-        sessions: newSessions,
-        currentSessionId: newCurrentId,
+    // Actions
+    addMessage: (sessionId, message) => {
+      const newMessage: Message = {
+        ...message,
+        id: generateId(),
+        timestamp: Date.now(),
       };
-    });
-  },
 
-  setIsConnected: (isConnected) => {
-    set({ isConnected });
-  },
+      set((state) => ({
+        sessions: state.sessions.map((session) =>
+          session.id === sessionId
+            ? { ...session, messages: [...session.messages, newMessage] }
+            : session
+        ),
+      }));
 
-  setIsStreaming: (isStreaming) => {
-    set({ isStreaming });
-  },
+      return newMessage;
+    },
 
-  setConnectionStatus: (connectionStatus) => {
-    // Also update isConnected for backward compatibility
-    set({ 
-      connectionStatus,
-      isConnected: connectionStatus === "connected",
-    });
-  },
+    updateMessage: (sessionId, messageId, content) => {
+      set((state) => ({
+        sessions: state.sessions.map((session) =>
+          session.id === sessionId
+            ? {
+                ...session,
+                messages: session.messages.map((msg) =>
+                  msg.id === messageId ? { ...msg, content } : msg
+                ),
+              }
+            : session
+        ),
+      }));
+    },
 
-  getCurrentSession: () => {
-    const state = get();
-    if (!state.currentSessionId) return null;
-    return (
-      state.sessions.find((s) => s.id === state.currentSessionId) ?? null
-    );
-  },
-})));
+    addToolCall: (sessionId, messageId, toolCall, contentPosition) => {
+      const newToolCall: ToolCall = {
+        ...toolCall,
+        id: generateId(),
+        timestamp: Date.now(),
+        status: "pending",
+        contentPosition,
+      };
+
+      set((state) => ({
+        sessions: state.sessions.map((session) =>
+          session.id === sessionId
+            ? {
+                ...session,
+                messages: session.messages.map((msg) =>
+                  msg.id === messageId
+                    ? {
+                        ...msg,
+                        toolCalls: [...(msg.toolCalls ?? []), newToolCall],
+                      }
+                    : msg
+                ),
+              }
+            : session
+        ),
+      }));
+
+      return newToolCall;
+    },
+
+    updateToolCallResult: (sessionId, messageId, toolName, result) => {
+      set((state) => ({
+        sessions: state.sessions.map((session) =>
+          session.id === sessionId
+            ? {
+                ...session,
+                messages: session.messages.map((msg) =>
+                  msg.id === messageId
+                    ? {
+                        ...msg,
+                        toolCalls: msg.toolCalls?.map((tc) =>
+                          tc.toolName === toolName && tc.status === "pending"
+                            ? { ...tc, result, status: "completed" as const }
+                            : tc
+                        ),
+                      }
+                    : msg
+                ),
+              }
+            : session
+        ),
+      }));
+    },
+
+    createSession: (title?: string) => {
+      const newSession: ChatSession = {
+        id: generateId(),
+        messages: [],
+        createdAt: Date.now(),
+        title,
+      };
+
+      set((state) => ({
+        sessions: [...state.sessions, newSession],
+        currentSessionId: newSession.id,
+      }));
+
+      return newSession;
+    },
+
+    setCurrentSession: (sessionId) => {
+      set({ currentSessionId: sessionId });
+    },
+
+    clearSession: (sessionId) => {
+      set((state) => ({
+        sessions: state.sessions.map((session) =>
+          session.id === sessionId ? { ...session, messages: [] } : session
+        ),
+      }));
+    },
+
+    deleteSession: (sessionId) => {
+      set((state) => {
+        const newSessions = state.sessions.filter(
+          (session) => session.id !== sessionId
+        );
+        const newCurrentId =
+          state.currentSessionId === sessionId
+            ? newSessions.length > 0
+              ? newSessions[newSessions.length - 1].id
+              : null
+            : state.currentSessionId;
+
+        return {
+          sessions: newSessions,
+          currentSessionId: newCurrentId,
+        };
+      });
+    },
+
+    setIsConnected: (isConnected) => {
+      set({ isConnected });
+    },
+
+    setIsStreaming: (isStreaming) => {
+      set({ isStreaming });
+    },
+
+    setConnectionStatus: (connectionStatus) => {
+      // Also update isConnected for backward compatibility
+      set({
+        connectionStatus,
+        isConnected: connectionStatus === "connected",
+      });
+    },
+
+    getCurrentSession: () => {
+      const state = get();
+      if (!state.currentSessionId) return null;
+      return (
+        state.sessions.find((s) => s.id === state.currentSessionId) ?? null
+      );
+    },
+  }))
+);
 
 // ============================================
 // IndexedDB Persistence Integration
@@ -208,7 +291,10 @@ export function subscribeToChatPersistence(): () => void {
           try {
             await dbDeleteSession(id);
           } catch (error) {
-            console.error(`Failed to delete session ${id} from IndexedDB:`, error);
+            console.error(
+              `Failed to delete session ${id} from IndexedDB:`,
+              error
+            );
           }
         }
       }
@@ -217,15 +303,20 @@ export function subscribeToChatPersistence(): () => void {
       for (const session of sessions) {
         // Check if session is new or has been modified
         const prevSession = previousSessions.find((s) => s.id === session.id);
-        if (!prevSession || JSON.stringify(prevSession) !== JSON.stringify(session)) {
+        if (
+          !prevSession ||
+          JSON.stringify(prevSession) !== JSON.stringify(session)
+        ) {
           try {
             await dbSaveSession(session);
           } catch (error) {
-            console.error(`Failed to save session ${session.id} to IndexedDB:`, error);
+            console.error(
+              `Failed to save session ${session.id} to IndexedDB:`,
+              error
+            );
           }
         }
       }
-
     },
     { fireImmediately: false }
   );
