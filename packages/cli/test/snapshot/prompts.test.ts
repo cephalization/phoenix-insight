@@ -32,6 +32,7 @@ describe("fetchPrompts", () => {
       }),
       exec: vi.fn(),
       getBashTool: vi.fn(),
+      getSnapshotRoot: vi.fn().mockReturnValue("/phoenix/"),
       cleanup: vi.fn(),
     } as ExecutionMode;
 

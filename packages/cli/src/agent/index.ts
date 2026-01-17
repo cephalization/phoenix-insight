@@ -13,7 +13,7 @@ import {
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import type { ExecutionMode } from "../modes/types.js";
-import { INSIGHT_SYSTEM_PROMPT } from "../prompts/system.js";
+import { getInsightSystemPrompt } from "../prompts/system.js";
 import {
   fetchMoreSpans,
   fetchMoreTrace,
@@ -21,7 +21,6 @@ import {
   type FetchMoreTraceOptions,
 } from "../commands/index.js";
 import type { PhoenixClient } from "@arizeai/phoenix-client";
-import { PhoenixClientError } from "../snapshot/client.js";
 
 /**
  * Configuration for the Phoenix Insight agent
@@ -47,12 +46,15 @@ export class PhoenixInsightAgent {
   private tools: Record<string, any> | null = null;
   private additionalTools: Record<string, any>;
   private model = anthropic("claude-sonnet-4-5");
+  private systemPrompt: string;
 
   constructor(config: PhoenixInsightAgentConfig) {
     this.mode = config.mode;
     this.client = config.client;
     this.maxSteps = config.maxSteps || 25;
     this.additionalTools = config.additionalTools || {};
+    // Generate the system prompt with the snapshot root path from the mode
+    this.systemPrompt = getInsightSystemPrompt(this.mode.getSnapshotRoot());
   }
 
   /**
@@ -165,14 +167,16 @@ export class PhoenixInsightAgent {
       tools = await this.initializeTools();
     } catch (error) {
       throw new Error(
-        `Failed to initialize agent tools: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to initialize agent tools: ${
+          error instanceof Error ? error.message : String(error)
+        }`
       );
     }
 
     try {
       const result = await generateText({
         model: this.model,
-        system: INSIGHT_SYSTEM_PROMPT,
+        system: this.systemPrompt,
         prompt: userQuery,
         tools,
         stopWhen: stepCountIs(this.maxSteps),
@@ -205,7 +209,9 @@ export class PhoenixInsightAgent {
       }
 
       throw new Error(
-        `AI generation failed: ${error instanceof Error ? error.message : String(error)}`
+        `AI generation failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
       );
     }
   }
@@ -224,14 +230,16 @@ export class PhoenixInsightAgent {
       tools = await this.initializeTools();
     } catch (error) {
       throw new Error(
-        `Failed to initialize agent tools: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to initialize agent tools: ${
+          error instanceof Error ? error.message : String(error)
+        }`
       );
     }
 
     try {
       const result = streamText({
         model: this.model,
-        system: INSIGHT_SYSTEM_PROMPT,
+        system: this.systemPrompt,
         prompt: userQuery,
         tools,
         stopWhen: stepCountIs(this.maxSteps),
@@ -264,7 +272,9 @@ export class PhoenixInsightAgent {
       }
 
       throw new Error(
-        `AI streaming failed: ${error instanceof Error ? error.message : String(error)}`
+        `AI streaming failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
       );
     }
   }

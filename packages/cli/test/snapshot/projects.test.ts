@@ -14,6 +14,7 @@ describe("fetchProjects", () => {
       }),
       exec: vi.fn(),
       getBashTool: vi.fn(),
+      getSnapshotRoot: vi.fn().mockReturnValue("/phoenix/"),
       cleanup: vi.fn(),
     };
     return { mockMode, writtenFiles };

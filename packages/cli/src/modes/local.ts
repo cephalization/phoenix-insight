@@ -35,6 +35,14 @@ export class LocalMode implements ExecutionMode {
   }
 
   /**
+   * Get the absolute root path of the Phoenix snapshot directory
+   * For local mode, this is the actual filesystem path
+   */
+  getSnapshotRoot(): string {
+    return this.workDir;
+  }
+
+  /**
    * Initialize the working directory
    */
   private async init() {

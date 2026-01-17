@@ -107,11 +107,12 @@ function downloadAsFile(content: string, filename: string): void {
 export function ReportPanel({ className, isStreaming = false }: ReportPanelProps) {
   const [historyOpen, setHistoryOpen] = useState(false);
 
-  // Report store selectors
-  const getCurrentReport = useReportStore((state) => state.getCurrentReport);
-
-  // Get current report
-  const currentReport = getCurrentReport();
+  // Subscribe to currentReportId and reports to derive the current report
+  // This ensures re-renders when either changes (unlike using getCurrentReport as a function)
+  const currentReport = useReportStore((state) => {
+    if (!state.currentReportId) return null;
+    return state.reports.find((r) => r.id === state.currentReportId) ?? null;
+  });
 
   // Handle downloading current report as markdown
   const handleDownload = useCallback(() => {
