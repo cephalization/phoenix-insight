@@ -23,7 +23,7 @@
     "clean": "rimraf dist tsconfig.esm.tsbuildinfo tsconfig.tsbuildinfo",
     "prebuild": "pnpm run clean && pnpm run verify-ui-dist",
     "verify-ui-dist": "node -e \"const fs = require('fs'); const path = require('path'); const uiDist = path.resolve(__dirname, '../ui/dist/index.html'); if (!fs.existsSync(uiDist)) { console.error('ERROR: UI dist not found. Build UI package first with: pnpm --filter @cephalization/phoenix-insight-ui build'); process.exit(1); } console.log('UI dist verified:', uiDist);\"",
-    "build": "tsc --build tsconfig.esm.json && pnpm run copy-ui-dist",
+    "build": "tsup && pnpm run copy-ui-dist",
     "copy-ui-dist": "node -e \"const fs = require('fs'); const path = require('path'); const src = path.resolve(__dirname, '../ui/dist'); const dest = path.resolve(__dirname, 'dist/ui'); fs.cpSync(src, dest, { recursive: true }); console.log('UI dist copied to:', dest);\"",
     "start": "node dist/cli.js",
     "dev": "tsx src/cli.ts",
@@ -50,7 +50,6 @@
     "url": "https://github.com/cephalization/phoenix-insight/issues"
   },
   "dependencies": {
-    "@cephalization/phoenix-insight-ui": "workspace:*",
     "@ai-sdk/anthropic": "^3.0.0",
     "@arizeai/phoenix-client": "^5.6.1",
     "@arizeai/phoenix-otel": "^0.3.4",
@@ -63,14 +62,13 @@
     "ws": "^8.19.0",
     "zod": "^4.3.5"
   },
-  "bundledDependencies": [
-    "@cephalization/phoenix-insight-ui"
-  ],
   "devDependencies": {
+    "@cephalization/phoenix-insight-ui": "workspace:*",
     "@faker-js/faker": "^10.2.0",
     "@types/ws": "^8.18.1",
     "msw": "^2.12.7",
-    "tsc-alias": "^1.8.11"
+    "tsc-alias": "^1.8.11",
+    "tsup": "^8.5.1"
   },
   "engines": {
     "node": ">=18"
