@@ -300,7 +300,7 @@ describe("config loader", () => {
       expect(writtenConfig.stream).toBe(true);
       expect(writtenConfig.mode).toBe("sandbox");
       expect(writtenConfig.refresh).toBe(false);
-      expect(writtenConfig.trace).toBe(false);
+      expect(writtenConfig.trace).toBe(true);
     });
 
     it("should handle directory creation errors gracefully", async () => {

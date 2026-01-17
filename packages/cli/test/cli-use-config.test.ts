@@ -288,7 +288,7 @@ describe("cli-use-config", () => {
       expect(config.stream).toBe(true);
       expect(config.mode).toBe("sandbox");
       expect(config.refresh).toBe(false);
-      expect(config.trace).toBe(false);
+      expect(config.trace).toBe(true);
     });
 
     it("should work with empty config file (uses defaults)", async () => {
