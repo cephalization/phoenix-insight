@@ -16,7 +16,7 @@ describe("configSchema", () => {
       expect(config.stream).toBe(true);
       expect(config.mode).toBe("sandbox");
       expect(config.refresh).toBe(false);
-      expect(config.trace).toBe(false);
+      expect(config.trace).toBe(true);
     });
 
     it("getDefaultConfig should return all defaults", () => {
@@ -28,7 +28,7 @@ describe("configSchema", () => {
       expect(config.stream).toBe(true);
       expect(config.mode).toBe("sandbox");
       expect(config.refresh).toBe(false);
-      expect(config.trace).toBe(false);
+      expect(config.trace).toBe(true);
     });
   });
 
@@ -161,7 +161,7 @@ describe("configSchema", () => {
 
     it("should default to false", () => {
       const config = configSchema.parse({});
-      expect(config.trace).toBe(false);
+      expect(config.trace).toBe(true);
     });
   });
 
@@ -196,7 +196,7 @@ describe("configSchema", () => {
       expect(config.limit).toBe(1000);
       expect(config.stream).toBe(true);
       expect(config.refresh).toBe(false);
-      expect(config.trace).toBe(false);
+      expect(config.trace).toBe(true);
     });
   });
 
