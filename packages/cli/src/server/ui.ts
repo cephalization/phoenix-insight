@@ -60,7 +60,8 @@ export function resolveUIDistPath(): string {
   
   // First check for bundled UI dist (copied during CLI build)
   // This is the path when installed from npm
-  const bundledPath = resolve(__dirname, "../ui");
+  // When bundled by tsup, cli.js is at dist/cli.js and UI is at dist/ui/
+  const bundledPath = resolve(__dirname, "ui");
   if (existsSync(bundledPath) && existsSync(join(bundledPath, "index.html"))) {
     return bundledPath;
   }
