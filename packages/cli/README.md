@@ -174,7 +174,7 @@ The web UI provides:
 ### Observability
 
 ```bash
-# Enable tracing of agent operations to Phoenix
+# Enable tracing of agent operations to Phoenix (enabled by default)
 phoenix-insight --trace "analyze performance"
 ```
 
