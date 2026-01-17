@@ -9,7 +9,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ToolCall } from "@/store/chat";
 
@@ -36,7 +35,13 @@ function getToolDisplayName(toolName: string): string {
 /**
  * Get an icon for a tool
  */
-function ToolIcon({ toolName, className }: { toolName: string; className?: string }) {
+function ToolIcon({
+  toolName,
+  className,
+}: {
+  toolName: string;
+  className?: string;
+}) {
   // Different icons for different tool types
   switch (toolName) {
     case "bash":
@@ -118,7 +123,13 @@ function ToolIcon({ toolName, className }: { toolName: string; className?: strin
 /**
  * Chevron icon for expand/collapse
  */
-function ChevronIcon({ isOpen, className }: { isOpen: boolean; className?: string }) {
+function ChevronIcon({
+  isOpen,
+  className,
+}: {
+  isOpen: boolean;
+  className?: string;
+}) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -191,7 +202,7 @@ function formatArgsPreview(args: unknown, toolName: string): string {
   if (typeof args === "string") {
     return args.length > 40 ? args.slice(0, 40) + "…" : args;
   }
-  
+
   try {
     // For bash/shell commands, show the command itself
     if (toolName === "bash" && typeof args === "object" && args !== null) {
@@ -201,7 +212,7 @@ function formatArgsPreview(args: unknown, toolName: string): string {
         return cmd.length > 40 ? cmd.slice(0, 40) + "…" : cmd;
       }
     }
-    
+
     // For other tools, stringify and truncate
     const str = JSON.stringify(args);
     if (str === "{}") return "";
@@ -220,7 +231,7 @@ function formatArgsPreview(args: unknown, toolName: string): string {
 function formatJsonExpanded(value: unknown): string {
   if (!value) return "null";
   if (typeof value === "string") return value;
-  
+
   try {
     return JSON.stringify(value, null, 2);
   } catch {
@@ -237,15 +248,20 @@ export function ToolCallPill({ toolCall, className }: ToolCallPillProps) {
 
   const displayName = getToolDisplayName(toolCall.toolName);
   const isPending = toolCall.status === "pending";
-  
+
   // Check if we have details to show (args can be {} which is truthy but empty)
-  const hasArgs = toolCall.args !== undefined && toolCall.args !== null && 
-    (typeof toolCall.args !== 'object' || Object.keys(toolCall.args as object).length > 0);
+  const hasArgs =
+    toolCall.args !== undefined &&
+    toolCall.args !== null &&
+    (typeof toolCall.args !== "object" ||
+      Object.keys(toolCall.args as object).length > 0);
   const hasResult = toolCall.result !== undefined && toolCall.result !== null;
   const hasDetails = hasArgs || hasResult;
-  
+
   // Get truncated args preview for inline display
-  const argsPreview = hasArgs ? formatArgsPreview(toolCall.args, toolCall.toolName) : "";
+  const argsPreview = hasArgs
+    ? formatArgsPreview(toolCall.args, toolCall.toolName)
+    : "";
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className={className}>
@@ -262,25 +278,28 @@ export function ToolCallPill({ toolCall, className }: ToolCallPillProps) {
           )}
         >
           {/* Tool icon */}
-          <ToolIcon toolName={toolCall.toolName} className="h-3.5 w-3.5 shrink-0" />
-          
+          <ToolIcon
+            toolName={toolCall.toolName}
+            className="h-3.5 w-3.5 shrink-0"
+          />
+
           {/* Tool name */}
           <span className="shrink-0 font-semibold">{displayName}</span>
-          
+
           {/* Args preview - truncated, semi-transparent */}
           {argsPreview && (
             <span className="min-w-0 truncate font-mono text-[10px] opacity-60">
               {argsPreview}
             </span>
           )}
-          
+
           {/* Status indicator */}
           {isPending ? (
             <Spinner className="h-3 w-3 shrink-0" />
           ) : (
             <CheckIcon className="h-3 w-3 shrink-0" />
           )}
-          
+
           {/* Expand indicator (only if has details) */}
           {hasDetails && (
             <ChevronIcon
@@ -298,7 +317,13 @@ export function ToolCallPill({ toolCall, className }: ToolCallPillProps) {
             {hasArgs && (
               <div className={hasResult ? "mb-3" : ""}>
                 <div className="mb-1.5 flex items-center gap-1.5 font-semibold text-muted-foreground">
-                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    className="h-3 w-3"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M4 17l6-6-6-6M12 19h8" />
                   </svg>
                   Input
@@ -308,12 +333,18 @@ export function ToolCallPill({ toolCall, className }: ToolCallPillProps) {
                 </pre>
               </div>
             )}
-            
+
             {/* Result section */}
             {hasResult && (
               <div>
                 <div className="mb-1.5 flex items-center gap-1.5 font-semibold text-muted-foreground">
-                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    className="h-3 w-3"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M9 5l7 7-7 7" />
                   </svg>
                   Output
