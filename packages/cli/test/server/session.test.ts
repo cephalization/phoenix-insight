@@ -51,12 +51,14 @@ function createMockClient(): PhoenixClient {
 
 /**
  * Create a mock agent that can be controlled in tests
+ * The stream method should return { fullStream, response } to match AI SDK v6 API
  */
 function createMockAgent() {
-  const mockTextStream = {
+  const mockFullStream = {
     async *[Symbol.asyncIterator]() {
-      yield "Hello ";
-      yield "world!";
+      yield { type: "text-delta", text: "Hello " };
+      yield { type: "text-delta", text: "world!" };
+      yield { type: "text-end" };
     },
   };
 
@@ -64,7 +66,7 @@ function createMockAgent() {
 
   return {
     stream: vi.fn().mockResolvedValue({
-      textStream: mockTextStream,
+      fullStream: mockFullStream,
       response: mockResponse,
     }),
     generate: vi.fn().mockResolvedValue({ text: "Hello world!" }),
@@ -172,15 +174,16 @@ describe("AgentSession", () => {
         resolveStream = resolve;
       });
 
-      const slowTextStream = {
+      const slowFullStream = {
         async *[Symbol.asyncIterator]() {
           await slowPromise;
-          yield "done";
+          yield { type: "text-delta", text: "done" };
+          yield { type: "text-end" };
         },
       };
 
       mockAgent.stream.mockResolvedValue({
-        textStream: slowTextStream,
+        fullStream: slowFullStream,
         response: Promise.resolve({ text: "done" }),
       });
 
@@ -277,15 +280,16 @@ describe("AgentSession", () => {
         resolveStream = resolve;
       });
 
-      const slowTextStream = {
+      const slowFullStream = {
         async *[Symbol.asyncIterator]() {
           await slowPromise;
-          yield "done";
+          yield { type: "text-delta", text: "done" };
+          yield { type: "text-end" };
         },
       };
 
       mockAgent.stream.mockResolvedValue({
-        textStream: slowTextStream,
+        fullStream: slowFullStream,
         response: Promise.resolve({ text: "done" }),
       });
 
@@ -297,7 +301,9 @@ describe("AgentSession", () => {
       // Try to execute another query
       await session.executeQuery("second query");
 
-      const errorMessages = collector.messages.filter((m) => m.type === "error");
+      const errorMessages = collector.messages.filter(
+        (m) => m.type === "error"
+      );
       expect(errorMessages).toHaveLength(1);
       expect((errorMessages[0].payload as any).message).toContain(
         "already being executed"
@@ -309,26 +315,28 @@ describe("AgentSession", () => {
     });
 
     it("should send tool call notifications", async () => {
-      mockAgent.stream.mockImplementation(async (_query, options) => {
-        // Simulate a step with tool calls
-        // AI SDK v6 uses 'input' property (not 'args') for the parsed arguments
-        options?.onStepFinish?.({
-          toolCalls: [
-            { toolName: "bash", input: { command: "ls -la" } },
-            { toolName: "px_fetch_more_spans", input: { project: "test" } },
-          ],
-        });
+      // The fullStream emits tool-call events that the session sends to the client
+      // AI SDK v6 uses 'input' property for the parsed arguments
+      const fullStream = {
+        async *[Symbol.asyncIterator]() {
+          yield {
+            type: "tool-call",
+            toolName: "bash",
+            input: { command: "ls -la" },
+          };
+          yield {
+            type: "tool-call",
+            toolName: "px_fetch_more_spans",
+            input: { project: "test" },
+          };
+          yield { type: "text-delta", text: "Result" };
+          yield { type: "text-end" };
+        },
+      };
 
-        const textStream = {
-          async *[Symbol.asyncIterator]() {
-            yield "Result";
-          },
-        };
-
-        return {
-          textStream,
-          response: Promise.resolve({ text: "Result" }),
-        };
+      mockAgent.stream.mockResolvedValue({
+        fullStream,
+        response: Promise.resolve({ text: "Result" }),
       });
 
       await session.executeQuery("test query");
@@ -345,25 +353,23 @@ describe("AgentSession", () => {
     });
 
     it("should send tool result notifications", async () => {
-      mockAgent.stream.mockImplementation(async (_query, options) => {
-        // Simulate a step with tool results
-        // AI SDK v6 uses 'output' property (not 'result') for the tool result
-        options?.onStepFinish?.({
-          toolResults: [
-            { toolName: "bash", output: { stdout: "file.txt", exitCode: 0 } },
-          ],
-        });
+      // The fullStream emits tool-result events that the session sends to the client
+      // AI SDK v6 uses 'output' property for the tool result
+      const fullStream = {
+        async *[Symbol.asyncIterator]() {
+          yield {
+            type: "tool-result",
+            toolName: "bash",
+            output: { stdout: "file.txt", exitCode: 0 },
+          };
+          yield { type: "text-delta", text: "Done" };
+          yield { type: "text-end" };
+        },
+      };
 
-        const textStream = {
-          async *[Symbol.asyncIterator]() {
-            yield "Done";
-          },
-        };
-
-        return {
-          textStream,
-          response: Promise.resolve({ text: "Done" }),
-        };
+      mockAgent.stream.mockResolvedValue({
+        fullStream,
+        response: Promise.resolve({ text: "Done" }),
       });
 
       await session.executeQuery("test query");
@@ -384,9 +390,13 @@ describe("AgentSession", () => {
 
       await session.executeQuery("test query");
 
-      const errorMessages = collector.messages.filter((m) => m.type === "error");
+      const errorMessages = collector.messages.filter(
+        (m) => m.type === "error"
+      );
       expect(errorMessages).toHaveLength(1);
-      expect((errorMessages[0].payload as any).message).toContain("Agent failed");
+      expect((errorMessages[0].payload as any).message).toContain(
+        "Agent failed"
+      );
     });
   });
 
@@ -399,17 +409,18 @@ describe("AgentSession", () => {
       });
 
       let yieldCount = 0;
-      const slowTextStream = {
+      const slowFullStream = {
         async *[Symbol.asyncIterator]() {
-          yield "First ";
+          yield { type: "text-delta", text: "First " };
           await slowPromise;
           yieldCount++;
-          yield "Second";
+          yield { type: "text-delta", text: "Second" };
+          yield { type: "text-end" };
         },
       };
 
       mockAgent.stream.mockResolvedValue({
-        textStream: slowTextStream,
+        fullStream: slowFullStream,
         response: Promise.resolve({ text: "First Second" }),
       });
 
@@ -441,7 +452,9 @@ describe("AgentSession", () => {
       const content = { root: "test-root", elements: {} };
       session.sendReport(content, "Test Report");
 
-      const reportMessages = collector.messages.filter((m) => m.type === "report");
+      const reportMessages = collector.messages.filter(
+        (m) => m.type === "report"
+      );
       expect(reportMessages).toHaveLength(1);
       expect(reportMessages[0].payload).toEqual({
         content,
@@ -457,7 +470,9 @@ describe("AgentSession", () => {
 
       callback(content, "Title");
 
-      const reportMessages = collector.messages.filter((m) => m.type === "report");
+      const reportMessages = collector.messages.filter(
+        (m) => m.type === "report"
+      );
       expect(reportMessages).toHaveLength(1);
     });
   });
@@ -489,15 +504,16 @@ describe("AgentSession", () => {
         resolveStream = resolve;
       });
 
-      const slowTextStream = {
+      const slowFullStream = {
         async *[Symbol.asyncIterator]() {
           await slowPromise;
-          yield "done";
+          yield { type: "text-delta", text: "done" };
+          yield { type: "text-end" };
         },
       };
 
       mockAgent.stream.mockResolvedValue({
-        textStream: slowTextStream,
+        fullStream: slowFullStream,
         response: Promise.resolve({ text: "done" }),
       });
 
