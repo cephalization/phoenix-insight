@@ -1,5 +1,11 @@
 # @cephalization/phoenix-insight
 
+## 1.0.2
+
+### Patch Changes
+
+- 637575d: fix: Ensure ui dist is found
+
 ## 1.0.1
 
 ### Patch Changes
