@@ -1,5 +1,11 @@
 # @cephalization/phoenix-insight
 
+## 1.0.3
+
+### Patch Changes
+
+- ad92236: fix: Correct statistics in \_context.md
+
 ## 1.0.2
 
 ### Patch Changes
