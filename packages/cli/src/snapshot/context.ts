@@ -273,7 +273,9 @@ function buildWhatsHereSection(
 
   // Snapshot metadata
   lines.push(
-    `- **Snapshot**: Created ${formatRelativeTime(metadata.snapshotTime)} from ${metadata.phoenixUrl}`
+    `- **Snapshot**: Created ${formatRelativeTime(
+      metadata.snapshotTime
+    )} from ${metadata.phoenixUrl}`
   );
   lines.push("");
 
@@ -328,9 +330,10 @@ async function collectSnapshotStats(mode: ExecutionMode): Promise<{
   };
 
   // Collect project stats
+  // Use relative paths since cwd is the phoenix directory in both modes
   try {
     const projectsExec = await mode.exec(
-      "cat /phoenix/projects/index.jsonl 2>/dev/null || true"
+      "cat projects/index.jsonl 2>/dev/null || true"
     );
     if (projectsExec.stdout) {
       const projectLines = projectsExec.stdout
@@ -348,7 +351,7 @@ async function collectSnapshotStats(mode: ExecutionMode): Promise<{
 
           // Get span count for this project
           const spansMetaExec = await mode.exec(
-            `cat /phoenix/projects/${project.name}/spans/metadata.json 2>/dev/null || echo "{}"`
+            `cat projects/${project.name}/spans/metadata.json 2>/dev/null || echo "{}"`
           );
           if (spansMetaExec.stdout) {
             try {
@@ -372,7 +375,7 @@ async function collectSnapshotStats(mode: ExecutionMode): Promise<{
   // Collect dataset stats
   try {
     const datasetsExec = await mode.exec(
-      "cat /phoenix/datasets/index.jsonl 2>/dev/null || true"
+      "cat datasets/index.jsonl 2>/dev/null || true"
     );
     if (datasetsExec.stdout) {
       const datasetLines = datasetsExec.stdout
@@ -386,7 +389,7 @@ async function collectSnapshotStats(mode: ExecutionMode): Promise<{
 
           // Get example count
           const examplesExec = await mode.exec(
-            `wc -l < /phoenix/datasets/${dataset.name}/examples.jsonl 2>/dev/null || echo "0"`
+            `wc -l < datasets/${dataset.name}/examples.jsonl 2>/dev/null || echo "0"`
           );
           const exampleCount = parseInt(examplesExec.stdout.trim()) || 0;
 
@@ -407,7 +410,7 @@ async function collectSnapshotStats(mode: ExecutionMode): Promise<{
   // Collect experiment stats
   try {
     const experimentsExec = await mode.exec(
-      "cat /phoenix/experiments/index.jsonl 2>/dev/null || true"
+      "cat experiments/index.jsonl 2>/dev/null || true"
     );
     if (experimentsExec.stdout) {
       const experimentLines = experimentsExec.stdout
@@ -444,7 +447,7 @@ async function collectSnapshotStats(mode: ExecutionMode): Promise<{
   // Collect prompt stats
   try {
     const promptsExec = await mode.exec(
-      "cat /phoenix/prompts/index.jsonl 2>/dev/null || true"
+      "cat prompts/index.jsonl 2>/dev/null || true"
     );
     if (promptsExec.stdout) {
       const promptLines = promptsExec.stdout
@@ -458,7 +461,7 @@ async function collectSnapshotStats(mode: ExecutionMode): Promise<{
 
           // Count versions
           const versionsExec = await mode.exec(
-            `wc -l < /phoenix/prompts/${prompt.name}/versions/index.jsonl 2>/dev/null || echo "0"`
+            `wc -l < prompts/${prompt.name}/versions/index.jsonl 2>/dev/null || echo "0"`
           );
           const versionCount = parseInt(versionsExec.stdout.trim()) || 0;
 
@@ -533,7 +536,10 @@ function getRecentActivity(stats: {
   for (const exp of recentExperiments.slice(0, 2)) {
     const timeAgo = formatRelativeTime(new Date(exp.updatedAt!));
     activities.push(
-      `${exp.projectName || exp.datasetName}: experiment "${exp.id.slice(0, 8)}..." ${exp.status} ${timeAgo}`
+      `${exp.projectName || exp.datasetName}: experiment "${exp.id.slice(
+        0,
+        8
+      )}..." ${exp.status} ${timeAgo}`
     );
   }
 
