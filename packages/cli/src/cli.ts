@@ -197,16 +197,17 @@ Configuration:
   Set PHOENIX_INSIGHT_CONFIG env var to override the default config location.
 
 Examples:
-  $ phoenix-insight                                               # Start interactive mode
-  $ phoenix-insight "What are the slowest traces?"                # Single query (sandbox mode)
-  $ phoenix-insight --interactive                                  # Explicitly start interactive mode
-  $ phoenix-insight --local "Show me error patterns"              # Local mode with persistence
-  $ phoenix-insight --local --stream "Analyze recent experiments"  # Local mode with streaming
-  $ phoenix-insight --config ./my-config.json "Analyze traces"    # Use custom config file
-  $ phoenix-insight ui                                            # Start web UI on localhost:6007
-  $ phoenix-insight ui --port 8080                                # Start web UI on custom port
-  $ phoenix-insight ui --no-open                                  # Start web UI without opening browser
-  $ phoenix-insight help                                          # Show this help message
+  $ phoenix-insight                                                            # Start interactive mode
+  $ phoenix-insight "What are the slowest traces?"                             # Single query (sandbox mode)
+  $ phoenix-insight --interactive                                              # Explicitly start interactive mode
+  $ phoenix-insight --local "Show me error patterns"                           # Local mode with persistence
+  $ phoenix-insight --local --stream "Analyze recent experiments"              # Local mode with streaming
+  $ phoenix-insight --config ./my-config.json "Analyze traces"                 # Use custom config file
+  $ phoenix-insight ui                                                         # Start web UI on localhost:6007
+  $ phoenix-insight ui --port 8080                                             # Start web UI on custom port
+  $ phoenix-insight ui --no-open                                               # Start web UI without opening browser
+  $ opencode run "Analyze my spans" -f $(pxi snapshot latest)/_context.md      # Analyze phoenix data with OpenCode agent
+  $ phoenix-insight help                                                       # Show this help message
 `
   )
   .hook("preAction", async (thisCommand) => {
