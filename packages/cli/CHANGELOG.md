@@ -1,5 +1,11 @@
 # @cephalization/phoenix-insight
 
+## 1.0.4
+
+### Patch Changes
+
+- 5e83389: feat: Improve cli examples with external agent
+
 ## 1.0.3
 
 ### Patch Changes
