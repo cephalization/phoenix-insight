@@ -15,7 +15,8 @@ describe("generateContext", () => {
       }),
       exec: vi.fn(async (command: string) => {
         // Mock responses for different commands
-        if (command.includes("cat /phoenix/projects/index.jsonl")) {
+        // Use relative paths since cwd is the phoenix directory
+        if (command.includes("cat projects/index.jsonl")) {
           return {
             stdout:
               JSON.stringify({
@@ -33,9 +34,7 @@ describe("generateContext", () => {
         }
 
         if (
-          command.includes(
-            "cat /phoenix/projects/chatbot-prod/spans/metadata.json"
-          )
+          command.includes("cat projects/chatbot-prod/spans/metadata.json")
         ) {
           return {
             stdout: JSON.stringify({ spanCount: 2341 }),
@@ -45,9 +44,7 @@ describe("generateContext", () => {
         }
 
         if (
-          command.includes(
-            "cat /phoenix/projects/rag-experiment/spans/metadata.json"
-          )
+          command.includes("cat projects/rag-experiment/spans/metadata.json")
         ) {
           return {
             stdout: JSON.stringify({ spanCount: 892 }),
@@ -56,7 +53,7 @@ describe("generateContext", () => {
           };
         }
 
-        if (command.includes("cat /phoenix/datasets/index.jsonl")) {
+        if (command.includes("cat datasets/index.jsonl")) {
           return {
             stdout:
               JSON.stringify({
@@ -75,21 +72,19 @@ describe("generateContext", () => {
 
         if (
           command.includes(
-            "wc -l < /phoenix/datasets/customer-queries/examples.jsonl"
+            "wc -l < datasets/customer-queries/examples.jsonl"
           )
         ) {
           return { stdout: "150", stderr: "", exitCode: 0 };
         }
 
         if (
-          command.includes(
-            "wc -l < /phoenix/datasets/test-cases/examples.jsonl"
-          )
+          command.includes("wc -l < datasets/test-cases/examples.jsonl")
         ) {
           return { stdout: "75", stderr: "", exitCode: 0 };
         }
 
-        if (command.includes("cat /phoenix/experiments/index.jsonl")) {
+        if (command.includes("cat experiments/index.jsonl")) {
           return {
             stdout: JSON.stringify({
               id: "exp-123",
@@ -107,7 +102,7 @@ describe("generateContext", () => {
           };
         }
 
-        if (command.includes("cat /phoenix/prompts/index.jsonl")) {
+        if (command.includes("cat prompts/index.jsonl")) {
           return {
             stdout:
               JSON.stringify({
@@ -126,16 +121,14 @@ describe("generateContext", () => {
 
         if (
           command.includes(
-            "wc -l < /phoenix/prompts/main-assistant/versions/index.jsonl"
+            "wc -l < prompts/main-assistant/versions/index.jsonl"
           )
         ) {
           return { stdout: "5", stderr: "", exitCode: 0 };
         }
 
         if (
-          command.includes(
-            "wc -l < /phoenix/prompts/summarizer/versions/index.jsonl"
-          )
+          command.includes("wc -l < prompts/summarizer/versions/index.jsonl")
         ) {
           return { stdout: "3", stderr: "", exitCode: 0 };
         }
@@ -347,7 +340,7 @@ describe("generateContext", () => {
       recentTime.setHours(recentTime.getHours() - 1);
 
       mockMode.exec = vi.fn(async (command: string) => {
-        if (command.includes("cat /phoenix/experiments/index.jsonl")) {
+        if (command.includes("cat experiments/index.jsonl")) {
           return {
             stdout: JSON.stringify({
               id: "exp-recent",
@@ -386,7 +379,7 @@ describe("generateContext", () => {
       oldTime.setDate(oldTime.getDate() - 2);
 
       mockMode.exec = vi.fn(async (command: string) => {
-        if (command.includes("cat /phoenix/experiments/index.jsonl")) {
+        if (command.includes("cat experiments/index.jsonl")) {
           return {
             stdout: JSON.stringify({
               id: "exp-old",
@@ -422,7 +415,7 @@ describe("generateContext", () => {
   describe("experiment status determination", () => {
     it("should correctly count experiments by status", async () => {
       mockMode.exec = vi.fn(async (command: string) => {
-        if (command.includes("cat /phoenix/experiments/index.jsonl")) {
+        if (command.includes("cat experiments/index.jsonl")) {
           return {
             stdout:
               // Completed experiment
