@@ -271,6 +271,22 @@ export class PhoenixWebSocketServer {
       });
     });
   }
+
+  /**
+   * Force terminate all WebSocket connections immediately.
+   * Use this when graceful close doesn't complete in time.
+   */
+  forceClose(): void {
+    if (!this.wss) {
+      return;
+    }
+
+    // Terminate all client connections immediately (no close handshake)
+    for (const client of this.clients) {
+      client.terminate();
+    }
+    this.clients.clear();
+  }
 }
 
 // ============================================================================

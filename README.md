@@ -50,12 +50,26 @@ phoenix-insight/
 └── README.md                # This file
 ```
 
+## Requirements
+
+- **Node.js v22 or newer** - Required for the CLI to run
+- **Anthropic API key** - Required for the AI agent
+
+Set your Anthropic API key before running:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-api03-...
+```
+
+You can get an API key from [console.anthropic.com](https://console.anthropic.com/).
+
 ## Development
 
 ### Prerequisites
 
-- Node.js >= 18 (v24 recommended, see `.nvmrc`)
+- Node.js v22 or newer
 - pnpm 9.15.0 (`corepack enable && corepack prepare pnpm@9.15.0 --activate`)
+- Anthropic API key (see [Requirements](#requirements))
 
 ### Setup
 

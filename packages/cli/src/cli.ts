@@ -95,6 +95,30 @@ function formatBashCommand(command: string): string {
 }
 
 /**
+ * Check if ANTHROPIC_API_KEY is set and provide a helpful error if not
+ */
+function ensureAnthropicApiKey(): void {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error(
+      "\n❌ Error: Missing ANTHROPIC_API_KEY environment variable\n"
+    );
+    console.error("The Anthropic API key is required to run the AI agent.\n");
+    console.error("To fix this, set the environment variable:\n");
+    console.error("  export ANTHROPIC_API_KEY=sk-ant-api03-...\n");
+    console.error(
+      "Or add it to your shell profile (~/.zshrc, ~/.bashrc, etc.):\n"
+    );
+    console.error(
+      "  echo 'export ANTHROPIC_API_KEY=sk-ant-api03-...' >> ~/.zshrc\n"
+    );
+    console.error(
+      "You can get an API key from: https://console.anthropic.com/\n"
+    );
+    process.exit(1);
+  }
+}
+
+/**
  * Handle errors with appropriate exit codes and user-friendly messages
  */
 function handleError(error: unknown, context: string): never {
@@ -448,6 +472,9 @@ program
       return;
     }
 
+    // Ensure Anthropic API key is available for agent execution
+    ensureAnthropicApiKey();
+
     // Initialize observability if trace is enabled in config
     if (config.trace) {
       initializeObservability({
@@ -622,6 +649,9 @@ async function runUIServer(options: {
   port?: number;
   open?: boolean;
 }): Promise<void> {
+  // Ensure Anthropic API key is available for agent execution
+  ensureAnthropicApiKey();
+
   const config = getConfig();
   const port = options.port ?? 6007;
   const shouldOpen = options.open !== false; // Default to opening browser
@@ -735,13 +765,23 @@ async function runUIServer(options: {
       openBrowser(url);
     }
 
-    // Handle graceful shutdown
+    // Handle graceful shutdown with timeout
     let isShuttingDown = false;
+    const SHUTDOWN_TIMEOUT_MS = 3000;
+
     const shutdown = async (signal: string) => {
       if (isShuttingDown) return;
       isShuttingDown = true;
 
       console.log(`\n\n📥 Received ${signal}, shutting down gracefully...`);
+
+      // Set up a timeout to force exit if graceful shutdown takes too long
+      const forceExitTimeout = setTimeout(() => {
+        console.log("⏱️  Shutdown timeout reached, forcing exit...");
+        wsServer.forceClose();
+        uiServer.forceClose();
+        process.exit(0);
+      }, SHUTDOWN_TIMEOUT_MS);
 
       try {
         // Close WebSocket connections first
@@ -759,9 +799,11 @@ async function runUIServer(options: {
         // Shutdown observability if enabled
         await shutdownObservability();
 
+        clearTimeout(forceExitTimeout);
         console.log("👋 Server stopped. Goodbye!");
         process.exit(0);
       } catch (error) {
+        clearTimeout(forceExitTimeout);
         console.error("Error during shutdown:", error);
         process.exit(1);
       }
@@ -780,6 +822,9 @@ async function runUIServer(options: {
 }
 
 async function runInteractiveMode(): Promise<void> {
+  // Ensure Anthropic API key is available for agent execution
+  ensureAnthropicApiKey();
+
   const config = getConfig();
 
   console.log("🚀 Phoenix Insight Interactive Mode");
