@@ -6,6 +6,25 @@ Phoenix Insight brings AI-powered analysis to your [Phoenix](https://github.com/
 
 This filesystem-native approach provides transparency that traditional APIs can't match. Every query the agent runs is visible and reproducible. You can inspect the exact files it reads, copy its commands, and run them yourself. The data is just files, and the analysis is just bash, making AI-driven observability debuggable, auditable, and extensible with any tool in your Unix toolkit.
 
+## Requirements
+
+- **Node.js v22 or newer** - Required for the CLI to run
+- **Anthropic API key** - Required for the AI agent
+
+Set your Anthropic API key before running:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-api03-...
+```
+
+Or add it to your shell profile for persistence:
+
+```bash
+echo 'export ANTHROPIC_API_KEY=sk-ant-api03-...' >> ~/.zshrc  # or ~/.bashrc
+```
+
+You can get an API key from [console.anthropic.com](https://console.anthropic.com/).
+
 ## Installation
 
 ```bash

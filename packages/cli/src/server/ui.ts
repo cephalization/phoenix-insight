@@ -103,8 +103,10 @@ export interface UIServer {
   host: string;
   /** Path to the UI dist directory being served */
   distPath: string;
-  /** Close the server */
+  /** Close the server gracefully */
   close(): Promise<void>;
+  /** Force close all connections immediately */
+  forceClose(): void;
 }
 
 // ============================================================================
@@ -189,6 +191,9 @@ export function createUIServer(options: UIServerOptions = {}): Promise<UIServer>
   }
 
   return new Promise((resolve, reject) => {
+    // Track active connections for force-close capability
+    const activeConnections = new Set<import("node:net").Socket>();
+
     const httpServer = createServer((req, res) => {
       const urlPath = req.url ?? "/";
 
@@ -258,6 +263,14 @@ export function createUIServer(options: UIServerOptions = {}): Promise<UIServer>
       });
     });
 
+    // Track connections to enable force-close
+    httpServer.on("connection", (socket) => {
+      activeConnections.add(socket);
+      socket.on("close", () => {
+        activeConnections.delete(socket);
+      });
+    });
+
     // Handle server errors
     httpServer.on("error", (err) => {
       reject(err);
@@ -286,6 +299,13 @@ export function createUIServer(options: UIServerOptions = {}): Promise<UIServer>
               }
             });
           });
+        },
+        forceClose(): void {
+          // Destroy all active connections immediately
+          for (const socket of activeConnections) {
+            socket.destroy();
+          }
+          activeConnections.clear();
         },
       });
     });
