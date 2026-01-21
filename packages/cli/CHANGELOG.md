@@ -1,5 +1,11 @@
 # @cephalization/phoenix-insight
 
+## 1.1.0
+
+### Minor Changes
+
+- ee99975: fix: Forcefully shutdown keep-alive connections on close
+
 ## 1.0.4
 
 ### Patch Changes
