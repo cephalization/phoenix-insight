@@ -344,3 +344,74 @@ export function toModelMessage(message: ConversationMessage): ModelMessage {
 export function toModelMessages(history: ConversationMessage[]): ModelMessage[] {
   return history.map(toModelMessage);
 }
+
+// ============================================================================
+// Message Truncation Utilities
+// ============================================================================
+
+/**
+ * Placeholder text used to replace truncated report content
+ */
+const TRUNCATED_REPORT_PLACEHOLDER = "[Report content truncated to save tokens]";
+
+/**
+ * Truncate the arguments of generate_report tool calls to save tokens in conversation history.
+ *
+ * The generate_report tool can have very large content arguments (JSON-Render tree structures).
+ * When preserving conversation history for multi-turn conversations, these dense arguments
+ * consume many tokens without providing useful context for future queries.
+ *
+ * This function:
+ * 1. Scans assistant messages for tool calls with toolName === "generate_report"
+ * 2. Replaces the args with a truncated placeholder while keeping the tool call record
+ * 3. Preserves the title if present for context
+ *
+ * @param messages - Array of ModelMessages to process
+ * @returns New array with truncated generate_report tool call arguments
+ */
+export function truncateReportToolCalls(messages: ModelMessage[]): ModelMessage[] {
+  return messages.map((message): ModelMessage => {
+    // Only process assistant messages
+    if (message.role !== "assistant") {
+      return message;
+    }
+
+    // If content is a string, no tool calls to truncate
+    if (typeof message.content === "string") {
+      return message;
+    }
+
+    // Process content parts to truncate generate_report tool calls
+    const newContent = message.content.map((part) => {
+      // Only process tool-call parts
+      if (part.type !== "tool-call") {
+        return part;
+      }
+
+      // Only truncate generate_report tool calls
+      if (part.toolName !== "generate_report") {
+        return part;
+      }
+
+      // Preserve the title if present, truncate the content
+      const input = part.input as { title?: string; content?: unknown } | undefined;
+      const truncatedInput: { title?: string; content: string } = {
+        content: TRUNCATED_REPORT_PLACEHOLDER,
+      };
+      
+      if (input?.title) {
+        truncatedInput.title = input.title;
+      }
+
+      return {
+        ...part,
+        input: truncatedInput,
+      };
+    });
+
+    return {
+      ...message,
+      content: newContent,
+    } as AssistantModelMessage;
+  });
+}
