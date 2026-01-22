@@ -91,7 +91,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### interactive-cli-history
 
 - content: Update `runInteractiveMode()` in `packages/cli/src/cli.ts` to maintain a `ConversationMessage[]` array across queries. Pass this history to `agent.stream()` or `agent.generate()` for each query, and update the history with the response. The history is ephemeral (cleared when CLI exits). Show a message like "(continuing conversation with N previous messages)" when there's existing history.
-- status: pending
+- status: complete
 - dependencies: agent-messages-api, agent-response-to-history
 
 ### interactive-cli-token-retry

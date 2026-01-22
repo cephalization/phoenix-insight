@@ -9,6 +9,11 @@ import { exec } from "node:child_process";
 import { createSandboxMode, createLocalMode } from "./modes/index.js";
 import { createInsightAgent, runOneShotQuery } from "./agent/index.js";
 import {
+  type ConversationMessage,
+  createUserMessage,
+  extractMessagesFromResponse,
+} from "./agent/conversation.js";
+import {
   createSnapshot,
   createIncrementalSnapshot,
   createPhoenixClient,
@@ -894,6 +899,9 @@ async function runInteractiveMode(): Promise<void> {
     // Create reusable agent
     agent = await createInsightAgent(agentConfig);
 
+    // Conversation history for multi-turn interactions (ephemeral, cleared on exit)
+    const conversationHistory: ConversationMessage[] = [];
+
     // Setup readline interface
     const rl = readline.createInterface({
       input: process.stdin,
@@ -957,12 +965,20 @@ async function runInteractiveMode(): Promise<void> {
       }
 
       try {
+        // Show continuation message if there's existing history
+        if (conversationHistory.length > 0) {
+          console.log(
+            `(continuing conversation with ${conversationHistory.length} previous messages)\n`
+          );
+        }
+
         const agentProgress = new AgentProgress(!config.stream);
         agentProgress.startThinking();
 
         if (config.stream) {
-          // Stream mode
+          // Stream mode - pass conversation history
           const result = await agent.stream(query, {
+            messages: [...conversationHistory],
             onStepFinish: (step: any) => {
               // Show tool usage even in stream mode
               if (step.toolCalls?.length) {
@@ -1004,11 +1020,17 @@ async function runInteractiveMode(): Promise<void> {
           }
           console.log(); // Final newline
 
-          // Wait for full response to complete
+          // Wait for full response to complete and extract messages
           await result.response;
+
+          // Update conversation history with user message and assistant response
+          conversationHistory.push(createUserMessage(query));
+          const assistantMessages = extractMessagesFromResponse(result);
+          conversationHistory.push(...assistantMessages);
         } else {
-          // Non-streaming mode
+          // Non-streaming mode - pass conversation history
           const result = await agent.generate(query, {
+            messages: [...conversationHistory],
             onStepFinish: (step: any) => {
               // Show tool usage
               if (step.toolCalls?.length) {
@@ -1044,6 +1066,11 @@ async function runInteractiveMode(): Promise<void> {
           agentProgress.succeed();
           console.log("\n✨ Answer:\n");
           console.log(result.text);
+
+          // Update conversation history with user message and assistant response
+          conversationHistory.push(createUserMessage(query));
+          const assistantMessages = extractMessagesFromResponse(result);
+          conversationHistory.push(...assistantMessages);
         }
 
         console.log("\n" + "─".repeat(50) + "\n");
