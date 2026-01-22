@@ -33,7 +33,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### message-conversion-utils
 
 - content: Create utility functions in `packages/cli/src/agent/conversation.ts` to convert between the internal `ConversationMessage` format and AI SDK's `ModelMessage[]` format. Implement `toModelMessages(history: ConversationMessage[]): ModelMessage[]` that properly formats tool calls and results. Also implement `truncateReportToolCalls(messages: ModelMessage[]): ModelMessage[]` to remove dense `generate_report` tool call arguments from history while keeping the tool call record (as per user requirement to save tokens).
-- status: pending
+- status: complete
 - dependencies: conversation-types
 
 ---

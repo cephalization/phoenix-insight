@@ -30,3 +30,18 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **Pattern that worked well**: Creating a simplified internal type system (`ConversationMessage`) with conversion functions (`toModelMessages`) provides a clean API while handling the SDK's more complex type structure internally.
 
 - **Test location**: Tests for agent code go in `test/agent/` directory following existing patterns in `test/snapshot/`, `test/server/`, etc.
+
+## message-conversion-utils
+
+- **toModelMessages already existed**: The `conversation-types` task had already implemented `toModelMessages()` and related conversion functions. The main work for this task was implementing `truncateReportToolCalls()`.
+
+- **truncateReportToolCalls design decisions**:
+  - Works on `ModelMessage[]` (AI SDK format) rather than `ConversationMessage[]` because it's intended to be applied after conversion to the SDK format, just before sending to the model
+  - Preserves the `title` field from generate_report calls since it provides useful context and is small
+  - Only replaces the `content` field with a placeholder, not the entire input
+  - Does not mutate original messages - creates new objects via spread operator
+  - Handles edge cases: string content, non-assistant messages, non-tool-call parts
+
+- **Type casting in tests**: When testing ModelMessage types, TypeScript requires careful casting since the SDK types use discriminated unions. Using `as AssistantModelMessage` and explicit array typing helps make tests readable.
+
+- **Port conflict in tests**: The `test/server/ui.test.ts` can fail with EADDRINUSE if port 6007 is in use. This is an environmental issue unrelated to code changes.

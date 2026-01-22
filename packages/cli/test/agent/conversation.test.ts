@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import type { ModelMessage, AssistantModelMessage } from "ai";
 import {
   // Types
   type ConversationMessage,
@@ -27,6 +28,7 @@ import {
   // Conversion functions
   toModelMessage,
   toModelMessages,
+  truncateReportToolCalls,
 } from "../../src/agent/conversation.js";
 
 describe("conversation types", () => {
@@ -570,6 +572,338 @@ describe("conversation types", () => {
       };
 
       expect(result.result).toEqual({ data: [1, 2, 3], status: "ok" });
+    });
+  });
+
+  describe("truncateReportToolCalls", () => {
+    it("returns empty array for empty input", () => {
+      expect(truncateReportToolCalls([])).toEqual([]);
+    });
+
+    it("does not modify user messages", () => {
+      const messages: ModelMessage[] = [
+        { role: "user", content: "Hello" },
+        { role: "user", content: "How are you?" },
+      ];
+
+      const result = truncateReportToolCalls(messages);
+
+      expect(result).toEqual(messages);
+    });
+
+    it("does not modify assistant messages with string content", () => {
+      const messages: ModelMessage[] = [
+        { role: "assistant", content: "I am fine, thank you!" },
+      ];
+
+      const result = truncateReportToolCalls(messages);
+
+      expect(result).toEqual(messages);
+    });
+
+    it("does not modify tool messages", () => {
+      const messages: ModelMessage[] = [
+        {
+          role: "tool",
+          content: [
+            {
+              type: "tool-result",
+              toolCallId: "call_1",
+              toolName: "generate_report",
+              output: { type: "json" as const, value: { success: true } },
+            },
+          ],
+        },
+      ];
+
+      const result = truncateReportToolCalls(messages);
+
+      expect(result).toEqual(messages);
+    });
+
+    it("does not modify non-generate_report tool calls", () => {
+      const messages: ModelMessage[] = [
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "tool-call",
+              toolCallId: "call_1",
+              toolName: "bash",
+              input: { command: "ls -la" },
+            },
+            {
+              type: "tool-call",
+              toolCallId: "call_2",
+              toolName: "px_fetch_more_spans",
+              input: { project: "test-project", limit: 100 },
+            },
+          ],
+        },
+      ];
+
+      const result = truncateReportToolCalls(messages);
+
+      expect(result).toEqual(messages);
+    });
+
+    it("truncates generate_report tool call content while preserving title", () => {
+      const largeContent = {
+        root: "root-element",
+        elements: {
+          "root-element": {
+            key: "root-element",
+            type: "Card",
+            props: { title: "Analysis Results" },
+            children: ["metric-1", "metric-2", "table-1"],
+          },
+          "metric-1": {
+            key: "metric-1",
+            type: "Metric",
+            props: { label: "Total Spans", value: 1234 },
+            parentKey: "root-element",
+          },
+          "metric-2": {
+            key: "metric-2",
+            type: "Metric",
+            props: { label: "Error Rate", value: "2.5%" },
+            parentKey: "root-element",
+          },
+          "table-1": {
+            key: "table-1",
+            type: "Table",
+            props: {
+              columns: ["Name", "Duration", "Status"],
+              data: [
+                ["Trace 1", "120ms", "OK"],
+                ["Trace 2", "350ms", "ERROR"],
+                ["Trace 3", "45ms", "OK"],
+              ],
+            },
+            parentKey: "root-element",
+          },
+        },
+      };
+
+      const messages: ModelMessage[] = [
+        {
+          role: "assistant",
+          content: [
+            { type: "text", text: "Here is your analysis report." },
+            {
+              type: "tool-call",
+              toolCallId: "call_report",
+              toolName: "generate_report",
+              input: { title: "Span Analysis", content: largeContent },
+            },
+          ],
+        },
+      ];
+
+      const result = truncateReportToolCalls(messages);
+
+      expect(result).toHaveLength(1);
+      const assistantMsg = result[0] as AssistantModelMessage;
+      expect(assistantMsg.role).toBe("assistant");
+      expect(Array.isArray(assistantMsg.content)).toBe(true);
+
+      const content = assistantMsg.content as Array<{ type: string; [key: string]: unknown }>;
+      expect(content).toHaveLength(2);
+
+      // Text part should be unchanged
+      expect(content[0]).toEqual({ type: "text", text: "Here is your analysis report." });
+
+      // Tool call should be truncated but preserve title
+      const toolCall = content[1] as { type: string; toolCallId: string; toolName: string; input: unknown };
+      expect(toolCall.type).toBe("tool-call");
+      expect(toolCall.toolCallId).toBe("call_report");
+      expect(toolCall.toolName).toBe("generate_report");
+      expect(toolCall.input).toEqual({
+        title: "Span Analysis",
+        content: "[Report content truncated to save tokens]",
+      });
+    });
+
+    it("truncates generate_report tool call without title", () => {
+      const messages: ModelMessage[] = [
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "tool-call",
+              toolCallId: "call_report",
+              toolName: "generate_report",
+              input: { content: { root: "r", elements: {} } },
+            },
+          ],
+        },
+      ];
+
+      const result = truncateReportToolCalls(messages);
+
+      const assistantMsg = result[0] as AssistantModelMessage;
+      const content = assistantMsg.content as Array<{ type: string; input?: unknown }>;
+      const toolCall = content[0] as { input: { title?: string; content: string } };
+
+      expect(toolCall.input).toEqual({
+        content: "[Report content truncated to save tokens]",
+      });
+      expect(toolCall.input.title).toBeUndefined();
+    });
+
+    it("truncates only generate_report calls in mixed content", () => {
+      const messages: ModelMessage[] = [
+        {
+          role: "assistant",
+          content: [
+            { type: "text", text: "Let me analyze this" },
+            {
+              type: "tool-call",
+              toolCallId: "call_1",
+              toolName: "bash",
+              input: { command: "cat data.json" },
+            },
+            {
+              type: "tool-call",
+              toolCallId: "call_2",
+              toolName: "generate_report",
+              input: { title: "Report", content: { root: "r", elements: { r: { key: "r", type: "Card", props: {} } } } },
+            },
+            {
+              type: "tool-call",
+              toolCallId: "call_3",
+              toolName: "px_fetch_more_spans",
+              input: { project: "test", limit: 50 },
+            },
+          ],
+        },
+      ];
+
+      const result = truncateReportToolCalls(messages);
+
+      const assistantMsg = result[0] as AssistantModelMessage;
+      const content = assistantMsg.content as Array<{ type: string; toolName?: string; input?: unknown }>;
+
+      // Text part unchanged
+      expect(content[0]).toEqual({ type: "text", text: "Let me analyze this" });
+
+      // bash tool unchanged
+      expect(content[1]).toEqual({
+        type: "tool-call",
+        toolCallId: "call_1",
+        toolName: "bash",
+        input: { command: "cat data.json" },
+      });
+
+      // generate_report truncated
+      expect((content[2] as { input: { title?: string; content: string } }).input).toEqual({
+        title: "Report",
+        content: "[Report content truncated to save tokens]",
+      });
+
+      // px_fetch_more_spans unchanged
+      expect(content[3]).toEqual({
+        type: "tool-call",
+        toolCallId: "call_3",
+        toolName: "px_fetch_more_spans",
+        input: { project: "test", limit: 50 },
+      });
+    });
+
+    it("handles conversation with multiple assistant messages", () => {
+      const messages: ModelMessage[] = [
+        { role: "user", content: "Analyze my spans" },
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "tool-call",
+              toolCallId: "call_1",
+              toolName: "generate_report",
+              input: { title: "First Report", content: { root: "r1", elements: {} } },
+            },
+          ],
+        },
+        {
+          role: "tool",
+          content: [
+            {
+              type: "tool-result",
+              toolCallId: "call_1",
+              toolName: "generate_report",
+              output: { type: "json" as const, value: { success: true } },
+            },
+          ],
+        },
+        { role: "user", content: "Update the report" },
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "tool-call",
+              toolCallId: "call_2",
+              toolName: "generate_report",
+              input: { title: "Updated Report", content: { root: "r2", elements: {} } },
+            },
+          ],
+        },
+      ];
+
+      const result = truncateReportToolCalls(messages);
+
+      expect(result).toHaveLength(5);
+
+      // User message unchanged
+      expect(result[0]).toEqual({ role: "user", content: "Analyze my spans" });
+
+      // First assistant message truncated
+      const firstAssistant = result[1] as AssistantModelMessage;
+      const firstContent = firstAssistant.content as Array<{ input: unknown }>;
+      expect((firstContent[0] as { input: { title: string; content: string } }).input).toEqual({
+        title: "First Report",
+        content: "[Report content truncated to save tokens]",
+      });
+
+      // Tool message unchanged
+      expect(result[2]).toEqual(messages[2]);
+
+      // Second user message unchanged
+      expect(result[3]).toEqual({ role: "user", content: "Update the report" });
+
+      // Second assistant message truncated
+      const secondAssistant = result[4] as AssistantModelMessage;
+      const secondContent = secondAssistant.content as Array<{ input: unknown }>;
+      expect((secondContent[0] as { input: { title: string; content: string } }).input).toEqual({
+        title: "Updated Report",
+        content: "[Report content truncated to save tokens]",
+      });
+    });
+
+    it("does not mutate the original messages array", () => {
+      const originalInput = { title: "Test", content: { root: "r", elements: {} } };
+      const messages: ModelMessage[] = [
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "tool-call",
+              toolCallId: "call_1",
+              toolName: "generate_report",
+              input: originalInput,
+            },
+          ],
+        },
+      ];
+
+      const result = truncateReportToolCalls(messages);
+
+      // Original should be unchanged
+      const origContent = (messages[0] as AssistantModelMessage).content as Array<{ input: unknown }>;
+      expect(origContent[0]?.input).toEqual(originalInput);
+
+      // Result should be different
+      const resultContent = (result[0] as AssistantModelMessage).content as Array<{ input: unknown }>;
+      expect(resultContent[0]?.input).not.toEqual(originalInput);
     });
   });
 });
