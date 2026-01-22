@@ -207,3 +207,19 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **No store updates needed**: Unlike `text`, `tool_call`, `tool_result` etc., the `context_compacted` message doesn't update any stores. It's purely informational to the user - the server handles the actual compaction on its side.
 
 - **Test pattern**: Added two tests for `context_compacted` messages - one without a reason and one with a reason. Tests verify the handler doesn't throw, since toast notifications are fire-and-forget (no state changes to assert on).
+
+## cli-session-use-ui-history
+
+- **UI to CLI type conversion**: Created `fromUIMessages()` function in `conversation.ts` to convert UI message types to internal `ConversationMessage[]` format. The UI types (`UIConversationMessage`) mirror the CLI types but are defined separately in the UI package to avoid tight coupling. The conversion handles all three message roles (user, assistant, tool) and their content structures.
+
+- **Type definitions duplicated intentionally**: Rather than importing types from the UI package into the CLI's conversation module, I defined local interfaces matching the expected UI message shape. This avoids a circular dependency (CLI imports types from UI, but the types barrel file may reference other UI code) and keeps the conversion function self-contained.
+
+- **Defensive conversion with validation**: The `fromUIMessages()` function accepts `unknown[]` and filters out invalid messages. This provides type safety when processing the potentially untyped `history` payload from WebSocket messages.
+
+- **executeQuery now takes optional options**: Extended `AgentSession.executeQuery()` to accept an `ExecuteQueryOptions` object with optional `history` field. When history is provided and non-empty, it's converted and used instead of the server-side `conversationHistory`. This allows the UI to manage its own conversation state.
+
+- **Client-managed vs server-managed history**: When the client provides history, the server does NOT update `this.conversationHistory` after the query completes. This is correct because the client is managing its own state - updating the server-side history would cause duplication if the client sends the updated history with the next query.
+
+- **Compaction with client history**: If a token limit error occurs with client-provided history, the history is compacted in-place for the retry, but the server-side `conversationHistory` is NOT updated (since `usingClientHistory` is true). The `context_compacted` message tells the client to compact its own history.
+
+- **WebSocket handler change minimal**: The only change to `cli.ts` was extracting the `history` field from the query payload and passing it to `executeQuery()`. The heavy lifting is done by the conversion function and modified session methods.
