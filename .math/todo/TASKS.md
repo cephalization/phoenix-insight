@@ -65,7 +65,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### test-seed-command
 
 - content: Write tests for the seed command in `packages/cli/test/commands/seed.test.ts`. Test: (1) Loads config correctly, (2) Initializes tracing with correct Phoenix endpoint, (3) Calls ai-sdk generateText with expected parameters, (4) Handles missing Anthropic API key gracefully, (5) Handles Phoenix connection errors gracefully. Use vitest mocking for ai-sdk and OpenTelemetry.
-- status: pending
+- status: complete
 - dependencies: implement-seed-command
 
 ---

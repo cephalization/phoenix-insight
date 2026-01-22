@@ -62,3 +62,13 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Error handling specifically checks for common failure modes: ECONNREFUSED (Phoenix not running), authentication errors (invalid Anthropic key), and provides actionable error messages for each.
 - The command validates ANTHROPIC_API_KEY is set before attempting the API call - using the same error message pattern as `ensureAnthropicApiKey()` for consistency.
 - This command doesn't require tests per the task definition - tests are in a separate task (`test-seed-command`).
+
+## test-seed-command
+
+- The seed command is embedded in `cli.ts` (function `runSeedCommand`) rather than a separate module. Tests focus on the individual behaviors rather than calling the function directly.
+- Used vitest mocking for `ai`, `@ai-sdk/anthropic`, observability module, and config module to isolate the test scenarios.
+- Tests are organized into 9 logical sections: config loading, OpenTelemetry initialization, ai-sdk generateText integration, missing Anthropic API key handling, Phoenix connection error handling, Phoenix URL construction, console output messages, and error message formatting.
+- Key test pattern: mock the external dependencies (`generateText`, `anthropic`, `initializeObservability`, `shutdownObservability`, `getConfig`) and verify they're called with expected parameters.
+- For environment variable tests, save `process.env` in `beforeEach` and restore in `afterEach` to prevent test pollution.
+- The test suite has 38 tests covering all 5 requirements: config loading, tracing initialization, generateText parameters, missing API key handling, and Phoenix connection errors.
+- Note: `anthropic()` returns a model identifier that gets passed to `generateText`. The mock returns `"mock-model"` to simulate this behavior.
