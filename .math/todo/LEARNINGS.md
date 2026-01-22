@@ -140,3 +140,15 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **extractMessagesFromResponse requires steps**: The mock agent must return a `steps` array (not just `fullStream` and `response`) because `extractMessagesFromResponse()` reads from `result.steps` to build the conversation messages. Each step contains `text`, `toolCalls`, and `toolResults`.
 
 - **Re-exported ConversationMessage type**: Added `export type { ConversationMessage }` in session.ts so external consumers can import the type from either the session module or conversation module.
+
+## interactive-cli-history
+
+- **Pattern: Pass history copy, not reference**: When passing `conversationHistory` to `agent.stream()` or `agent.generate()`, pass a spread copy (`[...conversationHistory]`) instead of the array directly. The agent modifies its internal view but shouldn't affect the original array until we explicitly update it after the response completes.
+
+- **User message added AFTER successful response**: Following the same pattern from `cli-session-history`, the user message is added to the conversation history only AFTER the agent completes successfully (including tool calls), along with the extracted assistant messages from `extractMessagesFromResponse()`. This avoids duplication since the agent internally appends the user query.
+
+- **Continuation message format**: When there's existing history, the CLI shows `(continuing conversation with N previous messages)` before processing the query. This provides visibility to users that context from previous exchanges is being used.
+
+- **History persists across multiple queries in a session**: The `conversationHistory` array is declared outside the `processQuery` closure but inside `runInteractiveMode`, so it persists across queries but is cleared when the CLI exits (ephemeral, as required).
+
+- **Both streaming and non-streaming paths updated**: Both the `config.stream` branch (using `agent.stream()`) and the non-streaming branch (using `agent.generate()`) pass `messages: [...conversationHistory]` and update the history after the response completes. The update logic is identical in both paths.
