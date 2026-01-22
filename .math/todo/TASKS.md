@@ -33,7 +33,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### create-user-focused-readme
 
 - content: Create a new user-focused `README.md` in the repo root with: (1) Clear project description explaining what Phoenix Insight does - AI-powered analysis of Phoenix observability data using the "bash + files" paradigm, (2) Key features section highlighting transparency, reproducibility, and extensibility, (3) Requirements section (Node.js v22+, Anthropic API key), (4) Installation instructions (`npm install -g @cephalization/phoenix-insight`), (5) Quick usage examples showing basic queries and the `ui` command, (6) Link to `packages/cli/README.md` for full CLI documentation, (7) Link to `DEVELOPMENT.md` for development/contributing. Keep it welcoming for new users while explaining the value proposition.
-- status: pending
+- status: complete
 - dependencies: move-root-readme-to-development
 
 ---
