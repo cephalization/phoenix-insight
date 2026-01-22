@@ -418,7 +418,7 @@ export class AgentSession {
 
           // Extract the assistant's response (including tool calls/results) from the result
           // and append to conversation history for future queries
-          const assistantMessages = extractMessagesFromResponse(result);
+          const assistantMessages = await extractMessagesFromResponse(result);
           if (assistantMessages.length > 0) {
             this.addAssistantMessages(assistantMessages);
           }
