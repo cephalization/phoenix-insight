@@ -45,3 +45,24 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **Type casting in tests**: When testing ModelMessage types, TypeScript requires careful casting since the SDK types use discriminated unions. Using `as AssistantModelMessage` and explicit array typing helps make tests readable.
 
 - **Port conflict in tests**: The `test/server/ui.test.ts` can fail with EADDRINUSE if port 6007 is in use. This is an environmental issue unrelated to code changes.
+
+## agent-messages-api
+
+- **AI SDK multi-turn conversation support**: The AI SDK supports two mutually exclusive ways to provide user input: `prompt` (single string) or `messages` (array of ModelMessage). When using `messages`, the user query should be appended as the last message, not passed via `prompt`.
+
+- **Backward compatibility maintained**: The `messages` parameter is optional. When not provided or empty, the methods fall back to using `prompt` directly, preserving existing behavior for single-turn queries.
+
+- **Token optimization integrated**: The implementation automatically calls `truncateReportToolCalls()` on history before sending to the model. This ensures report tool calls don't bloat the context window.
+
+- **Message conversion flow**: 
+  1. Convert `ConversationMessage[]` history to `ModelMessage[]` via `toModelMessages()`
+  2. Apply `truncateReportToolCalls()` to truncate dense report content
+  3. Convert current query to user message via `createUserMessage()` then `toModelMessages()`
+  4. Concatenate truncated history with current query
+  5. Pass combined array to AI SDK's `messages` property
+
+- **Helper functions**: Also updated `runQuery()` and `runOneShotQuery()` wrapper functions to pass through the `messages` parameter for consistency.
+
+- **Type re-export**: Added `export type { ConversationMessage }` to make the type accessible from the agent module without importing from conversation.js directly.
+
+- **Testing pattern**: Used `vi.mock()` to mock the AI SDK functions and verify the correct parameters are passed. The mocks intercept `generateText` and `streamText` calls, allowing inspection of whether `prompt` or `messages` was used.

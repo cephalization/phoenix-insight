@@ -43,7 +43,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### agent-messages-api
 
 - content: Modify `PhoenixInsightAgent.stream()` and `PhoenixInsightAgent.generate()` in `packages/cli/src/agent/index.ts` to accept an optional `messages` parameter (array of `ConversationMessage`). When provided, use AI SDK's `messages` property instead of `prompt` to enable multi-turn conversations. The current user query should be appended as the last user message in the array.
-- status: pending
+- status: complete
 - dependencies: message-conversion-utils
 
 ### agent-response-to-history
