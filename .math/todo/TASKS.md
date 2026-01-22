@@ -75,7 +75,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### cli-session-history
 
 - content: Update `AgentSession` in `packages/cli/src/server/session.ts` to maintain a `ConversationMessage[]` history that is actually passed to the agent. Modify `executeQuery()` to: (1) build the full message history including the new user query, (2) call `agent.stream()` with the messages array, (3) extract the assistant response and append to history. The history should be ephemeral (not persisted to disk).
-- status: pending
+- status: complete
 - dependencies: agent-messages-api, agent-response-to-history
 
 ### cli-session-token-retry

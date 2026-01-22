@@ -51,7 +51,9 @@ function createMockClient(): PhoenixClient {
 
 /**
  * Create a mock agent that can be controlled in tests
- * The stream method should return { fullStream, response } to match AI SDK v6 API
+ * The stream method should return { fullStream, response, steps } to match AI SDK v6 API
+ *
+ * The `steps` array is used by `extractMessagesFromResponse()` to build the conversation history.
  */
 function createMockAgent() {
   const mockFullStream = {
@@ -64,12 +66,25 @@ function createMockAgent() {
 
   const mockResponse = Promise.resolve({ text: "Hello world!" });
 
+  // Steps array used by extractMessagesFromResponse()
+  const mockSteps = [
+    {
+      text: "Hello world!",
+      toolCalls: [],
+      toolResults: [],
+    },
+  ];
+
   return {
     stream: vi.fn().mockResolvedValue({
       fullStream: mockFullStream,
       response: mockResponse,
+      steps: mockSteps,
     }),
-    generate: vi.fn().mockResolvedValue({ text: "Hello world!" }),
+    generate: vi.fn().mockResolvedValue({
+      text: "Hello world!",
+      steps: mockSteps,
+    }),
     cleanup: vi.fn().mockResolvedValue(undefined),
   };
 }
@@ -270,7 +285,100 @@ describe("AgentSession", () => {
       expect(history[0].role).toBe("user");
       expect(history[0].content).toBe("test query");
       expect(history[1].role).toBe("assistant");
+      // The assistant message content can be a string or an array of parts
+      // depending on whether there were tool calls. For text-only, it's a string.
       expect(history[1].content).toBe("Hello world!");
+    });
+
+    it("should pass conversation history to agent for multi-turn context", async () => {
+      // First query
+      await session.executeQuery("first query");
+
+      // Second query should include history from first query
+      await session.executeQuery("second query");
+
+      // The agent should have been called with messages option on both calls
+      expect(mockAgent.stream).toHaveBeenCalledTimes(2);
+
+      // First call: history is empty (user message added AFTER successful completion)
+      const firstCall = mockAgent.stream.mock.calls[0];
+      expect(firstCall[0]).toBe("first query");
+      expect(firstCall[1].messages).toHaveLength(0);
+
+      // Second call: history has first user message and first assistant response
+      // The agent will append the current userQuery ("second query") as the last message
+      const secondCall = mockAgent.stream.mock.calls[1];
+      expect(secondCall[0]).toBe("second query");
+      // History has: first user, first assistant
+      expect(secondCall[1].messages).toHaveLength(2);
+      expect(secondCall[1].messages[0]).toEqual({
+        role: "user",
+        content: "first query",
+      });
+      expect(secondCall[1].messages[1]).toEqual({
+        role: "assistant",
+        content: "Hello world!",
+      });
+    });
+
+    it("should include tool calls and results in history", async () => {
+      // Create a mock that includes tool calls
+      const fullStreamWithTools = {
+        async *[Symbol.asyncIterator]() {
+          yield {
+            type: "tool-call",
+            toolName: "bash",
+            input: { command: "ls" },
+          };
+          yield {
+            type: "tool-result",
+            toolName: "bash",
+            output: { stdout: "file.txt", exitCode: 0 },
+          };
+          yield { type: "text-delta", text: "Found file.txt" };
+          yield { type: "text-end" };
+        },
+      };
+
+      const stepsWithTools = [
+        {
+          text: "Found file.txt",
+          toolCalls: [
+            {
+              type: "tool-call",
+              toolCallId: "call-123",
+              toolName: "bash",
+              input: { command: "ls" },
+            },
+          ],
+          toolResults: [
+            {
+              type: "tool-result",
+              toolCallId: "call-123",
+              toolName: "bash",
+              output: { stdout: "file.txt", exitCode: 0 },
+            },
+          ],
+        },
+      ];
+
+      mockAgent.stream.mockResolvedValue({
+        fullStream: fullStreamWithTools,
+        response: Promise.resolve({ text: "Found file.txt" }),
+        steps: stepsWithTools,
+      });
+
+      await session.executeQuery("list files");
+
+      const history = session.history;
+      // Should have: user message, assistant message (with tool call), tool message (with result)
+      expect(history).toHaveLength(3);
+      expect(history[0]).toEqual({ role: "user", content: "list files" });
+      // Assistant message with tool call
+      expect(history[1].role).toBe("assistant");
+      expect(Array.isArray(history[1].content)).toBe(true);
+      // Tool result message
+      expect(history[2].role).toBe("tool");
     });
 
     it("should send error when already executing", async () => {

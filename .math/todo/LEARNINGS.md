@@ -110,3 +110,15 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **TypeScript type guard pattern**: When filtering arrays, use type guard functions (e.g., `(p): p is ConversationTextPart => p.type === "text"`) to properly narrow types in the resulting array.
 
 - **Short-circuit optimization**: If `messages.length <= keepFirstN + keepLastN`, return the array as-is without conversion/pruning overhead.
+
+## cli-session-history
+
+- **Replaced simple history type with rich ConversationMessage**: The old `session.ts` had a simple `ConversationMessage` type with just `role`, `content`, and `timestamp`. Replaced with the rich type from `conversation.ts` which supports tool calls, tool results, and multi-part content.
+
+- **History array must be copied, not referenced**: When passing `conversationHistory` to `agent.stream()`, must pass a spread copy (`[...this.conversationHistory]`) rather than the array reference. Otherwise, when the test checks the mock's arguments AFTER multiple queries, it sees the mutated array, not the array at the time of each call.
+
+- **User message added AFTER successful completion**: Initially tried adding the user message to history BEFORE calling the agent, but this causes duplication since the agent also appends the userQuery as the last message. The solution is to add the user message only AFTER the response completes successfully, along with the assistant messages.
+
+- **extractMessagesFromResponse requires steps**: The mock agent must return a `steps` array (not just `fullStream` and `response`) because `extractMessagesFromResponse()` reads from `result.steps` to build the conversation messages. Each step contains `text`, `toolCalls`, and `toolResults`.
+
+- **Re-exported ConversationMessage type**: Added `export type { ConversationMessage }` in session.ts so external consumers can import the type from either the session module or conversation module.
