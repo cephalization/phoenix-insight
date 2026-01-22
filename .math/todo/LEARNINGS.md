@@ -223,3 +223,24 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **Compaction with client history**: If a token limit error occurs with client-provided history, the history is compacted in-place for the retry, but the server-side `conversationHistory` is NOT updated (since `usingClientHistory` is true). The `context_compacted` message tells the client to compact its own history.
 
 - **WebSocket handler change minimal**: The only change to `cli.ts` was extracting the `history` field from the query payload and passing it to `executeQuery()`. The heavy lifting is done by the conversion function and modified session methods.
+
+## test-conversation-utils
+
+- **Test file location**: Tests placed in `packages/cli/test/conversation.test.ts` at the package root test directory, following the pattern of other module tests like `token-errors.test.ts`.
+
+- **AI SDK type casting in tests**: When testing `ModelMessage` types, TypeScript requires careful casting since the SDK uses discriminated unions. Pattern: cast to `AssistantModelMessage` or `ToolModelMessage`, then access content as typed array. Example: `const content = assistantMsg.content as Array<{ type: string; input?: unknown }>`.
+
+- **ToolResultPart output access**: The `ToolModelMessage.content` array contains union types (`ToolResultPart | ToolApprovalResponse`), requiring explicit type assertions when accessing `output` property: `const toolResult = toolMsg.content[0] as { type: "tool-result"; output: unknown }`.
+
+- **compactConversation behavior with text-only messages**: The `pruneMessages()` function from AI SDK only removes reasoning and tool calls. For conversations with only simple text messages (no tool calls, no reasoning), the middle section remains unchanged - no reduction in size. Tests should use `toBeLessThanOrEqual()` not `toBeLessThan()` for such cases.
+
+- **Helper function pattern for test readability**: Created helper functions (`userMsg`, `assistantMsg`, `assistantWithToolCalls`, `toolMsg`) inside describe blocks to make test cases more readable and reduce boilerplate.
+
+- **JSONValue import required**: When creating `ConversationToolResultPart` objects in tests, the `result` field must be typed as `JSONValue` (imported from conversation.ts), not `unknown`. This matches the actual type constraint.
+
+- **Edge case testing categories**: Organized tests into logical groups:
+  1. Happy path - basic conversion of each message type
+  2. Mixed conversations - complete multi-turn with all message types
+  3. Edge cases - empty arrays, empty strings, null values
+  4. Tool-specific - tool calls with/without text, multiple tools, error results
+  5. Long conversations - 100+ messages, many tool calls
