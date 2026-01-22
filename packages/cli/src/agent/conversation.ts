@@ -471,29 +471,34 @@ type AIResult = {
  * 1. If the step has text content and/or tool calls, creates an assistant message
  * 2. If the step has tool results, creates a tool message
  *
+ * Note: For StreamTextResult, `steps` is a Promise that must be awaited.
+ * For GenerateTextResult, `steps` is a direct array. This function handles both.
+ *
  * @param result - The result from AI SDK's generateText() or streamText()
- * @returns Array of ConversationMessages representing the assistant's response
+ * @returns Promise of array of ConversationMessages representing the assistant's response
  *
  * @example
  * ```typescript
  * const result = await generateText({ ... });
- * const assistantMessages = extractMessagesFromResponse(result);
+ * const assistantMessages = await extractMessagesFromResponse(result);
  * conversationHistory.push(...assistantMessages);
  * ```
  */
-export function extractMessagesFromResponse(
+export async function extractMessagesFromResponse(
   result: GenerateTextResult<any, any> | StreamTextResult<any, any>
-): ConversationMessage[] {
+): Promise<ConversationMessage[]> {
   const messages: ConversationMessage[] = [];
 
-  // Cast to our simplified type - both GenerateTextResult and StreamTextResult have steps
-  const aiResult = result as AIResult;
+  // Steps can be a Promise (StreamTextResult) or a direct array (GenerateTextResult)
+  // We need to await it to handle both cases
+  const stepsValue = result.steps;
+  const steps: AIStep[] = await Promise.resolve(stepsValue);
 
-  if (!aiResult.steps || aiResult.steps.length === 0) {
+  if (!steps || steps.length === 0) {
     return messages;
   }
 
-  for (const step of aiResult.steps) {
+  for (const step of steps) {
     // Build assistant message content
     const hasText = step.text && step.text.length > 0;
     const hasToolCalls = step.toolCalls && step.toolCalls.length > 0;

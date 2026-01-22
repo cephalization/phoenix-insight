@@ -671,12 +671,12 @@ describe("extractMessagesFromResponse", () => {
   }
 
   describe("text-only responses", () => {
-    it("should extract assistant message from text response", () => {
+    it("should extract assistant message from text response", async () => {
       const result = createMockResult([
         { text: "Hello! I'm here to help." },
       ]);
 
-      const messages = extractMessagesFromResponse(result as any);
+      const messages = await extractMessagesFromResponse(result as any);
 
       expect(messages).toHaveLength(1);
       expect(messages[0]).toEqual({
@@ -685,13 +685,13 @@ describe("extractMessagesFromResponse", () => {
       });
     });
 
-    it("should extract multiple text steps as separate messages", () => {
+    it("should extract multiple text steps as separate messages", async () => {
       const result = createMockResult([
         { text: "First part." },
         { text: "Second part." },
       ]);
 
-      const messages = extractMessagesFromResponse(result as any);
+      const messages = await extractMessagesFromResponse(result as any);
 
       expect(messages).toHaveLength(2);
       expect(messages[0]).toEqual({ role: "assistant", content: "First part." });
@@ -700,7 +700,7 @@ describe("extractMessagesFromResponse", () => {
   });
 
   describe("tool call responses", () => {
-    it("should extract assistant message with tool calls", () => {
+    it("should extract assistant message with tool calls", async () => {
       const result = createMockResult([
         {
           text: "Let me run a query.",
@@ -714,7 +714,7 @@ describe("extractMessagesFromResponse", () => {
         },
       ]);
 
-      const messages = extractMessagesFromResponse(result as any);
+      const messages = await extractMessagesFromResponse(result as any);
 
       expect(messages).toHaveLength(1);
       expect(messages[0].role).toBe("assistant");
@@ -730,7 +730,7 @@ describe("extractMessagesFromResponse", () => {
       });
     });
 
-    it("should extract tool calls without text", () => {
+    it("should extract tool calls without text", async () => {
       const result = createMockResult([
         {
           toolCalls: [
@@ -743,7 +743,7 @@ describe("extractMessagesFromResponse", () => {
         },
       ]);
 
-      const messages = extractMessagesFromResponse(result as any);
+      const messages = await extractMessagesFromResponse(result as any);
 
       expect(messages).toHaveLength(1);
       expect(messages[0].role).toBe("assistant");
@@ -752,7 +752,7 @@ describe("extractMessagesFromResponse", () => {
       expect(content[0].type).toBe("tool-call");
     });
 
-    it("should extract multiple tool calls in one step", () => {
+    it("should extract multiple tool calls in one step", async () => {
       const result = createMockResult([
         {
           text: "Running multiple queries.",
@@ -771,7 +771,7 @@ describe("extractMessagesFromResponse", () => {
         },
       ]);
 
-      const messages = extractMessagesFromResponse(result as any);
+      const messages = await extractMessagesFromResponse(result as any);
 
       expect(messages).toHaveLength(1);
       const content = messages[0].content as ConversationAssistantContentPart[];
@@ -780,7 +780,7 @@ describe("extractMessagesFromResponse", () => {
   });
 
   describe("tool result responses", () => {
-    it("should extract tool results as tool message", () => {
+    it("should extract tool results as tool message", async () => {
       const result = createMockResult([
         {
           text: "Running query.",
@@ -801,7 +801,7 @@ describe("extractMessagesFromResponse", () => {
         },
       ]);
 
-      const messages = extractMessagesFromResponse(result as any);
+      const messages = await extractMessagesFromResponse(result as any);
 
       // Should have assistant message with tool call AND tool message with result
       expect(messages).toHaveLength(2);
@@ -818,7 +818,7 @@ describe("extractMessagesFromResponse", () => {
       });
     });
 
-    it("should extract multiple tool results", () => {
+    it("should extract multiple tool results", async () => {
       const result = createMockResult([
         {
           toolCalls: [
@@ -832,7 +832,7 @@ describe("extractMessagesFromResponse", () => {
         },
       ]);
 
-      const messages = extractMessagesFromResponse(result as any);
+      const messages = await extractMessagesFromResponse(result as any);
 
       expect(messages).toHaveLength(2);
       const toolMsg = messages[1] as { role: "tool"; content: ConversationToolResultPart[] };
@@ -841,7 +841,7 @@ describe("extractMessagesFromResponse", () => {
   });
 
   describe("multi-step responses", () => {
-    it("should handle multi-step agentic response", () => {
+    it("should handle multi-step agentic response", async () => {
       const result = createMockResult([
         // Step 1: Tool call
         {
@@ -869,7 +869,7 @@ describe("extractMessagesFromResponse", () => {
         },
       ]);
 
-      const messages = extractMessagesFromResponse(result as any);
+      const messages = await extractMessagesFromResponse(result as any);
 
       // Step 1: assistant (text + tool call) + tool (result)
       // Step 2: assistant (text + tool call) + tool (result)
@@ -884,35 +884,35 @@ describe("extractMessagesFromResponse", () => {
   });
 
   describe("edge cases", () => {
-    it("should return empty array for result with no steps", () => {
+    it("should return empty array for result with no steps", async () => {
       const result = { steps: [] };
 
-      const messages = extractMessagesFromResponse(result as any);
+      const messages = await extractMessagesFromResponse(result as any);
 
       expect(messages).toEqual([]);
     });
 
-    it("should return empty array for result with undefined steps", () => {
+    it("should return empty array for result with undefined steps", async () => {
       const result = {} as any;
 
-      const messages = extractMessagesFromResponse(result);
+      const messages = await extractMessagesFromResponse(result);
 
       expect(messages).toEqual([]);
     });
 
-    it("should skip steps with no content (no text, no tool calls)", () => {
+    it("should skip steps with no content (no text, no tool calls)", async () => {
       const result = createMockResult([
         { text: "" }, // Empty text, no tool calls - should be skipped
         { text: "Actual content." },
       ]);
 
-      const messages = extractMessagesFromResponse(result as any);
+      const messages = await extractMessagesFromResponse(result as any);
 
       expect(messages).toHaveLength(1);
       expect(messages[0]).toEqual({ role: "assistant", content: "Actual content." });
     });
 
-    it("should handle steps with only tool results (no calls or text)", () => {
+    it("should handle steps with only tool results (no calls or text)", async () => {
       const result = createMockResult([
         {
           toolResults: [
@@ -921,14 +921,14 @@ describe("extractMessagesFromResponse", () => {
         },
       ]);
 
-      const messages = extractMessagesFromResponse(result as any);
+      const messages = await extractMessagesFromResponse(result as any);
 
       // Should only have tool message (no assistant message since no text/calls)
       expect(messages).toHaveLength(1);
       expect(messages[0].role).toBe("tool");
     });
 
-    it("should handle complex nested tool results", () => {
+    it("should handle complex nested tool results", async () => {
       const result = createMockResult([
         {
           text: "Query result:",
@@ -951,7 +951,7 @@ describe("extractMessagesFromResponse", () => {
         },
       ]);
 
-      const messages = extractMessagesFromResponse(result as any);
+      const messages = await extractMessagesFromResponse(result as any);
 
       expect(messages).toHaveLength(2);
       const toolMsg = messages[1] as { role: "tool"; content: ConversationToolResultPart[] };

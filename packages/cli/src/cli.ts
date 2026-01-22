@@ -982,7 +982,7 @@ async function runInteractiveMode(): Promise<void> {
         // Wait for full response to complete and extract messages
         await result.response;
 
-        const assistantMessages = extractMessagesFromResponse(result);
+        const assistantMessages = await extractMessagesFromResponse(result);
         return { assistantMessages };
       } else {
         // Non-streaming mode - pass conversation history
@@ -1024,7 +1024,7 @@ async function runInteractiveMode(): Promise<void> {
         console.log("\n✨ Answer:\n");
         console.log(result.text);
 
-        const assistantMessages = extractMessagesFromResponse(result);
+        const assistantMessages = await extractMessagesFromResponse(result);
         return { assistantMessages };
       }
     };
