@@ -21,6 +21,15 @@ import {
   type FetchMoreTraceOptions,
 } from "../commands/index.js";
 import type { PhoenixClient } from "@arizeai/phoenix-client";
+import {
+  type ConversationMessage,
+  toModelMessages,
+  createUserMessage,
+  truncateReportToolCalls,
+} from "./conversation.js";
+
+// Re-export ConversationMessage type for consumers
+export type { ConversationMessage } from "./conversation.js";
 
 /**
  * Configuration for the Phoenix Insight agent
@@ -155,11 +164,20 @@ export class PhoenixInsightAgent {
 
   /**
    * Generate a response for a user query
+   *
+   * @param userQuery - The current user query
+   * @param options - Optional configuration
+   * @param options.onStepFinish - Callback called after each agent step
+   * @param options.messages - Optional conversation history for multi-turn conversations.
+   *   When provided, the history is converted to AI SDK format and the userQuery is
+   *   appended as the final user message. Report tool calls in history are truncated
+   *   to save tokens.
    */
   async generate(
     userQuery: string,
     options?: {
       onStepFinish?: (step: any) => void;
+      messages?: ConversationMessage[];
     }
   ): Promise<GenerateTextResult<any, any>> {
     let tools;
@@ -174,17 +192,39 @@ export class PhoenixInsightAgent {
     }
 
     try {
-      const result = await generateText({
+      // Build the request config based on whether we have conversation history
+      const baseConfig = {
         model: this.model,
         system: this.systemPrompt,
-        prompt: userQuery,
         tools,
         stopWhen: stepCountIs(this.maxSteps),
         onStepFinish: options?.onStepFinish,
         experimental_telemetry: {
           isEnabled: true,
         },
-      });
+      };
+
+      let result;
+      if (options?.messages && options.messages.length > 0) {
+        // Multi-turn conversation mode: convert history and append current query
+        const historyMessages = toModelMessages(options.messages);
+        // Truncate report tool calls to save tokens
+        const truncatedHistory = truncateReportToolCalls(historyMessages);
+        // Append the current user query as the last message
+        const currentUserMessage = toModelMessages([createUserMessage(userQuery)]);
+        const allMessages = [...truncatedHistory, ...currentUserMessage];
+
+        result = await generateText({
+          ...baseConfig,
+          messages: allMessages,
+        });
+      } else {
+        // Single-turn mode: use prompt directly
+        result = await generateText({
+          ...baseConfig,
+          prompt: userQuery,
+        });
+      }
 
       return result;
     } catch (error) {
@@ -218,11 +258,20 @@ export class PhoenixInsightAgent {
 
   /**
    * Stream a response for a user query
+   *
+   * @param userQuery - The current user query
+   * @param options - Optional configuration
+   * @param options.onStepFinish - Callback called after each agent step
+   * @param options.messages - Optional conversation history for multi-turn conversations.
+   *   When provided, the history is converted to AI SDK format and the userQuery is
+   *   appended as the final user message. Report tool calls in history are truncated
+   *   to save tokens.
    */
   async stream(
     userQuery: string,
     options?: {
       onStepFinish?: (step: any) => void;
+      messages?: ConversationMessage[];
     }
   ): Promise<StreamTextResult<any, any>> {
     let tools;
@@ -237,17 +286,39 @@ export class PhoenixInsightAgent {
     }
 
     try {
-      const result = streamText({
+      // Build the request config based on whether we have conversation history
+      const baseConfig = {
         model: this.model,
         system: this.systemPrompt,
-        prompt: userQuery,
         tools,
         stopWhen: stepCountIs(this.maxSteps),
         onStepFinish: options?.onStepFinish,
         experimental_telemetry: {
           isEnabled: true,
         },
-      });
+      };
+
+      let result;
+      if (options?.messages && options.messages.length > 0) {
+        // Multi-turn conversation mode: convert history and append current query
+        const historyMessages = toModelMessages(options.messages);
+        // Truncate report tool calls to save tokens
+        const truncatedHistory = truncateReportToolCalls(historyMessages);
+        // Append the current user query as the last message
+        const currentUserMessage = toModelMessages([createUserMessage(userQuery)]);
+        const allMessages = [...truncatedHistory, ...currentUserMessage];
+
+        result = streamText({
+          ...baseConfig,
+          messages: allMessages,
+        });
+      } else {
+        // Single-turn mode: use prompt directly
+        result = streamText({
+          ...baseConfig,
+          prompt: userQuery,
+        });
+      }
 
       return result;
     } catch (error) {
@@ -305,14 +376,15 @@ export async function runQuery(
   options?: {
     onStepFinish?: (step: any) => void;
     stream?: boolean;
+    messages?: ConversationMessage[];
   }
 ): Promise<GenerateTextResult<any, any> | StreamTextResult<any, any>> {
-  const { stream = false, ...callbacks } = options || {};
+  const { stream = false, ...rest } = options || {};
 
   if (stream) {
-    return await agent.stream(userQuery, callbacks);
+    return await agent.stream(userQuery, rest);
   } else {
-    return await agent.generate(userQuery, callbacks);
+    return await agent.generate(userQuery, rest);
   }
 }
 
@@ -325,6 +397,7 @@ export async function runOneShotQuery(
   options?: {
     onStepFinish?: (step: any) => void;
     stream?: boolean;
+    messages?: ConversationMessage[];
   }
 ): Promise<GenerateTextResult<any, any> | StreamTextResult<any, any>> {
   const agent = await createInsightAgent(config);
