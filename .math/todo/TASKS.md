@@ -129,7 +129,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### test-conversation-utils
 
 - content: Write unit tests in `packages/cli/test/conversation.test.ts` for the conversation utility functions: `toModelMessages()`, `truncateReportToolCalls()`, `extractMessagesFromResponse()`, and `compactConversation()`. Test edge cases like empty history, history with only tool calls, and very long conversations.
-- status: pending
+- status: complete
 - dependencies: conversation-compaction, agent-response-to-history
 
 ### test-token-error-detection
