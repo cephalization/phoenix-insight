@@ -269,3 +269,25 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **Helper function for test setup**: The `createAPICallError()` helper creates real `APICallError` instances rather than mocks. This is important because `APICallError.isInstance()` type guard is used in the actual implementation.
 
 - **Test count**: Final count is 40 tests covering `isTokenLimitError()` and `getTokenLimitErrorDescription()` functions.
+
+## test-session-history
+
+- **Tests already existed**: The test file `packages/cli/test/server/session.test.ts` was already created during the `cli-session-history` task with comprehensive tests for basic session functionality. This task added the token error handling and compaction tests.
+
+- **Token limit error mock format matters**: When creating mock `APICallError` for token limit testing, the message MUST contain a recognized pattern like "prompt is too long" for `isTokenLimitError()` to recognize it. Using arbitrary messages like "fail attempt 11" will cause the error to be treated as a non-token-limit error.
+
+- **compactConversation behavior with text-only messages**: The `pruneMessages()` function from AI SDK only removes reasoning content and tool calls. For conversations with only simple text messages (no tool calls, no reasoning), no actual pruning occurs. To test compaction behavior properly, the mock agent must return responses with tool calls so there's content to prune.
+
+- **Test organization for token error handling**: Added a dedicated describe block "token error handling and compaction" with tests covering:
+  1. Successful retry after compaction (with tool calls in history)
+  2. Failed retry after compaction (double failure)
+  3. Non-token-limit errors don't trigger compaction
+  4. Empty history token errors
+  5. Reason field with token count information
+  6. History update after successful retry
+
+- **Message collector pattern**: Create a new collector per test for cleaner isolation. Clear `messages.length = 0` before the action under test to focus on specific behaviors.
+
+- **AICallError requires proper instantiation**: Use real `APICallError` instances from the `ai` package (not mocks) because `APICallError.isInstance()` type guard checks the constructor chain.
+
+- **Test count**: Added 6 new tests for token error handling, bringing total session tests to 46.
