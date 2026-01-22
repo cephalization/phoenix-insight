@@ -27,7 +27,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### move-root-readme-to-development
 
 - content: Move the existing root `README.md` content to a new `DEVELOPMENT.md` file in the repo root. This file currently contains monorepo structure, development setup, package scripts, UI integration testing instructions, architecture overview, and contributing guidelines. These are developer-focused and should live in DEVELOPMENT.md. Do NOT modify `packages/cli/README.md` - leave it as is.
-- status: pending
+- status: complete
 - dependencies: none
 
 ### create-user-focused-readme

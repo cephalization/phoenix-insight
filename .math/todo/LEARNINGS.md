@@ -16,3 +16,10 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Pattern that worked well
 - Anything the next agent should know
 -->
+
+## move-root-readme-to-development
+
+- The root README.md had a mix of user-facing and developer-facing content. The DEVELOPMENT.md file now contains all developer-focused sections: monorepo structure, development setup, package scripts, UI integration testing, architecture overview, and contributing guidelines.
+- The original README.md still exists and needs to be replaced with user-focused content in the next task (`create-user-focused-readme`). The next agent should NOT delete the current README.md yet - that's part of their task.
+- Key sections moved to DEVELOPMENT.md: Packages table, Monorepo Structure, Development (Prerequisites, Setup), Package Scripts, UI Integration Testing, Architecture, Contributing (Making Changes, Release Process, Changeset Guidelines), License, Support.
+- The `packages/cli/README.md` was left untouched as instructed - it contains the detailed CLI documentation that users should be directed to.
