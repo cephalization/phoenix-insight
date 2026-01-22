@@ -85,6 +85,51 @@ describe("isTokenLimitError", () => {
 
         expect(isTokenLimitError(error)).toBe(true);
       });
+
+      it("should detect 'maximum context' error with status 400", () => {
+        const error = createAPICallError({
+          message: "Request exceeds maximum context allowed for this model",
+          statusCode: 400,
+        });
+
+        expect(isTokenLimitError(error)).toBe(true);
+      });
+
+      it("should detect 'exceeds the maximum' error with status 400", () => {
+        const error = createAPICallError({
+          message: "Your input exceeds the maximum allowed by this model",
+          statusCode: 400,
+        });
+
+        expect(isTokenLimitError(error)).toBe(true);
+      });
+
+      it("should detect 'context limit' error with status 400", () => {
+        const error = createAPICallError({
+          message: "Input has exceeded context limit",
+          statusCode: 400,
+        });
+
+        expect(isTokenLimitError(error)).toBe(true);
+      });
+
+      it("should detect 'input too long' error with status 400", () => {
+        const error = createAPICallError({
+          message: "Input too long for the specified model",
+          statusCode: 400,
+        });
+
+        expect(isTokenLimitError(error)).toBe(true);
+      });
+
+      it("should detect 'request too large' error with status 400", () => {
+        const error = createAPICallError({
+          message: "Request too large: please reduce input size",
+          statusCode: 400,
+        });
+
+        expect(isTokenLimitError(error)).toBe(true);
+      });
     });
 
     describe("alternative status codes", () => {

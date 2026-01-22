@@ -135,7 +135,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### test-token-error-detection
 
 - content: Write unit tests in `packages/cli/test/token-errors.test.ts` for `isTokenLimitError()`. Mock various error shapes including `AI_APICallError` with different status codes and messages. Test that it correctly identifies Anthropic token limit errors and doesn't false-positive on other errors.
-- status: pending
+- status: complete
 - dependencies: token-error-detection
 
 ### test-session-history

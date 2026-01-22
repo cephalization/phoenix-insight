@@ -244,3 +244,28 @@ Use this knowledge to avoid repeating mistakes and build on what works.
   3. Edge cases - empty arrays, empty strings, null values
   4. Tool-specific - tool calls with/without text, multiple tools, error results
   5. Long conversations - 100+ messages, many tool calls
+
+## test-token-error-detection
+
+- **Tests already existed**: The test file `packages/cli/test/token-errors.test.ts` was already created during the `token-error-detection` task. The main work for this task was to verify coverage and add tests for any missing patterns.
+
+- **Pattern coverage verification**: Compared the `TOKEN_LIMIT_ERROR_PATTERNS` array in `token-errors.ts` against existing tests. Found 5 patterns that weren't explicitly tested:
+  - "maximum context"
+  - "exceeds the maximum"
+  - "context limit"
+  - "input too long"
+  - "request too large"
+  Added explicit test cases for each of these patterns.
+
+- **Test organization pattern**: Tests are grouped by category using nested describe blocks:
+  - `Anthropic-style token limit errors` - the main pattern matching tests
+  - `alternative status codes` - 413, 422 variations
+  - `case insensitivity` - mixed case handling
+  - `no status code` - fallback to pattern matching only
+  - `false positives prevention` - critical for avoiding retry loops
+  - `with regular Error` - non-APICallError handling
+  - `with non-Error types` - defensive edge cases
+
+- **Helper function for test setup**: The `createAPICallError()` helper creates real `APICallError` instances rather than mocks. This is important because `APICallError.isInstance()` type guard is used in the actual implementation.
+
+- **Test count**: Final count is 40 tests covering `isTokenLimitError()` and `getTokenLimitErrorDescription()` functions.
