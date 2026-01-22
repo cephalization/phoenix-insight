@@ -27,7 +27,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### conversation-types
 
 - content: Define TypeScript types for conversation messages compatible with AI SDK v6. Create a `ConversationMessage` type in `packages/cli/src/agent/conversation.ts` that can represent user messages, assistant messages with text content, and assistant messages with tool calls/results. These types should be convertible to AI SDK's `ModelMessage` format for multi-turn conversations.
-- status: pending
+- status: complete
 - dependencies: none
 
 ### message-conversion-utils
