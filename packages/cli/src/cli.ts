@@ -12,7 +12,9 @@ import {
   type ConversationMessage,
   createUserMessage,
   extractMessagesFromResponse,
+  compactConversation,
 } from "./agent/conversation.js";
+import { isTokenLimitError } from "./agent/token-errors.js";
 import {
   createSnapshot,
   createIncrementalSnapshot,
@@ -924,6 +926,108 @@ async function runInteractiveMode(): Promise<void> {
       rl.prompt();
     });
 
+    // Helper function to execute a single agent query with optional history
+    // Returns the result or throws an error
+    const executeAgentQuery = async (
+      query: string,
+      messages: ConversationMessage[],
+      agentProgress: AgentProgress
+    ): Promise<{ assistantMessages: ConversationMessage[] }> => {
+      if (config.stream) {
+        // Stream mode - pass conversation history
+        const result = await agent.stream(query, {
+          messages: [...messages],
+          onStepFinish: (step: any) => {
+            // Show tool usage even in stream mode
+            if (step.toolCalls?.length) {
+              step.toolCalls.forEach((toolCall: any) => {
+                const toolName = toolCall.toolName;
+                if (toolName === "bash") {
+                  // Extract bash command for better visibility
+                  const command = toolCall.args?.command || "";
+                  const shortCmd = command.split("\n")[0].substring(0, 50);
+                  agentProgress.updateTool(
+                    toolName,
+                    shortCmd + (command.length > 50 ? "..." : "")
+                  );
+                } else {
+                  agentProgress.updateTool(toolName);
+                }
+              });
+            }
+
+            // Show tool results
+            if (step.toolResults?.length) {
+              step.toolResults.forEach((toolResult: any) => {
+                agentProgress.updateToolResult(
+                  toolResult.toolName,
+                  !toolResult.isError
+                );
+              });
+            }
+          },
+        });
+
+        // Stop progress before streaming
+        agentProgress.stop();
+
+        // Handle streaming response
+        console.log("\n✨ Answer:\n");
+        for await (const chunk of result.textStream) {
+          process.stdout.write(chunk);
+        }
+        console.log(); // Final newline
+
+        // Wait for full response to complete and extract messages
+        await result.response;
+
+        const assistantMessages = extractMessagesFromResponse(result);
+        return { assistantMessages };
+      } else {
+        // Non-streaming mode - pass conversation history
+        const result = await agent.generate(query, {
+          messages: [...messages],
+          onStepFinish: (step: any) => {
+            // Show tool usage
+            if (step.toolCalls?.length) {
+              step.toolCalls.forEach((toolCall: any) => {
+                const toolName = toolCall.toolName;
+                if (toolName === "bash") {
+                  // Extract bash command for better visibility
+                  const command = toolCall.args?.command || "";
+                  const shortCmd = command.split("\n")[0].substring(0, 50);
+                  agentProgress.updateTool(
+                    toolName,
+                    shortCmd + (command.length > 50 ? "..." : "")
+                  );
+                } else {
+                  agentProgress.updateTool(toolName);
+                }
+              });
+            }
+
+            // Show tool results
+            if (step.toolResults?.length) {
+              step.toolResults.forEach((toolResult: any) => {
+                agentProgress.updateToolResult(
+                  toolResult.toolName,
+                  !toolResult.isError
+                );
+              });
+            }
+          },
+        });
+
+        // Stop progress and display the final answer
+        agentProgress.succeed();
+        console.log("\n✨ Answer:\n");
+        console.log(result.text);
+
+        const assistantMessages = extractMessagesFromResponse(result);
+        return { assistantMessages };
+      }
+    };
+
     // Helper function to process a single query
     const processQuery = async (query: string): Promise<boolean> => {
       if (query === "exit" || query === "quit") {
@@ -975,105 +1079,66 @@ async function runInteractiveMode(): Promise<void> {
         const agentProgress = new AgentProgress(!config.stream);
         agentProgress.startThinking();
 
-        if (config.stream) {
-          // Stream mode - pass conversation history
-          const result = await agent.stream(query, {
-            messages: [...conversationHistory],
-            onStepFinish: (step: any) => {
-              // Show tool usage even in stream mode
-              if (step.toolCalls?.length) {
-                step.toolCalls.forEach((toolCall: any) => {
-                  const toolName = toolCall.toolName;
-                  if (toolName === "bash") {
-                    // Extract bash command for better visibility
-                    const command = toolCall.args?.command || "";
-                    const shortCmd = command.split("\n")[0].substring(0, 50);
-                    agentProgress.updateTool(
-                      toolName,
-                      shortCmd + (command.length > 50 ? "..." : "")
-                    );
-                  } else {
-                    agentProgress.updateTool(toolName);
-                  }
-                });
-              }
+        // Track whether we had to compact
+        let didCompact = false;
+        let currentHistory = [...conversationHistory];
 
-              // Show tool results
-              if (step.toolResults?.length) {
-                step.toolResults.forEach((toolResult: any) => {
-                  agentProgress.updateToolResult(
-                    toolResult.toolName,
-                    !toolResult.isError
-                  );
-                });
-              }
-            },
-          });
+        try {
+          const { assistantMessages } = await executeAgentQuery(
+            query,
+            currentHistory,
+            agentProgress
+          );
 
-          // Stop progress before streaming
-          agentProgress.stop();
+          // Update conversation history with user message and assistant response
+          conversationHistory.push(createUserMessage(query));
+          conversationHistory.push(...assistantMessages);
+        } catch (error) {
+          // Check if this is a token limit error - if so, compact and retry
+          if (isTokenLimitError(error) && conversationHistory.length > 0) {
+            // Stop any running progress indicator
+            agentProgress.stop();
 
-          // Handle streaming response
-          console.log("\n✨ Answer:\n");
-          for await (const chunk of result.textStream) {
-            process.stdout.write(chunk);
+            // Display warning to user
+            console.log(
+              "\n⚠️  Context was trimmed to fit model limits\n"
+            );
+
+            // Compact the conversation history
+            const compactedHistory = compactConversation(conversationHistory);
+            currentHistory = compactedHistory;
+            didCompact = true;
+
+            // Create a new progress indicator for the retry
+            const retryProgress = new AgentProgress(!config.stream);
+            retryProgress.startThinking();
+
+            // Retry with compacted history
+            const { assistantMessages } = await executeAgentQuery(
+              query,
+              currentHistory,
+              retryProgress
+            );
+
+            // Update conversation history - replace with compacted version plus new messages
+            conversationHistory.length = 0;
+            conversationHistory.push(...compactedHistory);
+            conversationHistory.push(createUserMessage(query));
+            conversationHistory.push(...assistantMessages);
+          } else {
+            // Re-throw non-token-limit errors
+            throw error;
           }
-          console.log(); // Final newline
-
-          // Wait for full response to complete and extract messages
-          await result.response;
-
-          // Update conversation history with user message and assistant response
-          conversationHistory.push(createUserMessage(query));
-          const assistantMessages = extractMessagesFromResponse(result);
-          conversationHistory.push(...assistantMessages);
-        } else {
-          // Non-streaming mode - pass conversation history
-          const result = await agent.generate(query, {
-            messages: [...conversationHistory],
-            onStepFinish: (step: any) => {
-              // Show tool usage
-              if (step.toolCalls?.length) {
-                step.toolCalls.forEach((toolCall: any) => {
-                  const toolName = toolCall.toolName;
-                  if (toolName === "bash") {
-                    // Extract bash command for better visibility
-                    const command = toolCall.args?.command || "";
-                    const shortCmd = command.split("\n")[0].substring(0, 50);
-                    agentProgress.updateTool(
-                      toolName,
-                      shortCmd + (command.length > 50 ? "..." : "")
-                    );
-                  } else {
-                    agentProgress.updateTool(toolName);
-                  }
-                });
-              }
-
-              // Show tool results
-              if (step.toolResults?.length) {
-                step.toolResults.forEach((toolResult: any) => {
-                  agentProgress.updateToolResult(
-                    toolResult.toolName,
-                    !toolResult.isError
-                  );
-                });
-              }
-            },
-          });
-
-          // Stop progress and display the final answer
-          agentProgress.succeed();
-          console.log("\n✨ Answer:\n");
-          console.log(result.text);
-
-          // Update conversation history with user message and assistant response
-          conversationHistory.push(createUserMessage(query));
-          const assistantMessages = extractMessagesFromResponse(result);
-          conversationHistory.push(...assistantMessages);
         }
 
         console.log("\n" + "─".repeat(50) + "\n");
+
+        // Show info about compaction if it happened
+        if (didCompact) {
+          console.log(
+            `(conversation compacted to ${conversationHistory.length} messages)\n`
+          );
+        }
       } catch (error) {
         console.error("\n❌ Query Error:");
         if (error instanceof PhoenixClientError) {

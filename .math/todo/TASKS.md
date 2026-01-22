@@ -97,7 +97,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### interactive-cli-token-retry
 
 - content: In the interactive CLI's query processing, catch token limit errors, compact the conversation, display a warning message to the user (e.g., "⚠️ Context was trimmed to fit model limits"), and retry the query with the compacted history.
-- status: pending
+- status: complete
 - dependencies: interactive-cli-history, token-error-detection, conversation-compaction
 
 ---

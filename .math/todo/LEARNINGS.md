@@ -152,3 +152,26 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **History persists across multiple queries in a session**: The `conversationHistory` array is declared outside the `processQuery` closure but inside `runInteractiveMode`, so it persists across queries but is cleared when the CLI exits (ephemeral, as required).
 
 - **Both streaming and non-streaming paths updated**: Both the `config.stream` branch (using `agent.stream()`) and the non-streaming branch (using `agent.generate()`) pass `messages: [...conversationHistory]` and update the history after the response completes. The update logic is identical in both paths.
+
+## interactive-cli-token-retry
+
+- **Refactored processQuery to separate execution logic**: Extracted the core agent execution (streaming/non-streaming) into a separate `executeAgentQuery()` helper function. This allows the main `processQuery()` function to implement retry logic cleanly without duplicating the complex streaming/tool handling code.
+
+- **Single retry pattern**: The implementation retries exactly once on token limit error. If the retry also fails (whether token error or other), it falls through to the normal error handling. This prevents infinite retry loops.
+
+- **History replacement strategy**: When compaction is needed:
+  1. Compact the current history using `compactConversation()`
+  2. Execute retry with the compacted history
+  3. On success, REPLACE the original `conversationHistory` entirely with: compacted history + new user message + assistant response
+  This ensures the conversation history reflects the compacted state going forward.
+
+- **Progress indicator handling**: The initial progress indicator must be stopped before displaying the compaction warning. A new progress indicator is created for the retry attempt. This provides clean visual feedback to the user.
+
+- **User feedback messages**: 
+  - Warning shown immediately: `⚠️  Context was trimmed to fit model limits`
+  - Info shown after response: `(conversation compacted to N messages)`
+  This helps users understand what happened without being intrusive.
+
+- **Imports required**: Added imports for `compactConversation` from conversation.ts and `isTokenLimitError` from token-errors.ts.
+
+- **Error condition check**: Only attempt compaction+retry if `conversationHistory.length > 0`. If history is empty, there's nothing to compact, so the error is re-thrown immediately.
