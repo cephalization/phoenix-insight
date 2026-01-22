@@ -59,7 +59,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### implement-seed-command
 
 - content: Add a new `seed` subcommand to the CLI that sends a traced hello-world message using ai-sdk. The command should: (1) Load config from the config file, (2) Initialize OpenTelemetry tracing to Phoenix, (3) Use ai-sdk `generateText` with a simple "Hello, world! Please respond briefly." message, (4) Stream or print the response, (5) Ensure the trace is sent to Phoenix, (6) Print success message with link to view trace in Phoenix UI. This validates the user's Phoenix setup is working.
-- status: pending
+- status: complete
 - dependencies: implement-init-command
 
 ### test-seed-command
