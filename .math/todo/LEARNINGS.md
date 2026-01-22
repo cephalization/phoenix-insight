@@ -23,3 +23,11 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - The original README.md still exists and needs to be replaced with user-focused content in the next task (`create-user-focused-readme`). The next agent should NOT delete the current README.md yet - that's part of their task.
 - Key sections moved to DEVELOPMENT.md: Packages table, Monorepo Structure, Development (Prerequisites, Setup), Package Scripts, UI Integration Testing, Architecture, Contributing (Making Changes, Release Process, Changeset Guidelines), License, Support.
 - The `packages/cli/README.md` was left untouched as instructed - it contains the detailed CLI documentation that users should be directed to.
+
+## create-user-focused-readme
+
+- The new root README.md focuses on what users care about: what the tool does, why it's valuable, how to install it, and how to use it.
+- Kept the README concise (~80 lines) - detailed documentation lives in `packages/cli/README.md` and users are linked there.
+- The "Why Phoenix Insight?" section explains the value proposition with three key differentiators: Transparent, Reproducible, Extensible. These align with the "bash + files" paradigm mentioned in the task.
+- Included three usage sections: basic queries, interactive mode, and web UI - covering the main ways users interact with the tool.
+- Links at the bottom direct users to full CLI documentation and development guide rather than duplicating content.
