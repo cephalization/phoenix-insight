@@ -67,6 +67,24 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 
 - **Testing pattern**: Used `vi.mock()` to mock the AI SDK functions and verify the correct parameters are passed. The mocks intercept `generateText` and `streamText` calls, allowing inspection of whether `prompt` or `messages` was used.
 
+## cli-session-token-retry
+
+- **Refactored executeQuery into two methods**: The original `executeQuery()` method was monolithic. To implement retry logic cleanly, I extracted the core streaming logic into a private `executeQueryWithHistory()` method that returns an error (or null on success) instead of throwing. This allows the main `executeQuery()` to handle the token error detection and retry flow without deeply nested try-catch blocks.
+
+- **Retry pattern design**: The retry happens at most once. If the first attempt fails with a token limit error:
+  1. Compact the conversation history in place (mutating `this.conversationHistory`)
+  2. Send `context_compacted` notification to the client with a reason
+  3. Retry with the compacted history
+  4. If retry also fails, send error to client (no further retries)
+  
+- **Error handling flow**: The `executeQueryWithHistory()` method catches errors and returns them instead of re-throwing. This allows the caller to distinguish between success (null returned), token limit errors (needs retry), and other errors (send error to client).
+
+- **WebSocket message type addition**: Added `context_compacted` message type to `ServerMessage` union in `packages/ui/src/lib/websocket.ts`. The CLI's `websocket.ts` imports these types from the UI package, so only one change was needed. The payload includes `sessionId` (required) and `reason` (optional) for displaying to users.
+
+- **Helper function reuse**: Used `getTokenLimitErrorDescription()` from `token-errors.ts` to generate user-friendly messages explaining why compaction happened, including token counts if available in the error message.
+
+- **Done signal handling**: Important to only send `sendDone()` once per query execution. With the retry logic, need to ensure `sendDone()` is called in the success paths (both first attempt success and retry success) but not called when errors occur (errors are sent via `sendError()` instead).
+
 ## token-error-detection
 
 - **APICallError from AI SDK**: The `APICallError` class is exported from the `ai` package (re-exported from `@ai-sdk/provider`). It has:

@@ -81,7 +81,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### cli-session-token-retry
 
 - content: In `AgentSession.executeQuery()`, wrap the agent call in a try-catch. If `isTokenLimitError()` returns true, automatically compact the conversation using `compactConversation()`, notify the client via a new `"context_compacted"` WebSocket message type, and retry the query. Add the new message type to the WebSocket protocol types in both CLI and UI.
-- status: pending
+- status: complete
 - dependencies: cli-session-history, token-error-detection, conversation-compaction
 
 ---

@@ -32,7 +32,11 @@ export type ServerMessage =
     }
   | { type: "report"; payload: { content: JSONRenderTree; sessionId: string } }
   | { type: "error"; payload: { message: string; sessionId?: string } }
-  | { type: "done"; payload: { sessionId: string } };
+  | { type: "done"; payload: { sessionId: string } }
+  | {
+      type: "context_compacted";
+      payload: { sessionId: string; reason?: string };
+    };
 
 /**
  * JSON render tree type placeholder - will be properly typed when json-render is integrated
