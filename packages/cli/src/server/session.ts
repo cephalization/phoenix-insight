@@ -14,19 +14,18 @@ import {
 import type { ExecutionMode } from "../modes/types.js";
 import type { PhoenixClient } from "@arizeai/phoenix-client";
 import { createReportTool } from "../commands/report-tool.js";
+import {
+  type ConversationMessage,
+  createUserMessage,
+  extractMessagesFromResponse,
+} from "../agent/conversation.js";
 
 // ============================================================================
 // Types
 // ============================================================================
 
-/**
- * Message in conversation history
- */
-export interface ConversationMessage {
-  role: "user" | "assistant";
-  content: string;
-  timestamp: number;
-}
+// Re-export ConversationMessage from conversation.ts for external use
+export type { ConversationMessage } from "../agent/conversation.js";
 
 /**
  * Callback for broadcasting messages to a WebSocket client
@@ -196,14 +195,17 @@ export class AgentSession {
   }
 
   /**
-   * Add a message to the conversation history
+   * Add a user message to the conversation history
    */
-  private addToHistory(role: "user" | "assistant", content: string): void {
-    this.conversationHistory.push({
-      role,
-      content,
-      timestamp: Date.now(),
-    });
+  private addUserMessage(content: string): void {
+    this.conversationHistory.push(createUserMessage(content));
+  }
+
+  /**
+   * Add assistant messages (including tool calls and results) to the conversation history
+   */
+  private addAssistantMessages(messages: ConversationMessage[]): void {
+    this.conversationHistory.push(...messages);
   }
 
   /**
@@ -217,7 +219,11 @@ export class AgentSession {
   }
 
   /**
-   * Execute a query and stream the response to the client
+   * Execute a query and stream the response to the client.
+   *
+   * The conversation history is passed to the agent for multi-turn context.
+   * After the response completes, both the user message and the assistant's
+   * response (including any tool calls and results) are appended to the history.
    */
   async executeQuery(query: string): Promise<void> {
     if (this.isExecuting) {
@@ -228,18 +234,18 @@ export class AgentSession {
     this.isExecuting = true;
     this.abortController = new AbortController();
 
-    // Add user message to history
-    this.addToHistory("user", query);
-
     try {
       const agent = await this.getAgent();
 
-      // Use streaming for responses
-      const result = await agent.stream(query, {});
+      // Pass a copy of the conversation history to the agent for multi-turn context
+      // The agent will convert it to AI SDK format and append the current query as the last message
+      // We pass a copy to prevent the agent from seeing mutations we make after the call
+      const result = await agent.stream(query, {
+        messages: [...this.conversationHistory],
+      });
 
       // Stream using fullStream to get real-time tool call/result events
       // This ensures tool calls are sent BEFORE execution, not after
-      let fullResponse = "";
       let lastStepHadText = false;
 
       for await (const part of result.fullStream) {
@@ -253,11 +259,9 @@ export class AgentSession {
             // Add step separator if needed (when previous step had text)
             if (lastStepHadText && part.text.trim().length > 0) {
               const separator = "\n\n";
-              fullResponse += separator;
               this.sendText(separator);
               lastStepHadText = false;
             }
-            fullResponse += part.text;
             this.sendText(part.text);
             break;
 
@@ -275,10 +279,8 @@ export class AgentSession {
             break;
 
           case "text-end":
-            // A text block ended - if there was content, mark for separator
-            if (fullResponse.trim().length > 0) {
-              lastStepHadText = true;
-            }
+            // A text block ended - mark for separator before next step
+            lastStepHadText = true;
             break;
         }
       }
@@ -286,11 +288,16 @@ export class AgentSession {
       // Wait for the full response to complete
       if (!this.abortController?.signal.aborted) {
         await result.response;
-      }
 
-      // Add assistant message to history
-      if (fullResponse) {
-        this.addToHistory("assistant", fullResponse);
+        // Add user message to history (after successful completion)
+        this.addUserMessage(query);
+
+        // Extract the assistant's response (including tool calls/results) from the result
+        // and append to conversation history for future queries
+        const assistantMessages = extractMessagesFromResponse(result);
+        if (assistantMessages.length > 0) {
+          this.addAssistantMessages(assistantMessages);
+        }
       }
 
       // Send done signal
