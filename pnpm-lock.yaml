@@ -17,6 +17,9 @@ importers:
       agent-browser:
         specifier: ^0.5.0
         version: 0.5.0
+      mprocs:
+        specifier: ^0.8.3
+        version: 0.8.3
       rimraf:
         specifier: ^5.0.10
         version: 5.0.10
@@ -3289,6 +3292,11 @@ packages:
 
   module-details-from-path@1.0.4:
     resolution: {integrity: sha512-EGWKgxALGMgzvxYF1UyGTy0HXX/2vHLkw6+NvDKW2jypWbHpjQuj4UMcqQWXHERJhVGKikolT06G3bcKe4fi7w==}
+
+  mprocs@0.8.3:
+    resolution: {integrity: sha512-q3uKG6YLWF9l+fnEgu9CC4qMzEIPSYYMlbTIYdeHYCxGcIm67m4uQmQFmuDr6h69rWPHWJX5N/ih5Ei4h8G9Yg==}
+    engines: {node: '>=0.10.0'}
+    hasBin: true
 
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
@@ -7837,6 +7845,8 @@ snapshots:
   modern-tar@0.7.3: {}
 
   module-details-from-path@1.0.4: {}
+
+  mprocs@0.8.3: {}
 
   mri@1.2.0: {}
 

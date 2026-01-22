@@ -1,0 +1,10 @@
+procs:
+  cli:
+    cmd: ["pnpm", "run", "dev", "ui", "--no-open"]
+    cwd: "packages/cli"
+    stop: { send-keys: ["<C-c>"] }
+
+  frontend:
+    cmd: ["pnpm", "run", "dev"]
+    cwd: "packages/ui"
+    stop: { send-keys: ["<C-c>"] }
