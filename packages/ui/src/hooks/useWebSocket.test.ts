@@ -480,6 +480,41 @@ describe("useWebSocket", () => {
       });
     });
 
+    describe("context_compacted messages", () => {
+      it("handles context_compacted message without error", () => {
+        const session = useChatStore.getState().createSession();
+        renderHook(() => useWebSocket());
+
+        // Should not throw
+        expect(() => {
+          act(() => {
+            mockClient.messageHandler?.({
+              type: "context_compacted",
+              payload: { sessionId: session.id },
+            });
+          });
+        }).not.toThrow();
+      });
+
+      it("handles context_compacted message with reason", () => {
+        const session = useChatStore.getState().createSession();
+        renderHook(() => useWebSocket());
+
+        // Should not throw
+        expect(() => {
+          act(() => {
+            mockClient.messageHandler?.({
+              type: "context_compacted",
+              payload: {
+                sessionId: session.id,
+                reason: "Token limit exceeded, older messages were summarized",
+              },
+            });
+          });
+        }).not.toThrow();
+      });
+    });
+
     describe("done messages", () => {
       it("resets streaming state", () => {
         const session = useChatStore.getState().createSession();

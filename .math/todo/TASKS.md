@@ -113,7 +113,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-handle-compaction
 
 - content: Add a handler in the UI's WebSocket message processing for the `"context_compacted"` message type. When received, display a toast notification (using sonner) informing the user that older conversation context was trimmed to fit model limits. Update the chat store types if needed.
-- status: pending
+- status: complete
 - dependencies: cli-session-token-retry
 
 ### cli-session-use-ui-history
