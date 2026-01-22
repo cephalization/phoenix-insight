@@ -65,7 +65,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### conversation-compaction
 
 - content: Create `compactConversation(messages: ConversationMessage[], options?: { keepFirstN?: number; keepLastN?: number }): ConversationMessage[]` in `packages/cli/src/agent/conversation.ts`. This function should use AI SDK's `pruneMessages()` to remove reasoning and tool calls from older messages. Default to keeping first 2 messages (system context) and last 6 messages. Also summarize older message content to reduce tokens while preserving key context.
-- status: pending
+- status: complete
 - dependencies: message-conversion-utils
 
 ---

@@ -29,6 +29,7 @@ import {
   toModelMessage,
   toModelMessages,
   truncateReportToolCalls,
+  extractMessagesFromResponse,
 } from "../../src/agent/conversation.js";
 
 describe("conversation types", () => {
@@ -904,6 +905,391 @@ describe("conversation types", () => {
       // Result should be different
       const resultContent = (result[0] as AssistantModelMessage).content as Array<{ input: unknown }>;
       expect(resultContent[0]?.input).not.toEqual(originalInput);
+    });
+  });
+
+  describe("extractMessagesFromResponse", () => {
+    // Helper to create a mock AI SDK result
+    function createMockResult(steps: Array<{
+      text?: string;
+      toolCalls?: Array<{
+        type: "tool-call";
+        toolCallId: string;
+        toolName: string;
+        input: unknown;
+      }>;
+      toolResults?: Array<{
+        type: "tool-result";
+        toolCallId: string;
+        toolName: string;
+        output: unknown;
+      }>;
+    }>) {
+      return {
+        steps: steps.map((step) => ({
+          text: step.text || "",
+          toolCalls: step.toolCalls || [],
+          toolResults: step.toolResults || [],
+        })),
+      };
+    }
+
+    it("returns empty array for result with no steps", () => {
+      const result = createMockResult([]);
+      expect(extractMessagesFromResponse(result as any)).toEqual([]);
+    });
+
+    it("returns empty array for result with undefined steps", () => {
+      const result = { steps: undefined };
+      expect(extractMessagesFromResponse(result as any)).toEqual([]);
+    });
+
+    it("extracts text-only response from single step", () => {
+      const result = createMockResult([
+        { text: "Hello, how can I help you?" },
+      ]);
+
+      const messages = extractMessagesFromResponse(result as any);
+
+      expect(messages).toHaveLength(1);
+      expect(messages[0]).toEqual({
+        role: "assistant",
+        content: "Hello, how can I help you?",
+      });
+    });
+
+    it("extracts response with single tool call", () => {
+      const result = createMockResult([
+        {
+          text: "Let me check that for you.",
+          toolCalls: [
+            {
+              type: "tool-call",
+              toolCallId: "call_123",
+              toolName: "bash",
+              input: { command: "ls -la" },
+            },
+          ],
+        },
+      ]);
+
+      const messages = extractMessagesFromResponse(result as any);
+
+      expect(messages).toHaveLength(1);
+      expect(messages[0]).toEqual({
+        role: "assistant",
+        content: [
+          { type: "text", text: "Let me check that for you." },
+          {
+            type: "tool-call",
+            toolCallId: "call_123",
+            toolName: "bash",
+            args: { command: "ls -la" },
+          },
+        ],
+      });
+    });
+
+    it("extracts response with tool call but no text", () => {
+      const result = createMockResult([
+        {
+          text: "",
+          toolCalls: [
+            {
+              type: "tool-call",
+              toolCallId: "call_456",
+              toolName: "read_file",
+              input: { path: "/tmp/test.txt" },
+            },
+          ],
+        },
+      ]);
+
+      const messages = extractMessagesFromResponse(result as any);
+
+      expect(messages).toHaveLength(1);
+      const assistantMsg = messages[0] as ConversationAssistantMessage;
+      expect(assistantMsg.role).toBe("assistant");
+      expect(Array.isArray(assistantMsg.content)).toBe(true);
+      
+      const content = assistantMsg.content as ConversationToolCallPart[];
+      expect(content).toHaveLength(1);
+      expect(content[0]).toEqual({
+        type: "tool-call",
+        toolCallId: "call_456",
+        toolName: "read_file",
+        args: { path: "/tmp/test.txt" },
+      });
+    });
+
+    it("extracts tool results as separate tool message", () => {
+      const result = createMockResult([
+        {
+          text: "Running command...",
+          toolCalls: [
+            {
+              type: "tool-call",
+              toolCallId: "call_789",
+              toolName: "bash",
+              input: { command: "echo hello" },
+            },
+          ],
+          toolResults: [
+            {
+              type: "tool-result",
+              toolCallId: "call_789",
+              toolName: "bash",
+              output: { stdout: "hello", exitCode: 0 },
+            },
+          ],
+        },
+      ]);
+
+      const messages = extractMessagesFromResponse(result as any);
+
+      expect(messages).toHaveLength(2);
+
+      // First message: assistant with text and tool call
+      expect(messages[0]).toEqual({
+        role: "assistant",
+        content: [
+          { type: "text", text: "Running command..." },
+          {
+            type: "tool-call",
+            toolCallId: "call_789",
+            toolName: "bash",
+            args: { command: "echo hello" },
+          },
+        ],
+      });
+
+      // Second message: tool results
+      expect(messages[1]).toEqual({
+        role: "tool",
+        content: [
+          {
+            type: "tool-result",
+            toolCallId: "call_789",
+            toolName: "bash",
+            result: { stdout: "hello", exitCode: 0 },
+          },
+        ],
+      });
+    });
+
+    it("extracts multi-step conversation", () => {
+      const result = createMockResult([
+        // Step 1: Agent thinks and calls a tool
+        {
+          text: "Let me search for files.",
+          toolCalls: [
+            {
+              type: "tool-call",
+              toolCallId: "call_1",
+              toolName: "bash",
+              input: { command: "find . -name '*.ts'" },
+            },
+          ],
+          toolResults: [
+            {
+              type: "tool-result",
+              toolCallId: "call_1",
+              toolName: "bash",
+              output: { stdout: "file1.ts\nfile2.ts" },
+            },
+          ],
+        },
+        // Step 2: Agent reads a file
+        {
+          text: "Found some files, let me read the first one.",
+          toolCalls: [
+            {
+              type: "tool-call",
+              toolCallId: "call_2",
+              toolName: "read_file",
+              input: { path: "file1.ts" },
+            },
+          ],
+          toolResults: [
+            {
+              type: "tool-result",
+              toolCallId: "call_2",
+              toolName: "read_file",
+              output: { content: "export const x = 1;" },
+            },
+          ],
+        },
+        // Step 3: Agent provides final answer
+        {
+          text: "I found 2 TypeScript files. The first file exports a constant x.",
+        },
+      ]);
+
+      const messages = extractMessagesFromResponse(result as any);
+
+      // Step 1: assistant + tool
+      // Step 2: assistant + tool
+      // Step 3: assistant (text only)
+      expect(messages).toHaveLength(5);
+
+      // Step 1 assistant message
+      expect((messages[0] as ConversationAssistantMessage).role).toBe("assistant");
+      expect(Array.isArray((messages[0] as ConversationAssistantMessage).content)).toBe(true);
+
+      // Step 1 tool result
+      expect((messages[1] as ConversationToolMessage).role).toBe("tool");
+
+      // Step 2 assistant message
+      expect((messages[2] as ConversationAssistantMessage).role).toBe("assistant");
+
+      // Step 2 tool result
+      expect((messages[3] as ConversationToolMessage).role).toBe("tool");
+
+      // Step 3 final text response
+      expect(messages[4]).toEqual({
+        role: "assistant",
+        content: "I found 2 TypeScript files. The first file exports a constant x.",
+      });
+    });
+
+    it("handles multiple tool calls in a single step", () => {
+      const result = createMockResult([
+        {
+          text: "Let me run multiple commands.",
+          toolCalls: [
+            {
+              type: "tool-call",
+              toolCallId: "call_a",
+              toolName: "bash",
+              input: { command: "pwd" },
+            },
+            {
+              type: "tool-call",
+              toolCallId: "call_b",
+              toolName: "bash",
+              input: { command: "whoami" },
+            },
+          ],
+          toolResults: [
+            {
+              type: "tool-result",
+              toolCallId: "call_a",
+              toolName: "bash",
+              output: { stdout: "/home/user" },
+            },
+            {
+              type: "tool-result",
+              toolCallId: "call_b",
+              toolName: "bash",
+              output: { stdout: "user" },
+            },
+          ],
+        },
+      ]);
+
+      const messages = extractMessagesFromResponse(result as any);
+
+      expect(messages).toHaveLength(2);
+
+      // Assistant message with multiple tool calls
+      const assistantMsg = messages[0] as ConversationAssistantMessage;
+      const content = assistantMsg.content as (ConversationTextPart | ConversationToolCallPart)[];
+      expect(content).toHaveLength(3); // text + 2 tool calls
+      expect(content[0]).toEqual({ type: "text", text: "Let me run multiple commands." });
+      expect(content[1]?.type).toBe("tool-call");
+      expect(content[2]?.type).toBe("tool-call");
+
+      // Tool message with multiple results
+      const toolMsg = messages[1] as ConversationToolMessage;
+      expect(toolMsg.content).toHaveLength(2);
+      expect(toolMsg.content[0]?.toolCallId).toBe("call_a");
+      expect(toolMsg.content[1]?.toolCallId).toBe("call_b");
+    });
+
+    it("skips steps with no text and no tool calls", () => {
+      const result = createMockResult([
+        { text: "", toolCalls: [], toolResults: [] },
+        { text: "Hello" },
+      ]);
+
+      const messages = extractMessagesFromResponse(result as any);
+
+      expect(messages).toHaveLength(1);
+      expect(messages[0]).toEqual({
+        role: "assistant",
+        content: "Hello",
+      });
+    });
+
+    it("handles tool results without corresponding tool calls in step", () => {
+      // This can happen if tool calls were in a previous step
+      const result = createMockResult([
+        {
+          text: "",
+          toolCalls: [],
+          toolResults: [
+            {
+              type: "tool-result",
+              toolCallId: "call_prev",
+              toolName: "bash",
+              output: { stdout: "result" },
+            },
+          ],
+        },
+      ]);
+
+      const messages = extractMessagesFromResponse(result as any);
+
+      // Only tool results message (no assistant message since no text/tool calls)
+      expect(messages).toHaveLength(1);
+      expect(messages[0]).toEqual({
+        role: "tool",
+        content: [
+          {
+            type: "tool-result",
+            toolCallId: "call_prev",
+            toolName: "bash",
+            result: { stdout: "result" },
+          },
+        ],
+      });
+    });
+
+    it("preserves complex tool output as JSONValue", () => {
+      const complexOutput = {
+        data: [
+          { id: 1, name: "test", nested: { value: true } },
+          { id: 2, name: "test2", nested: { value: false } },
+        ],
+        meta: { total: 2, page: 1 },
+      };
+
+      const result = createMockResult([
+        {
+          text: "",
+          toolCalls: [
+            {
+              type: "tool-call",
+              toolCallId: "call_complex",
+              toolName: "fetch_data",
+              input: {},
+            },
+          ],
+          toolResults: [
+            {
+              type: "tool-result",
+              toolCallId: "call_complex",
+              toolName: "fetch_data",
+              output: complexOutput,
+            },
+          ],
+        },
+      ]);
+
+      const messages = extractMessagesFromResponse(result as any);
+      const toolMsg = messages[1] as ConversationToolMessage;
+
+      expect(toolMsg.content[0]?.result).toEqual(complexOutput);
     });
   });
 });
