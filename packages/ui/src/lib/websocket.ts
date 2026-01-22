@@ -7,6 +7,77 @@
 import { WebSocket as PartyWebSocket } from "partysocket";
 
 // ============================================================================
+// Conversation History Types (for sending with queries)
+// ============================================================================
+
+/**
+ * A text content part in an assistant message
+ */
+export interface UITextPart {
+  type: "text";
+  text: string;
+}
+
+/**
+ * A tool call content part in an assistant message
+ */
+export interface UIToolCallPart {
+  type: "tool-call";
+  toolCallId: string;
+  toolName: string;
+  args: unknown;
+}
+
+/**
+ * Content parts that can appear in assistant messages
+ */
+export type UIAssistantContentPart = UITextPart | UIToolCallPart;
+
+/**
+ * A tool result content part
+ */
+export interface UIToolResultPart {
+  type: "tool-result";
+  toolCallId: string;
+  toolName: string;
+  result: unknown;
+  isError?: boolean;
+}
+
+/**
+ * A user message in the conversation history
+ */
+export interface UIUserMessage {
+  role: "user";
+  content: string;
+}
+
+/**
+ * An assistant message in the conversation history
+ */
+export interface UIAssistantMessage {
+  role: "assistant";
+  content: string | UIAssistantContentPart[];
+}
+
+/**
+ * A tool message containing tool results
+ */
+export interface UIToolMessage {
+  role: "tool";
+  content: UIToolResultPart[];
+}
+
+/**
+ * Conversation message types that can be sent with queries.
+ * These mirror the CLI's ConversationMessage types for consistency.
+ */
+export type UIConversationMessage =
+  | UIUserMessage
+  | UIAssistantMessage
+  | UIToolMessage;
+
+// ============================================================================
 // Message Types
 // ============================================================================
 
@@ -14,7 +85,15 @@ import { WebSocket as PartyWebSocket } from "partysocket";
  * Messages sent from the UI client to the server
  */
 export type ClientMessage =
-  | { type: "query"; payload: { content: string; sessionId?: string } }
+  | {
+      type: "query";
+      payload: {
+        content: string;
+        sessionId?: string;
+        /** Optional conversation history to send with the query */
+        history?: UIConversationMessage[];
+      };
+    }
   | { type: "cancel"; payload: { sessionId?: string } };
 
 /**
