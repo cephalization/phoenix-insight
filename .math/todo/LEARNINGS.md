@@ -195,3 +195,15 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **Tool call status handling**: When converting tool calls, we check for both `completed` and `error` statuses to include results. The `isError` flag is set based on the status being `error`.
 
 - **History captured before adding user message**: The history is captured from the session BEFORE adding the new user message to the store. This is important because the server will add the user message as part of the conversation when processing.
+
+## ui-handle-compaction
+
+- **Type already defined**: The `context_compacted` message type was already added to `ServerMessage` in `websocket.ts` during the `cli-session-token-retry` task (lines 115-118). This task only required adding the handler.
+
+- **Handler added to switch statement**: Added a case for `context_compacted` in the `handleMessage` callback inside `useWebSocket.ts`. The handler uses `toast.info()` from sonner to display a non-intrusive notification.
+
+- **Toast message design**: Uses title "Conversation context trimmed" with description from the `reason` field if provided, otherwise a default message "Older messages were summarized to fit model context limits." Duration set to 5 seconds to match other toast notifications in the codebase.
+
+- **No store updates needed**: Unlike `text`, `tool_call`, `tool_result` etc., the `context_compacted` message doesn't update any stores. It's purely informational to the user - the server handles the actual compaction on its side.
+
+- **Test pattern**: Added two tests for `context_compacted` messages - one without a reason and one with a reason. Tests verify the handler doesn't throw, since toast notifications are fire-and-forget (no state changes to assert on).

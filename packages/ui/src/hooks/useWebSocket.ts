@@ -372,6 +372,18 @@ export function useWebSocket(
           setIsStreaming(false);
           break;
         }
+
+        case "context_compacted": {
+          // Server had to trim conversation context to fit model limits
+          const { reason } = message.payload;
+          toast.info("Conversation context trimmed", {
+            description:
+              reason ||
+              "Older messages were summarized to fit model context limits.",
+            duration: 5000,
+          });
+          break;
+        }
       }
     },
     [
