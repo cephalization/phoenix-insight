@@ -107,7 +107,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### ui-send-history
 
 - content: Update the WebSocket `query` message type in `packages/ui/src/lib/websocket.ts` to include an optional `history` field containing the session's message history. Modify `useWebSocket` hook to include the current session's messages when sending queries. Update the corresponding server-side types in `packages/cli/src/server/websocket.ts`.
-- status: pending
+- status: complete
 - dependencies: conversation-types
 
 ### ui-handle-compaction

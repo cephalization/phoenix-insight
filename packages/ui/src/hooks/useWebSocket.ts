@@ -5,12 +5,127 @@
 
 import { useEffect, useRef, useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import { WebSocketClient, type ServerMessage } from "@/lib/websocket";
-import { useChatStore } from "@/store/chat";
+import {
+  WebSocketClient,
+  type ServerMessage,
+  type UIConversationMessage,
+  type UIAssistantContentPart,
+  type UIToolResultPart,
+} from "@/lib/websocket";
+import { useChatStore, type Message, type ToolCall } from "@/store/chat";
 import { useReportStore, type JSONRenderTree } from "@/store/report";
 
 // Default WebSocket URL (localhost:6007)
 const DEFAULT_WS_URL = "ws://localhost:6007";
+
+// ============================================================================
+// Conversation History Conversion
+// ============================================================================
+
+/**
+ * Convert a UI ToolCall to the parts needed for conversation history.
+ * Returns both the tool-call part (for assistant message) and tool-result part (for tool message).
+ */
+function convertToolCallToParts(
+  toolCall: ToolCall
+): {
+  callPart: UIAssistantContentPart;
+  resultPart?: UIToolResultPart;
+} {
+  const callPart: UIAssistantContentPart = {
+    type: "tool-call",
+    toolCallId: toolCall.id,
+    toolName: toolCall.toolName,
+    args: toolCall.args,
+  };
+
+  // Only include result if the tool call has completed (successfully or with error)
+  const hasResult = (toolCall.status === "completed" || toolCall.status === "error") && toolCall.result !== undefined;
+  const resultPart: UIToolResultPart | undefined = hasResult
+    ? {
+        type: "tool-result",
+        toolCallId: toolCall.id,
+        toolName: toolCall.toolName,
+        result: toolCall.result,
+        isError: toolCall.status === "error",
+      }
+    : undefined;
+
+  return { callPart, resultPart };
+}
+
+/**
+ * Convert UI Message array to UIConversationMessage array for sending with queries.
+ *
+ * The UI stores messages differently from the CLI's conversation format:
+ * - UI: Each assistant message may have embedded toolCalls array
+ * - CLI: Tool calls are inline content, tool results are separate tool messages
+ *
+ * This function converts the UI format to the CLI-compatible wire format.
+ */
+function convertMessagesToHistory(messages: Message[]): UIConversationMessage[] {
+  const history: UIConversationMessage[] = [];
+
+  for (const message of messages) {
+    if (message.role === "user") {
+      // User messages are straightforward
+      history.push({
+        role: "user",
+        content: message.content,
+      });
+    } else if (message.role === "assistant") {
+      // Assistant messages may have tool calls embedded
+      const hasToolCalls = message.toolCalls && message.toolCalls.length > 0;
+
+      if (!hasToolCalls) {
+        // Simple text-only assistant message
+        history.push({
+          role: "assistant",
+          content: message.content,
+        });
+      } else {
+        // Assistant message with tool calls - need to build content array
+        const contentParts: UIAssistantContentPart[] = [];
+        const toolResultParts: UIToolResultPart[] = [];
+
+        // Add text content if present
+        if (message.content && message.content.length > 0) {
+          contentParts.push({
+            type: "text",
+            text: message.content,
+          });
+        }
+
+        // Add tool calls and collect results
+        for (const toolCall of message.toolCalls!) {
+          const { callPart, resultPart } = convertToolCallToParts(toolCall);
+          contentParts.push(callPart);
+          if (resultPart) {
+            toolResultParts.push(resultPart);
+          }
+        }
+
+        // Add assistant message with tool calls
+        history.push({
+          role: "assistant",
+          content: contentParts.length === 1 && contentParts[0].type === "text"
+            ? (contentParts[0] as { type: "text"; text: string }).text
+            : contentParts,
+        });
+
+        // Add tool results as separate tool message if any
+        if (toolResultParts.length > 0) {
+          history.push({
+            role: "tool",
+            content: toolResultParts,
+          });
+        }
+      }
+    }
+  }
+
+  return history;
+}
 
 /**
  * Convert technical error messages to user-friendly messages.
@@ -350,17 +465,31 @@ export function useWebSocket(
         sessionId = newSession.id;
       }
 
+      // Get current session messages for history (before adding the new user message)
+      const currentSession = useChatStore
+        .getState()
+        .sessions.find((s) => s.id === sessionId);
+      const existingMessages = currentSession?.messages ?? [];
+
+      // Convert existing messages to history format
+      const history = convertMessagesToHistory(existingMessages);
+
       // Add user message to chat
       addMessage(sessionId, { role: "user", content });
 
       // Reset any previous assistant message ref
       currentAssistantMessageIdRef.current = null;
 
-      // Send query to server
+      // Send query to server with history
       try {
         clientRef.current.send({
           type: "query",
-          payload: { content, sessionId },
+          payload: {
+            content,
+            sessionId,
+            // Only include history if there are previous messages
+            ...(history.length > 0 && { history }),
+          },
         });
       } catch (error) {
         console.error("Failed to send query:", error);

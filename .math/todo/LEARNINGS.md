@@ -175,3 +175,23 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **Imports required**: Added imports for `compactConversation` from conversation.ts and `isTokenLimitError` from token-errors.ts.
 
 - **Error condition check**: Only attempt compaction+retry if `conversationHistory.length > 0`. If history is empty, there's nothing to compact, so the error is re-thrown immediately.
+
+## ui-send-history
+
+- **Parallel type definitions**: Defined `UIConversationMessage` and related types in the UI package (`websocket.ts`) that mirror the CLI's `ConversationMessage` types. This creates a clear wire format boundary - the UI converts its internal `Message` types to `UIConversationMessage` before sending, and the CLI will convert received `UIConversationMessage` to its `ConversationMessage` format.
+
+- **UI Message to ConversationMessage conversion**: The UI stores messages differently from the conversation format:
+  - UI: Each `Message` has `role` and `content`, with optional embedded `toolCalls` array
+  - Conversation format: Tool calls are inline content parts, tool results are separate `tool` role messages
+  
+  The `convertMessagesToHistory()` function handles this conversion, creating:
+  1. Assistant messages with `content` as array of text/tool-call parts when tool calls exist
+  2. Separate `tool` role messages containing tool results after each assistant message with tool calls
+
+- **History sent only when non-empty**: The query payload only includes `history` field when there are previous messages (`history.length > 0`). This keeps payloads minimal for fresh sessions.
+
+- **Type exports via barrel file**: The UI types are exported via `packages/ui/src/lib/types.ts` which re-exports from `websocket.ts`. The CLI imports from `@cephalization/phoenix-insight-ui/types`, so updating the UI types automatically updates what the CLI sees (no separate CLI changes needed).
+
+- **Tool call status handling**: When converting tool calls, we check for both `completed` and `error` statuses to include results. The `isError` flag is set based on the status being `error`.
+
+- **History captured before adding user message**: The history is captured from the session BEFORE adding the new user message to the store. This is important because the server will add the user message as part of the conversation when processing.
