@@ -49,7 +49,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### test-init-command
 
 - content: Write tests for the init command in `packages/cli/test/commands/init.test.ts`. Test: (1) Creates config file with provided values, (2) Uses defaults when user provides empty input, (3) Shows appropriate messages about defaults, (4) Handles existing config file (warn but don't overwrite without confirmation), (5) Creates parent directories if they don't exist.
-- status: pending
+- status: complete
 - dependencies: implement-init-command
 
 ---
