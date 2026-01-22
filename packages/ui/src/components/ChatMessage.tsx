@@ -114,11 +114,14 @@ export function ChatMessage({
 
   return (
     <div
-      className={cn("flex w-full", isUser ? "justify-end" : "justify-start")}
+      className={cn(
+        "flex min-w-0 w-full",
+        isUser ? "justify-end" : "justify-start"
+      )}
     >
       <div
         className={cn(
-          "max-w-[80%] rounded-lg px-4 py-3",
+          "max-w-[80%] rounded-lg px-4 py-3 overflow-hidden",
           isUser
             ? "bg-primary text-primary-foreground"
             : "bg-muted text-foreground"
@@ -145,14 +148,21 @@ export function ChatMessage({
                 <div
                   key={`text-${index}`}
                   className={cn(
-                    "prose prose-sm max-w-none",
+                    "prose prose-sm max-w-full overflow-x-auto **:data-[streamdown=code-block-body]:bg-accent-foreground! dark:**:data-[streamdown=code-block-body]:bg-primary-foreground!",
                     isUser ? "prose-invert" : "prose-neutral dark:prose-invert"
                   )}
                 >
                   {isUser ? (
-                    <p className="m-0 whitespace-pre-wrap">{segment.content}</p>
+                    <p className="m-0 whitespace-pre-wrap break-word">
+                      {segment.content}
+                    </p>
                   ) : (
-                    <Streamdown>{segment.content}</Streamdown>
+                    <Streamdown
+                      shikiTheme={["github-dark", "github-dark"]}
+                      mode="streaming"
+                    >
+                      {segment.content}
+                    </Streamdown>
                   )}
                 </div>
               );
