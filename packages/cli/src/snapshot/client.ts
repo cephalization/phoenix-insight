@@ -34,7 +34,8 @@ export function createPhoenixClient(
   const headers: Record<string, string> = {};
 
   if (config.apiKey) {
-    headers["api_key"] = config.apiKey;
+    // Phoenix client expects Authorization header with Bearer token
+    headers["Authorization"] = `Bearer ${config.apiKey}`;
   }
 
   const clientOptions: Parameters<typeof createClient>[0] = {
@@ -103,7 +104,9 @@ export async function withErrorHandling<T>(
 
     // Unknown errors
     throw new PhoenixClientError(
-      `Unexpected error during ${context}: ${error instanceof Error ? error.message : String(error)}`,
+      `Unexpected error during ${context}: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
       "UNKNOWN_ERROR",
       error
     );
