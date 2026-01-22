@@ -51,3 +51,14 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - The test file has 44 tests organized into logical sections: path construction, config creation, defaults handling, messages, existing file handling, directory creation, console output, prompt behavior, error handling, and config schema.
 - TypeScript gotcha: When using spread with a potentially falsy value like `...(apiKey && { apiKey })`, the spread may fail if `apiKey` is empty string. Use explicit `if` statements instead for cleaner type handling.
 - TypeScript gotcha: Direct string literal comparisons like `"custom-url" === "default-url"` trigger "no overlap" errors. Use typed variables instead of literals to avoid this.
+
+## implement-seed-command
+
+- The `seed` command was added inline in `cli.ts` following the established pattern for commands like `init`, `prune`, and `ui`.
+- Used dynamic imports (`await import(...)`) for `ai` and `@ai-sdk/anthropic` to keep the CLI startup fast - these dependencies are only loaded when the seed command is actually invoked.
+- The command uses `experimental_telemetry: { isEnabled: true }` in the `generateText` call, which is the ai-sdk way to enable OpenTelemetry tracing. Combined with `initializeObservability()` from the existing observability module, this sends traces to Phoenix.
+- Important: `shutdownObservability()` must be called before showing the success message to ensure traces are flushed to Phoenix. Otherwise traces might not appear immediately in the UI.
+- The Phoenix project URL is constructed as `{baseUrl}/projects/phoenix-insight-seed` - the project is auto-created when traces are received.
+- Error handling specifically checks for common failure modes: ECONNREFUSED (Phoenix not running), authentication errors (invalid Anthropic key), and provides actionable error messages for each.
+- The command validates ANTHROPIC_API_KEY is set before attempting the API call - using the same error message pattern as `ensureAnthropicApiKey()` for consistency.
+- This command doesn't require tests per the task definition - tests are in a separate task (`test-seed-command`).

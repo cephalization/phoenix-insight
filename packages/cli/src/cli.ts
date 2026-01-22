@@ -382,6 +382,14 @@ program
     await runInitCommand();
   });
 
+// Seed Command - sends a traced hello-world message to verify Phoenix setup
+program
+  .command("seed")
+  .description("Send a traced hello-world message to verify Phoenix setup")
+  .action(async () => {
+    await runSeedCommand();
+  });
+
 program
   .command("prune")
   .description(
@@ -747,6 +755,128 @@ async function runInitCommand(): Promise<void> {
     console.error(
       `   ${error instanceof Error ? error.message : String(error)}`
     );
+    process.exit(1);
+  }
+}
+
+/**
+ * Run the seed command to send a traced hello-world message
+ */
+async function runSeedCommand(): Promise<void> {
+  const { generateText } = await import("ai");
+  const { anthropic } = await import("@ai-sdk/anthropic");
+
+  console.log("🌱 Phoenix Insight Seed - Verifying Phoenix Setup\n");
+
+  // Load config
+  let config;
+  try {
+    config = getConfig();
+  } catch {
+    // Config not initialized yet, initialize with defaults
+    config = await initializeConfig({});
+  }
+
+  // Check for Anthropic API key
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error("❌ Error: Missing ANTHROPIC_API_KEY environment variable\n");
+    console.error("The Anthropic API key is required to run the seed command.\n");
+    console.error("To fix this, set the environment variable:\n");
+    console.error("  export ANTHROPIC_API_KEY=sk-ant-api03-...\n");
+    console.error(
+      "You can get an API key from: https://console.anthropic.com/\n"
+    );
+    process.exit(1);
+  }
+
+  console.log(`📋 Configuration:`);
+  console.log(`   Phoenix URL: ${config.baseUrl}`);
+  if (config.apiKey) {
+    console.log(`   Phoenix API Key: ${config.apiKey.substring(0, 8)}...`);
+  }
+  console.log();
+
+  // Initialize observability (always enabled for seed command)
+  console.log("🔭 Initializing OpenTelemetry tracing...");
+  initializeObservability({
+    enabled: true,
+    baseUrl: config.baseUrl,
+    apiKey: config.apiKey,
+    projectName: "phoenix-insight-seed",
+    debug: !!process.env.DEBUG,
+  });
+
+  try {
+    console.log("🤖 Sending hello-world message to Claude...\n");
+
+    // Use ai-sdk generateText with a simple hello-world message
+    const result = await generateText({
+      model: anthropic("claude-sonnet-4-20250514"),
+      prompt: "Hello, world! Please respond briefly.",
+      experimental_telemetry: {
+        isEnabled: true,
+      },
+    });
+
+    console.log("✨ Response from Claude:\n");
+    console.log(`   ${result.text}\n`);
+
+    // Ensure traces are flushed before showing success
+    console.log("📤 Flushing traces to Phoenix...");
+    await shutdownObservability();
+
+    // Build the Phoenix UI URL
+    let phoenixUrl = config.baseUrl;
+    // Remove trailing slash if present
+    if (phoenixUrl.endsWith("/")) {
+      phoenixUrl = phoenixUrl.slice(0, -1);
+    }
+    // Add project path
+    const projectUrl = `${phoenixUrl}/projects/phoenix-insight-seed`;
+
+    console.log("\n✅ Seed completed successfully!\n");
+    console.log("🔗 View your trace in Phoenix:");
+    console.log(`   ${projectUrl}\n`);
+    console.log(
+      "💡 If you don't see the trace immediately, wait a few seconds and refresh the page."
+    );
+  } catch (error) {
+    // Shutdown observability on error too
+    await shutdownObservability();
+
+    console.error("\n❌ Error during seed:");
+
+    if (error instanceof Error) {
+      if (
+        error.message.includes("ECONNREFUSED") ||
+        error.message.includes("fetch failed")
+      ) {
+        console.error(
+          `\n🌐 Network Error: Unable to connect to Phoenix at ${config.baseUrl}`
+        );
+        console.error("   Make sure Phoenix is running and accessible.");
+        console.error(
+          "   For self-hosted: docker run -d -p 6006:6006 arizephoenix/phoenix:latest"
+        );
+        console.error(
+          "   For Phoenix Cloud: Update your config with the correct URL\n"
+        );
+      } else if (
+        error.message.includes("authentication") ||
+        error.message.includes("API key") ||
+        error.message.includes("401")
+      ) {
+        console.error("\n🔒 Authentication Error:");
+        console.error(
+          "   Check your ANTHROPIC_API_KEY environment variable.\n"
+        );
+      } else {
+        console.error(`   ${error.message}\n`);
+      }
+    } else {
+      console.error(`   ${String(error)}\n`);
+    }
+
     process.exit(1);
   }
 }
