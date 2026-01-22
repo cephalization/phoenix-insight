@@ -1,5 +1,11 @@
 # @cephalization/phoenix-insight
 
+## 1.1.1
+
+### Patch Changes
+
+- 9906cae: fix: Ensure api_key is passed correctly to client
+
 ## 1.1.0
 
 ### Minor Changes
