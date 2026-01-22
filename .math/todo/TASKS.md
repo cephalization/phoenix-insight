@@ -22,125 +22,65 @@ Each agent picks the next pending task, implements it, and marks it complete.
 
 ---
 
-## Phase 1: Core Conversation Types and Message Conversion
+## Phase 1: Documentation Restructuring
 
-### conversation-types
+### move-root-readme-to-development
 
-- content: Define TypeScript types for conversation messages compatible with AI SDK v6. Create a `ConversationMessage` type in `packages/cli/src/agent/conversation.ts` that can represent user messages, assistant messages with text content, and assistant messages with tool calls/results. These types should be convertible to AI SDK's `ModelMessage` format for multi-turn conversations.
-- status: complete
+- content: Move the existing root `README.md` content to a new `DEVELOPMENT.md` file in the repo root. This file currently contains monorepo structure, development setup, package scripts, UI integration testing instructions, architecture overview, and contributing guidelines. These are developer-focused and should live in DEVELOPMENT.md. Do NOT modify `packages/cli/README.md` - leave it as is.
+- status: pending
 - dependencies: none
 
-### message-conversion-utils
+### create-user-focused-readme
 
-- content: Create utility functions in `packages/cli/src/agent/conversation.ts` to convert between the internal `ConversationMessage` format and AI SDK's `ModelMessage[]` format. Implement `toModelMessages(history: ConversationMessage[]): ModelMessage[]` that properly formats tool calls and results. Also implement `truncateReportToolCalls(messages: ModelMessage[]): ModelMessage[]` to remove dense `generate_report` tool call arguments from history while keeping the tool call record (as per user requirement to save tokens).
-- status: complete
-- dependencies: conversation-types
-
----
-
-## Phase 2: Agent Conversation History Support
-
-### agent-messages-api
-
-- content: Modify `PhoenixInsightAgent.stream()` and `PhoenixInsightAgent.generate()` in `packages/cli/src/agent/index.ts` to accept an optional `messages` parameter (array of `ConversationMessage`). When provided, use AI SDK's `messages` property instead of `prompt` to enable multi-turn conversations. The current user query should be appended as the last user message in the array.
-- status: complete
-- dependencies: message-conversion-utils
-
-### agent-response-to-history
-
-- content: Create a utility function `extractMessagesFromResponse(result: GenerateTextResult | StreamTextResult): ConversationMessage[]` in `packages/cli/src/agent/conversation.ts` that extracts the assistant's response (including any tool calls and results) from an AI SDK result object and converts it to internal `ConversationMessage` format. This will be used to update conversation history after each query.
-- status: complete
-- dependencies: conversation-types
+- content: Create a new user-focused `README.md` in the repo root with: (1) Clear project description explaining what Phoenix Insight does - AI-powered analysis of Phoenix observability data using the "bash + files" paradigm, (2) Key features section highlighting transparency, reproducibility, and extensibility, (3) Requirements section (Node.js v22+, Anthropic API key), (4) Installation instructions (`npm install -g @cephalization/phoenix-insight`), (5) Quick usage examples showing basic queries and the `ui` command, (6) Link to `packages/cli/README.md` for full CLI documentation, (7) Link to `DEVELOPMENT.md` for development/contributing. Keep it welcoming for new users while explaining the value proposition.
+- status: pending
+- dependencies: move-root-readme-to-development
 
 ---
 
-## Phase 3: Token Error Detection and Conversation Compaction
+## Phase 2: Init Command
 
-### token-error-detection
+### implement-init-command
 
-- content: Create `packages/cli/src/agent/token-errors.ts` with a function `isTokenLimitError(error: unknown): boolean` that detects when an API error is due to exceeding the model's context window. Check for `AI_APICallError` and look for status code 400 with messages containing "context length", "token limit", "max_tokens", or similar patterns from Anthropic's API.
-- status: complete
+- content: Add a new `init` subcommand to the CLI that creates a config file at `~/.phoenix-insight/config.json`. The command should: (1) Prompt for Phoenix base URL (default: http://localhost:6006), (2) Prompt for Phoenix API key (default: empty), (3) Show explanation of defaults when user skips input, (4) Write the config file with the provided or default values, (5) Print success message with path to config file. Use Node.js readline for prompts (no external deps).
+- status: pending
 - dependencies: none
 
-### conversation-compaction
+### test-init-command
 
-- content: Create `compactConversation(messages: ConversationMessage[], options?: { keepFirstN?: number; keepLastN?: number }): ConversationMessage[]` in `packages/cli/src/agent/conversation.ts`. This function should use AI SDK's `pruneMessages()` to remove reasoning and tool calls from older messages. Default to keeping first 2 messages (system context) and last 6 messages. Also summarize older message content to reduce tokens while preserving key context.
-- status: complete
-- dependencies: message-conversion-utils
-
----
-
-## Phase 4: CLI Session Conversation History
-
-### cli-session-history
-
-- content: Update `AgentSession` in `packages/cli/src/server/session.ts` to maintain a `ConversationMessage[]` history that is actually passed to the agent. Modify `executeQuery()` to: (1) build the full message history including the new user query, (2) call `agent.stream()` with the messages array, (3) extract the assistant response and append to history. The history should be ephemeral (not persisted to disk).
-- status: complete
-- dependencies: agent-messages-api, agent-response-to-history
-
-### cli-session-token-retry
-
-- content: In `AgentSession.executeQuery()`, wrap the agent call in a try-catch. If `isTokenLimitError()` returns true, automatically compact the conversation using `compactConversation()`, notify the client via a new `"context_compacted"` WebSocket message type, and retry the query. Add the new message type to the WebSocket protocol types in both CLI and UI.
-- status: complete
-- dependencies: cli-session-history, token-error-detection, conversation-compaction
+- content: Write tests for the init command in `packages/cli/test/commands/init.test.ts`. Test: (1) Creates config file with provided values, (2) Uses defaults when user provides empty input, (3) Shows appropriate messages about defaults, (4) Handles existing config file (warn but don't overwrite without confirmation), (5) Creates parent directories if they don't exist.
+- status: pending
+- dependencies: implement-init-command
 
 ---
 
-## Phase 5: Interactive CLI Conversation History
+## Phase 3: Seed Command
 
-### interactive-cli-history
+### implement-seed-command
 
-- content: Update `runInteractiveMode()` in `packages/cli/src/cli.ts` to maintain a `ConversationMessage[]` array across queries. Pass this history to `agent.stream()` or `agent.generate()` for each query, and update the history with the response. The history is ephemeral (cleared when CLI exits). Show a message like "(continuing conversation with N previous messages)" when there's existing history.
-- status: complete
-- dependencies: agent-messages-api, agent-response-to-history
+- content: Add a new `seed` subcommand to the CLI that sends a traced hello-world message using ai-sdk. The command should: (1) Load config from the config file, (2) Initialize OpenTelemetry tracing to Phoenix, (3) Use ai-sdk `generateText` with a simple "Hello, world! Please respond briefly." message, (4) Stream or print the response, (5) Ensure the trace is sent to Phoenix, (6) Print success message with link to view trace in Phoenix UI. This validates the user's Phoenix setup is working.
+- status: pending
+- dependencies: implement-init-command
 
-### interactive-cli-token-retry
+### test-seed-command
 
-- content: In the interactive CLI's query processing, catch token limit errors, compact the conversation, display a warning message to the user (e.g., "⚠️ Context was trimmed to fit model limits"), and retry the query with the compacted history.
-- status: complete
-- dependencies: interactive-cli-history, token-error-detection, conversation-compaction
-
----
-
-## Phase 6: UI Session History Integration
-
-### ui-send-history
-
-- content: Update the WebSocket `query` message type in `packages/ui/src/lib/websocket.ts` to include an optional `history` field containing the session's message history. Modify `useWebSocket` hook to include the current session's messages when sending queries. Update the corresponding server-side types in `packages/cli/src/server/websocket.ts`.
-- status: complete
-- dependencies: conversation-types
-
-### ui-handle-compaction
-
-- content: Add a handler in the UI's WebSocket message processing for the `"context_compacted"` message type. When received, display a toast notification (using sonner) informing the user that older conversation context was trimmed to fit model limits. Update the chat store types if needed.
-- status: complete
-- dependencies: cli-session-token-retry
-
-### cli-session-use-ui-history
-
-- content: Modify the WebSocket message handler in `packages/cli/src/cli.ts` (runUIServer function) and `AgentSession` to use the history provided by the UI client in the query message. Convert the UI message format to `ConversationMessage[]` before passing to the agent. If the client provides history, use it; otherwise fall back to the server-side session history.
-- status: complete
-- dependencies: cli-session-history, ui-send-history
+- content: Write tests for the seed command in `packages/cli/test/commands/seed.test.ts`. Test: (1) Loads config correctly, (2) Initializes tracing with correct Phoenix endpoint, (3) Calls ai-sdk generateText with expected parameters, (4) Handles missing Anthropic API key gracefully, (5) Handles Phoenix connection errors gracefully. Use vitest mocking for ai-sdk and OpenTelemetry.
+- status: pending
+- dependencies: implement-seed-command
 
 ---
 
-## Phase 7: Testing
+## Phase 4: Final Documentation Polish
 
-### test-conversation-utils
+### add-quickstart-section
 
-- content: Write unit tests in `packages/cli/test/conversation.test.ts` for the conversation utility functions: `toModelMessages()`, `truncateReportToolCalls()`, `extractMessagesFromResponse()`, and `compactConversation()`. Test edge cases like empty history, history with only tool calls, and very long conversations.
-- status: complete
-- dependencies: conversation-compaction, agent-response-to-history
+- content: Add a "Quickstart" section to the root README that guides users through: (1) Creating a Phoenix Cloud instance at https://app.phoenix.arize.com, (2) Optionally running self-hosted Phoenix with `docker run --pull=always -d --name arize-phoenix -p 6006:6006 arizephoenix/phoenix:latest`, (3) Running `phoenix-insight init` to generate config, (4) Configuring baseUrl as `https://app.phoenix.arize.com/s/<space_name>` for cloud or `http://localhost:6006` for self-hosted, (5) Running `phoenix-insight seed` to verify setup works. Reference both cloud and self-hosted options.
+- status: pending
+- dependencies: create-user-focused-readme, implement-init-command, implement-seed-command
 
-### test-token-error-detection
+### document-init-seed-in-cli-readme
 
-- content: Write unit tests in `packages/cli/test/token-errors.test.ts` for `isTokenLimitError()`. Mock various error shapes including `AI_APICallError` with different status codes and messages. Test that it correctly identifies Anthropic token limit errors and doesn't false-positive on other errors.
-- status: complete
-- dependencies: token-error-detection
-
-### test-session-history
-
-- content: Write integration tests in `packages/cli/test/session.test.ts` for the `AgentSession` class's conversation history functionality. Test that history accumulates across queries, that compaction is triggered on token errors, and that the `context_compacted` message is sent. Use mocked agents to avoid actual API calls.
-- status: complete
-- dependencies: cli-session-token-retry
+- content: Add documentation for the `init` and `seed` commands to `packages/cli/README.md`. Include them in the Command Reference section with their options, descriptions, and example usage. Follow the existing documentation style for other commands.
+- status: pending
+- dependencies: add-quickstart-section
 
