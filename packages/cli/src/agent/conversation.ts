@@ -5,15 +5,18 @@
  * converted to AI SDK's ModelMessage format for multi-turn conversations.
  */
 
-import type {
-  ModelMessage,
-  UserModelMessage,
-  AssistantModelMessage,
-  ToolModelMessage,
-  TextPart,
-  ToolCallPart,
-  ToolResultPart,
-  JSONValue as AIJSONValue,
+import {
+  pruneMessages,
+  type ModelMessage,
+  type UserModelMessage,
+  type AssistantModelMessage,
+  type ToolModelMessage,
+  type TextPart,
+  type ToolCallPart,
+  type ToolResultPart,
+  type JSONValue as AIJSONValue,
+  type GenerateTextResult,
+  type StreamTextResult,
 } from "ai";
 
 /**
@@ -414,4 +417,352 @@ export function truncateReportToolCalls(messages: ModelMessage[]): ModelMessage[
       content: newContent,
     } as AssistantModelMessage;
   });
+}
+
+// ============================================================================
+// Response Extraction Utilities
+// ============================================================================
+
+/**
+ * A tool call from an AI SDK result step
+ */
+interface AIToolCall {
+  type: "tool-call";
+  toolCallId: string;
+  toolName: string;
+  input: unknown;
+}
+
+/**
+ * A tool result from an AI SDK result step
+ */
+interface AIToolResult {
+  type: "tool-result";
+  toolCallId: string;
+  toolName: string;
+  output: unknown;
+}
+
+/**
+ * A step from an AI SDK result (simplified for extraction)
+ */
+interface AIStep {
+  text: string;
+  toolCalls: AIToolCall[];
+  toolResults: AIToolResult[];
+}
+
+/**
+ * Type representing either GenerateTextResult or StreamTextResult from AI SDK.
+ * Both have a `steps` property that contains the execution steps.
+ */
+type AIResult = {
+  steps: AIStep[];
+};
+
+/**
+ * Extract conversation messages from an AI SDK result object.
+ *
+ * This function takes the result from `generateText()` or `streamText()` and
+ * converts it to internal `ConversationMessage` format for updating conversation
+ * history.
+ *
+ * The function processes each step in the result:
+ * 1. If the step has text content and/or tool calls, creates an assistant message
+ * 2. If the step has tool results, creates a tool message
+ *
+ * @param result - The result from AI SDK's generateText() or streamText()
+ * @returns Array of ConversationMessages representing the assistant's response
+ *
+ * @example
+ * ```typescript
+ * const result = await generateText({ ... });
+ * const assistantMessages = extractMessagesFromResponse(result);
+ * conversationHistory.push(...assistantMessages);
+ * ```
+ */
+export function extractMessagesFromResponse(
+  result: GenerateTextResult<any, any> | StreamTextResult<any, any>
+): ConversationMessage[] {
+  const messages: ConversationMessage[] = [];
+
+  // Cast to our simplified type - both GenerateTextResult and StreamTextResult have steps
+  const aiResult = result as AIResult;
+
+  if (!aiResult.steps || aiResult.steps.length === 0) {
+    return messages;
+  }
+
+  for (const step of aiResult.steps) {
+    // Build assistant message content
+    const hasText = step.text && step.text.length > 0;
+    const hasToolCalls = step.toolCalls && step.toolCalls.length > 0;
+
+    if (hasText || hasToolCalls) {
+      // Determine the content format
+      if (hasToolCalls) {
+        // Mixed content: text and/or tool calls
+        const parts: ConversationAssistantContentPart[] = [];
+
+        if (hasText) {
+          parts.push({
+            type: "text",
+            text: step.text,
+          });
+        }
+
+        for (const toolCall of step.toolCalls) {
+          parts.push({
+            type: "tool-call",
+            toolCallId: toolCall.toolCallId,
+            toolName: toolCall.toolName,
+            args: toolCall.input,
+          });
+        }
+
+        messages.push(createAssistantMessageWithParts(parts));
+      } else {
+        // Text-only content
+        messages.push(createAssistantMessage(step.text));
+      }
+    }
+
+    // Add tool results as a separate tool message
+    if (step.toolResults && step.toolResults.length > 0) {
+      const results: ConversationToolResultPart[] = step.toolResults.map(
+        (toolResult) => ({
+          type: "tool-result" as const,
+          toolCallId: toolResult.toolCallId,
+          toolName: toolResult.toolName,
+          result: toolResult.output as JSONValue,
+        })
+      );
+
+      messages.push(createToolMessage(results));
+    }
+  }
+
+  return messages;
+}
+
+// ============================================================================
+// Conversation Compaction Utilities
+// ============================================================================
+
+/**
+ * Options for compacting conversation history
+ */
+export interface CompactConversationOptions {
+  /**
+   * Number of messages to keep from the beginning of the conversation.
+   * These are typically system context or initial user instructions.
+   * @default 2
+   */
+  keepFirstN?: number;
+
+  /**
+   * Number of messages to keep from the end of the conversation.
+   * These are the most recent and relevant messages.
+   * @default 6
+   */
+  keepLastN?: number;
+}
+
+/**
+ * Convert an AI SDK ModelMessage back to our internal ConversationMessage format.
+ *
+ * This is the inverse of toModelMessage(), used after applying pruneMessages().
+ *
+ * @param message - The AI SDK ModelMessage to convert
+ * @returns The equivalent ConversationMessage
+ */
+function fromModelMessage(message: ModelMessage): ConversationMessage {
+  switch (message.role) {
+    case "user": {
+      // User messages have either string content or array with text parts
+      const content =
+        typeof message.content === "string"
+          ? message.content
+          : message.content
+              .filter((part) => part.type === "text")
+              .map((part) => (part as { type: "text"; text: string }).text)
+              .join("");
+      return { role: "user", content };
+    }
+
+    case "assistant": {
+      // Assistant messages can have string content or array of parts
+      if (typeof message.content === "string") {
+        return { role: "assistant", content: message.content };
+      }
+
+      const parts: ConversationAssistantContentPart[] = [];
+      for (const part of message.content) {
+        if (part.type === "text") {
+          parts.push({ type: "text", text: part.text });
+        } else if (part.type === "tool-call") {
+          parts.push({
+            type: "tool-call",
+            toolCallId: part.toolCallId,
+            toolName: part.toolName,
+            args: part.input,
+          });
+        }
+        // Skip reasoning parts as they're not in our internal format
+      }
+
+      // If no parts remain, return empty string content
+      if (parts.length === 0) {
+        return { role: "assistant", content: "" };
+      }
+
+      // If only text parts, check if we can simplify to string
+      const textParts = parts.filter(
+        (p): p is ConversationTextPart => p.type === "text"
+      );
+      if (parts.length === textParts.length && textParts.length === 1 && textParts[0]) {
+        return { role: "assistant", content: textParts[0].text };
+      }
+
+      return { role: "assistant", content: parts };
+    }
+
+    case "tool": {
+      const results: ConversationToolResultPart[] = [];
+      const content = message.content;
+      for (const part of content) {
+        if (part.type === "tool-result") {
+          const output = part.output;
+          // Handle the discriminated union output type
+          let result: JSONValue;
+          let isError = false;
+          if (
+            output &&
+            typeof output === "object" &&
+            "type" in output &&
+            "value" in output
+          ) {
+            const typedOutput = output as { type: string; value: unknown };
+            result = typedOutput.value as JSONValue;
+            isError =
+              typedOutput.type === "error-json" ||
+              typedOutput.type === "error-text";
+          } else {
+            result = output as JSONValue;
+          }
+
+          results.push({
+            type: "tool-result",
+            toolCallId: part.toolCallId,
+            toolName: part.toolName,
+            result,
+            ...(isError && { isError }),
+          });
+        }
+        // Skip approval-related parts as they're not in our internal format
+      }
+      return { role: "tool", content: results };
+    }
+
+    case "system": {
+      // System messages aren't part of ConversationMessage, convert to user message
+      // SystemModelMessage.content is always a string
+      return { role: "user", content: `[System]: ${message.content}` };
+    }
+
+    default: {
+      // Fallback for unknown roles
+      return { role: "user", content: "[Unknown message type]" };
+    }
+  }
+}
+
+/**
+ * Convert an array of AI SDK ModelMessages back to ConversationMessages.
+ *
+ * @param messages - Array of AI SDK ModelMessages
+ * @returns Array of ConversationMessages
+ */
+function fromModelMessages(messages: ModelMessage[]): ConversationMessage[] {
+  return messages.map(fromModelMessage);
+}
+
+/**
+ * Compact a conversation history to reduce token usage.
+ *
+ * This function is used when the conversation history becomes too large for the
+ * model's context window. It uses AI SDK's `pruneMessages()` to intelligently
+ * remove reasoning content and tool calls from older messages while preserving:
+ *
+ * 1. The first N messages (system context, initial instructions)
+ * 2. The last N messages (most recent and relevant context)
+ * 3. Text content from middle messages (summaries of what was discussed)
+ *
+ * The function removes:
+ * - Reasoning parts from all messages except the last few
+ * - Tool calls and results from all messages except the last few
+ * - Empty messages that result from pruning
+ *
+ * @param messages - The conversation history to compact
+ * @param options - Compaction options
+ * @returns A new array with compacted messages
+ *
+ * @example
+ * ```typescript
+ * // After a token limit error, compact the conversation
+ * const compactedHistory = compactConversation(conversationHistory, {
+ *   keepFirstN: 2,  // Keep system context
+ *   keepLastN: 6,   // Keep recent exchanges
+ * });
+ * // Retry with compacted history
+ * const result = await agent.stream(query, { messages: compactedHistory });
+ * ```
+ */
+export function compactConversation(
+  messages: ConversationMessage[],
+  options?: CompactConversationOptions
+): ConversationMessage[] {
+  const keepFirstN = options?.keepFirstN ?? 2;
+  const keepLastN = options?.keepLastN ?? 6;
+
+  // If the conversation is short enough, no compaction needed
+  if (messages.length <= keepFirstN + keepLastN) {
+    return messages;
+  }
+
+  // Convert to AI SDK format
+  const modelMessages = toModelMessages(messages);
+
+  // Calculate how many middle messages there are
+  const middleStartIndex = keepFirstN;
+  const middleEndIndex = modelMessages.length - keepLastN;
+
+  // If there's no middle section, return as-is
+  if (middleEndIndex <= middleStartIndex) {
+    return messages;
+  }
+
+  // Extract the three sections
+  const firstMessages = modelMessages.slice(0, middleStartIndex);
+  const middleMessages = modelMessages.slice(middleStartIndex, middleEndIndex);
+  const lastMessages = modelMessages.slice(middleEndIndex);
+
+  // Apply pruning to middle messages only
+  // Remove all reasoning and tool calls from middle section
+  const prunedMiddle = pruneMessages({
+    messages: middleMessages,
+    reasoning: "all",
+    toolCalls: "all",
+    emptyMessages: "remove",
+  });
+
+  // Combine: first messages (unchanged) + pruned middle + last messages (unchanged)
+  const compactedModelMessages = [
+    ...firstMessages,
+    ...prunedMiddle,
+    ...lastMessages,
+  ];
+
+  // Convert back to internal format
+  return fromModelMessages(compactedModelMessages);
 }

@@ -87,3 +87,26 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **Helper function added**: Also implemented `getTokenLimitErrorDescription()` to extract user-friendly descriptions from token limit errors, including extracting token counts from messages like "150000 tokens".
 
 - **Pre-existing test failure**: The `test/server/ui.test.ts` can fail with `EADDRINUSE` on port 6007. This is an environmental issue from other processes, not related to code changes.
+
+## conversation-compaction
+
+- **AI SDK `pruneMessages()` function**: Exported from `ai` package. Has three main options:
+  - `reasoning`: `'all'` | `'before-last-message'` | `'none'` - controls removal of reasoning parts
+  - `toolCalls`: `'all'` | `'before-last-message'` | `'before-last-${n}-messages'` | `'none'` | array of tool-specific rules
+  - `emptyMessages`: `'keep'` | `'remove'` - whether to remove messages that become empty after pruning
+
+- **Design decision: Split first/middle/last**: Instead of using `pruneMessages()` on the entire history with `before-last-N-messages`, we split the conversation into three parts:
+  1. First N messages (kept intact - system context/initial instructions)
+  2. Middle messages (heavily pruned - all reasoning and tool calls removed)
+  3. Last N messages (kept intact - recent context)
+  This provides more control than pruneMessages alone, which only protects trailing messages.
+
+- **Required inverse conversion**: Implemented `fromModelMessage()` and `fromModelMessages()` to convert back from AI SDK's `ModelMessage[]` to internal `ConversationMessage[]` after pruning. Key details:
+  - `SystemModelMessage.content` is always a string (not an array like user messages)
+  - `ToolResultPart.output` uses discriminated union `{type: "json"|"error-json"|"text"|"error-text", value}`
+  - Reasoning parts are skipped since they're not in our internal format
+  - System messages converted to user messages with `[System]:` prefix
+
+- **TypeScript type guard pattern**: When filtering arrays, use type guard functions (e.g., `(p): p is ConversationTextPart => p.type === "text"`) to properly narrow types in the resulting array.
+
+- **Short-circuit optimization**: If `messages.length <= keepFirstN + keepLastN`, return the array as-is without conversion/pruning overhead.
