@@ -119,7 +119,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### cli-session-use-ui-history
 
 - content: Modify the WebSocket message handler in `packages/cli/src/cli.ts` (runUIServer function) and `AgentSession` to use the history provided by the UI client in the query message. Convert the UI message format to `ConversationMessage[]` before passing to the agent. If the client provides history, use it; otherwise fall back to the server-side session history.
-- status: pending
+- status: complete
 - dependencies: cli-session-history, ui-send-history
 
 ---

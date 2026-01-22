@@ -19,6 +19,7 @@ import {
   createUserMessage,
   extractMessagesFromResponse,
   compactConversation,
+  fromUIMessages,
 } from "../agent/conversation.js";
 import {
   isTokenLimitError,
@@ -57,6 +58,18 @@ export interface AgentSessionOptions {
  * Report generation callback that can be passed to tools
  */
 export type ReportCallback = (content: JSONRenderTree, title?: string) => void;
+
+/**
+ * Options for executeQuery
+ */
+export interface ExecuteQueryOptions {
+  /**
+   * Optional conversation history provided by the client.
+   * If provided, this history will be used instead of the server-side session history.
+   * This allows the UI to manage its own conversation state.
+   */
+  history?: unknown[];
+}
 
 // ============================================================================
 // AgentSession Class
@@ -242,8 +255,11 @@ export class AgentSession {
    *
    * If a token limit error occurs, the conversation is automatically compacted
    * and the query is retried once.
+   *
+   * @param query - The query to execute
+   * @param options - Optional settings including client-provided history
    */
-  async executeQuery(query: string): Promise<void> {
+  async executeQuery(query: string, options?: ExecuteQueryOptions): Promise<void> {
     if (this.isExecuting) {
       this.sendError("A query is already being executed");
       return;
@@ -252,18 +268,40 @@ export class AgentSession {
     this.isExecuting = true;
     this.abortController = new AbortController();
 
+    // Determine which history to use: client-provided or server-side
+    // If the client provides history, convert it and use that; otherwise use server-side history
+    let historyToUse: ConversationMessage[];
+    let usingClientHistory = false;
+
+    if (options?.history && Array.isArray(options.history) && options.history.length > 0) {
+      // Convert UI message format to internal ConversationMessage format
+      historyToUse = fromUIMessages(options.history);
+      usingClientHistory = true;
+    } else {
+      historyToUse = [...this.conversationHistory];
+    }
+
     try {
-      // First attempt with current history
-      const firstAttemptError = await this.executeQueryWithHistory(query);
+      // First attempt with determined history
+      const firstAttemptError = await this.executeQueryWithHistory(
+        query,
+        historyToUse,
+        usingClientHistory
+      );
 
       if (firstAttemptError && isTokenLimitError(firstAttemptError)) {
         // Token limit error - compact the conversation and retry
         const errorDescription = getTokenLimitErrorDescription(firstAttemptError);
         
-        // Compact the conversation history
-        const originalLength = this.conversationHistory.length;
-        this.conversationHistory = compactConversation(this.conversationHistory);
-        const compactedLength = this.conversationHistory.length;
+        // Compact the history being used
+        const originalLength = historyToUse.length;
+        historyToUse = compactConversation(historyToUse);
+        const compactedLength = historyToUse.length;
+
+        // If using server-side history, update it
+        if (!usingClientHistory) {
+          this.conversationHistory = historyToUse;
+        }
         
         // Notify the client that context was compacted
         const reason = errorDescription ?? 
@@ -271,7 +309,11 @@ export class AgentSession {
         this.sendContextCompacted(reason);
         
         // Retry with compacted history
-        const retryError = await this.executeQueryWithHistory(query);
+        const retryError = await this.executeQueryWithHistory(
+          query,
+          historyToUse,
+          usingClientHistory
+        );
         
         if (retryError) {
           // Retry also failed - send error to client
@@ -300,19 +342,27 @@ export class AgentSession {
   }
 
   /**
-   * Execute a query with the current conversation history.
+   * Execute a query with the provided conversation history.
    * Returns the error if execution fails, or null if successful.
-   * On success, updates the conversation history with the query and response.
+   * On success, updates the server-side conversation history with the query and response
+   * (unless usingClientHistory is true, in which case the client manages its own history).
+   *
+   * @param query - The query to execute
+   * @param history - The conversation history to use for this query
+   * @param usingClientHistory - If true, the client provided the history and manages its own state
    */
-  private async executeQueryWithHistory(query: string): Promise<Error | null> {
+  private async executeQueryWithHistory(
+    query: string,
+    history: ConversationMessage[],
+    usingClientHistory: boolean
+  ): Promise<Error | null> {
     try {
       const agent = await this.getAgent();
 
-      // Pass a copy of the conversation history to the agent for multi-turn context
+      // Pass the conversation history to the agent for multi-turn context
       // The agent will convert it to AI SDK format and append the current query as the last message
-      // We pass a copy to prevent the agent from seeing mutations we make after the call
       const result = await agent.stream(query, {
-        messages: [...this.conversationHistory],
+        messages: history,
       });
 
       // Stream using fullStream to get real-time tool call/result events
@@ -360,14 +410,18 @@ export class AgentSession {
       if (!this.abortController?.signal.aborted) {
         await result.response;
 
-        // Add user message to history (after successful completion)
-        this.addUserMessage(query);
+        // Only update server-side history if the client is NOT managing its own history
+        // When the client provides history, it's responsible for updating its own state
+        if (!usingClientHistory) {
+          // Add user message to history (after successful completion)
+          this.addUserMessage(query);
 
-        // Extract the assistant's response (including tool calls/results) from the result
-        // and append to conversation history for future queries
-        const assistantMessages = extractMessagesFromResponse(result);
-        if (assistantMessages.length > 0) {
-          this.addAssistantMessages(assistantMessages);
+          // Extract the assistant's response (including tool calls/results) from the result
+          // and append to conversation history for future queries
+          const assistantMessages = extractMessagesFromResponse(result);
+          if (assistantMessages.length > 0) {
+            this.addAssistantMessages(assistantMessages);
+          }
         }
       }
 

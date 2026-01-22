@@ -546,6 +546,169 @@ export function extractMessagesFromResponse(
 }
 
 // ============================================================================
+// UI Message Conversion Utilities
+// ============================================================================
+
+/**
+ * UI text content part from the UI package
+ */
+interface UITextPart {
+  type: "text";
+  text: string;
+}
+
+/**
+ * UI tool call content part from the UI package
+ */
+interface UIToolCallPart {
+  type: "tool-call";
+  toolCallId: string;
+  toolName: string;
+  args: unknown;
+}
+
+/**
+ * UI assistant content parts
+ */
+type UIAssistantContentPart = UITextPart | UIToolCallPart;
+
+/**
+ * UI tool result content part from the UI package
+ */
+interface UIToolResultPart {
+  type: "tool-result";
+  toolCallId: string;
+  toolName: string;
+  result: unknown;
+  isError?: boolean;
+}
+
+/**
+ * UI user message from the UI package
+ */
+interface UIUserMessage {
+  role: "user";
+  content: string;
+}
+
+/**
+ * UI assistant message from the UI package
+ */
+interface UIAssistantMessage {
+  role: "assistant";
+  content: string | UIAssistantContentPart[];
+}
+
+/**
+ * UI tool message from the UI package
+ */
+interface UIToolMessage {
+  role: "tool";
+  content: UIToolResultPart[];
+}
+
+/**
+ * UI conversation message types from the UI package
+ */
+type UIConversationMessage = UIUserMessage | UIAssistantMessage | UIToolMessage;
+
+/**
+ * Convert a single UI conversation message to the internal ConversationMessage format.
+ *
+ * The UI package uses similar types but they need to be converted to ensure
+ * type safety and proper handling by the agent.
+ *
+ * @param message - A UI conversation message
+ * @returns The equivalent internal ConversationMessage
+ */
+function convertUIMessage(message: UIConversationMessage): ConversationMessage {
+  switch (message.role) {
+    case "user":
+      return { role: "user", content: message.content };
+
+    case "assistant": {
+      if (typeof message.content === "string") {
+        return { role: "assistant", content: message.content };
+      }
+
+      // Convert content parts
+      const parts: ConversationAssistantContentPart[] = message.content.map(
+        (part): ConversationAssistantContentPart => {
+          if (part.type === "text") {
+            return { type: "text", text: part.text };
+          } else {
+            // tool-call
+            return {
+              type: "tool-call",
+              toolCallId: part.toolCallId,
+              toolName: part.toolName,
+              args: part.args,
+            };
+          }
+        }
+      );
+
+      return { role: "assistant", content: parts };
+    }
+
+    case "tool": {
+      const results: ConversationToolResultPart[] = message.content.map(
+        (part) => ({
+          type: "tool-result" as const,
+          toolCallId: part.toolCallId,
+          toolName: part.toolName,
+          result: part.result as JSONValue,
+          ...(part.isError && { isError: part.isError }),
+        })
+      );
+
+      return { role: "tool", content: results };
+    }
+  }
+}
+
+/**
+ * Convert an array of UI conversation messages to the internal ConversationMessage[] format.
+ *
+ * This function is used when the UI client provides conversation history with a query.
+ * The UI history is converted to the internal format before being passed to the agent.
+ *
+ * @param uiMessages - Array of UI conversation messages
+ * @returns Array of internal ConversationMessages
+ *
+ * @example
+ * ```typescript
+ * // In WebSocket message handler
+ * const { content, history } = message.payload;
+ * if (history) {
+ *   const internalHistory = fromUIMessages(history);
+ *   await session.executeQuery(content, { history: internalHistory });
+ * }
+ * ```
+ */
+export function fromUIMessages(
+  uiMessages: unknown[]
+): ConversationMessage[] {
+  // Validate that uiMessages is an array
+  if (!Array.isArray(uiMessages)) {
+    return [];
+  }
+
+  // Filter and convert valid messages
+  return uiMessages
+    .filter((msg): msg is UIConversationMessage => {
+      if (!msg || typeof msg !== "object") return false;
+      const m = msg as Record<string, unknown>;
+      return (
+        m.role === "user" ||
+        m.role === "assistant" ||
+        m.role === "tool"
+      );
+    })
+    .map(convertUIMessage);
+}
+
+// ============================================================================
 // Conversation Compaction Utilities
 // ============================================================================
 

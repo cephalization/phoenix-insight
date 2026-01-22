@@ -725,7 +725,7 @@ async function runUIServer(options: {
       },
       onMessage: async (message, ws) => {
         if (message.type === "query") {
-          const { content, sessionId: clientSessionId } = message.payload;
+          const { content, sessionId: clientSessionId, history } = message.payload;
           const sessionId = clientSessionId ?? `session-${Date.now()}`;
 
           // Get or create session for this client
@@ -736,7 +736,8 @@ async function runUIServer(options: {
           );
 
           // Execute the query (this is async but we don't await - let it stream)
-          session.executeQuery(content).catch((error) => {
+          // Pass the client-provided history if available; otherwise fall back to server-side history
+          session.executeQuery(content, { history }).catch((error) => {
             console.error("Error executing query:", error);
             wsServer.sendToClient(ws, {
               type: "error",
