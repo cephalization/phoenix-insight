@@ -43,7 +43,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### implement-init-command
 
 - content: Add a new `init` subcommand to the CLI that creates a config file at `~/.phoenix-insight/config.json`. The command should: (1) Prompt for Phoenix base URL (default: http://localhost:6006), (2) Prompt for Phoenix API key (default: empty), (3) Show explanation of defaults when user skips input, (4) Write the config file with the provided or default values, (5) Print success message with path to config file. Use Node.js readline for prompts (no external deps).
-- status: pending
+- status: complete
 - dependencies: none
 
 ### test-init-command

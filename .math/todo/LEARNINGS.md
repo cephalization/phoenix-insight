@@ -31,3 +31,14 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - The "Why Phoenix Insight?" section explains the value proposition with three key differentiators: Transparent, Reproducible, Extensible. These align with the "bash + files" paradigm mentioned in the task.
 - Included three usage sections: basic queries, interactive mode, and web UI - covering the main ways users interact with the tool.
 - Links at the bottom direct users to full CLI documentation and development guide rather than duplicating content.
+
+## implement-init-command
+
+- The `init` command was added inline in `cli.ts` following the pattern of other commands like `prune` and `ui`. No need to create a separate file in `commands/` since this is a simple, self-contained command.
+- Used Node.js `readline` module (already imported in cli.ts) for interactive prompts - no external dependencies needed.
+- The command writes a minimal config with only `baseUrl` and optionally `apiKey` - other config values use defaults from the schema. This keeps the user's config file clean and focused on what they need to customize.
+- Added helpful context messages when users accept defaults: explains localhost default is for self-hosted Phoenix, and that API key can be added later for Phoenix Cloud.
+- The command handles existing config files gracefully with a confirmation prompt before overwriting.
+- The helper `prompt()` function wraps readline.question in a Promise - a useful pattern for sequential async prompts.
+- The config is written to `~/.phoenix-insight/config.json` - same location used by the existing config loader.
+- Tests for this command are a separate task (`test-init-command`) - the implementation task doesn't require writing tests since those are explicitly split out.

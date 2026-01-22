@@ -374,6 +374,14 @@ program
     program.outputHelp();
   });
 
+// Init Command - creates config file at ~/.phoenix-insight/config.json
+program
+  .command("init")
+  .description("Initialize Phoenix Insight configuration file")
+  .action(async () => {
+    await runInitCommand();
+  });
+
 program
   .command("prune")
   .description(
@@ -625,6 +633,123 @@ program
       await shutdownObservability();
     }
   });
+
+/**
+ * Prompt the user for input with a default value
+ */
+function prompt(
+  rl: readline.Interface,
+  question: string,
+  defaultValue: string = ""
+): Promise<string> {
+  return new Promise((resolve) => {
+    const displayDefault = defaultValue ? ` (${defaultValue})` : "";
+    rl.question(`${question}${displayDefault}: `, (answer) => {
+      resolve(answer.trim() || defaultValue);
+    });
+  });
+}
+
+/**
+ * Run the init command to create a configuration file
+ */
+async function runInitCommand(): Promise<void> {
+  const configDir = path.join(os.homedir(), ".phoenix-insight");
+  const configPath = path.join(configDir, "config.json");
+
+  console.log("🚀 Phoenix Insight Configuration Setup\n");
+
+  // Check if config file already exists
+  let existingConfig: Record<string, unknown> | null = null;
+  try {
+    const existingContent = await fs.readFile(configPath, "utf-8");
+    existingConfig = JSON.parse(existingContent);
+    console.log(`⚠️  Config file already exists at ${configPath}`);
+
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    const answer = await prompt(rl, "Overwrite existing config? (yes/no)", "no");
+    rl.close();
+
+    if (answer.toLowerCase() !== "yes" && answer.toLowerCase() !== "y") {
+      console.log("\n❌ Init cancelled. Existing config preserved.");
+      return;
+    }
+    console.log();
+  } catch {
+    // Config doesn't exist, which is fine
+  }
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  console.log("Please provide your Phoenix configuration:\n");
+
+  // Prompt for Phoenix base URL
+  const baseUrl = await prompt(
+    rl,
+    "Phoenix base URL",
+    "http://localhost:6006"
+  );
+
+  if (baseUrl === "http://localhost:6006") {
+    console.log(
+      "   ℹ️  Using default localhost URL. For Phoenix Cloud, use: https://app.phoenix.arize.com/s/<space_name>\n"
+    );
+  }
+
+  // Prompt for Phoenix API key
+  const apiKey = await prompt(rl, "Phoenix API key (optional, press Enter to skip)", "");
+
+  if (!apiKey) {
+    console.log(
+      "   ℹ️  No API key provided. You can add one later if using Phoenix Cloud or authenticated Phoenix.\n"
+    );
+  }
+
+  rl.close();
+
+  // Build config object
+  const config: Record<string, unknown> = {
+    baseUrl,
+    ...(apiKey && { apiKey }),
+  };
+
+  // Create directory if it doesn't exist
+  try {
+    await fs.mkdir(configDir, { recursive: true });
+  } catch {
+    // Directory may already exist
+  }
+
+  // Write config file
+  try {
+    const content = JSON.stringify(config, null, 2);
+    await fs.writeFile(configPath, content, "utf-8");
+
+    console.log("✅ Configuration saved successfully!\n");
+    console.log(`📁 Config file: ${configPath}`);
+    console.log("\n📋 Configuration:");
+    console.log(`   baseUrl: ${baseUrl}`);
+    if (apiKey) {
+      console.log(`   apiKey: ${apiKey.substring(0, 8)}...`);
+    }
+    console.log(
+      "\n💡 You can now run 'phoenix-insight' to start analyzing your Phoenix data."
+    );
+  } catch (error) {
+    console.error("\n❌ Error saving configuration:");
+    console.error(
+      `   ${error instanceof Error ? error.message : String(error)}`
+    );
+    process.exit(1);
+  }
+}
 
 /**
  * Open a URL in the default browser
