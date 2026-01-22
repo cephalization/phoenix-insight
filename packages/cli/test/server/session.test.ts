@@ -12,6 +12,7 @@ import {
 import type { ServerMessage } from "../../src/server/websocket.js";
 import type { ExecutionMode } from "../../src/modes/types.js";
 import type { PhoenixClient } from "@arizeai/phoenix-client";
+import { APICallError } from "ai";
 
 // ============================================================================
 // Mocks
@@ -114,6 +115,65 @@ function createMessageCollector(): {
     messages.push(message);
   };
   return { broadcast, messages };
+}
+
+/**
+ * Create a mock APICallError for token limit testing
+ */
+function createTokenLimitError(message?: string): APICallError {
+  return new APICallError({
+    message: message || "prompt is too long: 150000 tokens > 100000 maximum",
+    statusCode: 400,
+    url: "https://api.anthropic.com/v1/messages",
+    responseBody: "",
+    requestBodyValues: {},
+  });
+}
+
+/**
+ * Create a mock agent that fails with a token limit error on first call,
+ * then succeeds on second call (after compaction)
+ */
+function createMockAgentWithTokenLimitRetry() {
+  let callCount = 0;
+  
+  const successFullStream = {
+    async *[Symbol.asyncIterator]() {
+      yield { type: "text-delta", text: "Retry " };
+      yield { type: "text-delta", text: "succeeded!" };
+      yield { type: "text-end" };
+    },
+  };
+
+  const successSteps = [
+    {
+      text: "Retry succeeded!",
+      toolCalls: [],
+      toolResults: [],
+    },
+  ];
+
+  return {
+    stream: vi.fn().mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        // First call fails with token limit error
+        return Promise.reject(createTokenLimitError());
+      }
+      // Second call (after compaction) succeeds
+      return Promise.resolve({
+        fullStream: successFullStream,
+        response: Promise.resolve({ text: "Retry succeeded!" }),
+        steps: successSteps,
+      });
+    }),
+    generate: vi.fn().mockResolvedValue({
+      text: "Response",
+      steps: [{ text: "Response", toolCalls: [], toolResults: [] }],
+    }),
+    cleanup: vi.fn().mockResolvedValue(undefined),
+    getCallCount: () => callCount,
+  };
 }
 
 // ============================================================================
@@ -636,6 +696,421 @@ describe("AgentSession", () => {
       // Let the stream complete (it should have been aborted)
       resolveStream!();
       await executePromise;
+    });
+  });
+
+  describe("token error handling and compaction", () => {
+    it("should compact history and retry successfully when history exists", async () => {
+      // Create a custom mock that:
+      // 1. First few calls succeed (to build history)
+      // 2. Next call fails with token limit error
+      // 3. Final call (retry with compacted history) succeeds
+      let callCount = 0;
+      const createSuccessfulStream = () => ({
+        async *[Symbol.asyncIterator]() {
+          yield { type: "text-delta", text: "Success!" };
+          yield { type: "text-end" };
+        },
+      });
+      const successSteps = [{ text: "Success!", toolCalls: [], toolResults: [] }];
+
+      const mixedAgent = {
+        stream: vi.fn().mockImplementation(() => {
+          callCount++;
+          if (callCount <= 10) {
+            // First 10 calls succeed (building history)
+            return Promise.resolve({
+              fullStream: createSuccessfulStream(),
+              response: Promise.resolve({ text: "Success!" }),
+              steps: successSteps,
+            });
+          } else if (callCount === 11) {
+            // 11th call fails with token limit error
+            return Promise.reject(createTokenLimitError());
+          } else {
+            // 12th+ call (retry) succeeds
+            return Promise.resolve({
+              fullStream: createSuccessfulStream(),
+              response: Promise.resolve({ text: "Success!" }),
+              steps: successSteps,
+            });
+          }
+        }),
+        generate: vi.fn(),
+        cleanup: vi.fn().mockResolvedValue(undefined),
+      };
+
+      vi.mocked(createInsightAgent).mockResolvedValue(mixedAgent as any);
+
+      const testSession = new AgentSession({
+        sessionId: "mixed-test-session",
+        mode: mockMode,
+        client: mockClient,
+        maxSteps: 25,
+        broadcast: collector.broadcast,
+      });
+
+      // Build up history with 10 queries
+      for (let i = 0; i < 10; i++) {
+        await testSession.executeQuery(`query ${i}`);
+      }
+
+      // Verify history has accumulated (user message + assistant response per query)
+      const historyBeforeError = testSession.history;
+      expect(historyBeforeError.length).toBe(20); // 10 user + 10 assistant messages
+
+      // Clear messages to track new ones
+      collector.messages.length = 0;
+
+      // Now execute a query that will trigger token limit error
+      // The session should compact history and retry
+      await testSession.executeQuery("query that triggers compaction");
+
+      // Check for context_compacted message
+      const compactedMessages = collector.messages.filter(
+        (m) => m.type === "context_compacted"
+      );
+      expect(compactedMessages).toHaveLength(1);
+      expect(compactedMessages[0].payload).toEqual({
+        sessionId: "mixed-test-session",
+        reason: expect.stringContaining("compacted"),
+      });
+
+      // Check that the query succeeded after retry (done message sent)
+      const doneMessages = collector.messages.filter((m) => m.type === "done");
+      expect(doneMessages).toHaveLength(1);
+
+      // The agent should have been called 12 times total
+      // (10 for building history + 1 fail + 1 retry)
+      expect(mixedAgent.stream).toHaveBeenCalledTimes(12);
+
+      await testSession.cleanup();
+    });
+
+    it("should send error if retry also fails after compaction", async () => {
+      // Create agent that builds history with tool calls, then fails twice in a row
+      // Tool calls are needed because compactConversation only prunes reasoning/tool calls,
+      // not simple text messages
+      let callCount = 0;
+      
+      // Create stream with tool calls so compaction has something to prune
+      const createStreamWithToolCalls = () => ({
+        async *[Symbol.asyncIterator]() {
+          yield { type: "tool-call", toolName: "bash", input: { command: "ls" } };
+          yield { type: "tool-result", toolName: "bash", output: { stdout: "file.txt", exitCode: 0 } };
+          yield { type: "text-delta", text: "Done" };
+          yield { type: "text-end" };
+        },
+      });
+
+      // Steps that include tool calls (which will be pruned during compaction)
+      const stepsWithToolCalls = [{
+        text: "Done",
+        toolCalls: [{ type: "tool-call", toolCallId: `call-${Date.now()}`, toolName: "bash", input: { command: "ls" } }],
+        toolResults: [{ type: "tool-result", toolCallId: `call-${Date.now()}`, toolName: "bash", output: { stdout: "file.txt", exitCode: 0 } }],
+      }];
+
+      const newCollector = createMessageCollector();
+      const mixedAgent = {
+        stream: vi.fn().mockImplementation(() => {
+          callCount++;
+          if (callCount <= 10) {
+            // First 10 calls succeed (building history with tool calls)
+            return Promise.resolve({
+              fullStream: createStreamWithToolCalls(),
+              response: Promise.resolve({ text: "Done" }),
+              steps: stepsWithToolCalls,
+            });
+          } else {
+            // 11th and 12th calls both fail with token limit error
+            // Use a proper token limit error message so isTokenLimitError() recognizes it
+            return Promise.reject(createTokenLimitError(`prompt is too long: attempt ${callCount}`));
+          }
+        }),
+        generate: vi.fn(),
+        cleanup: vi.fn().mockResolvedValue(undefined),
+      };
+
+      vi.mocked(createInsightAgent).mockResolvedValue(mixedAgent as any);
+
+      const testSession = new AgentSession({
+        sessionId: "double-fail-session",
+        mode: mockMode,
+        client: mockClient,
+        maxSteps: 25,
+        broadcast: newCollector.broadcast,
+      });
+
+      // Build history with tool calls
+      for (let i = 0; i < 10; i++) {
+        await testSession.executeQuery(`query ${i}`);
+      }
+      // History should have: 10 user + 10 assistant (with tool calls) + 10 tool result messages = 30
+      expect(testSession.history.length).toBe(30);
+
+      // Clear messages
+      newCollector.messages.length = 0;
+
+      // Execute query that will fail, compact, then fail again
+      await testSession.executeQuery("doomed query");
+
+      // Should have context_compacted message (from first failure)
+      const compactedMessages = newCollector.messages.filter(
+        (m) => m.type === "context_compacted"
+      );
+      expect(compactedMessages).toHaveLength(1);
+
+      // Should have error message (from second failure after compaction)
+      const errorMessages = newCollector.messages.filter((m) => m.type === "error");
+      expect(errorMessages).toHaveLength(1);
+      expect((errorMessages[0].payload as any).message).toContain(
+        "after compaction"
+      );
+
+      // Should NOT have done message (query ultimately failed)
+      const doneMessages = newCollector.messages.filter((m) => m.type === "done");
+      expect(doneMessages).toHaveLength(0);
+
+      // Agent should have been called 12 times total (10 success + 2 failures)
+      expect(mixedAgent.stream).toHaveBeenCalledTimes(12);
+
+      await testSession.cleanup();
+    });
+
+    it("should not trigger compaction for non-token-limit errors", async () => {
+      // Create an agent that fails with a non-token-limit error
+      const otherError = new Error("Some other error");
+      const failAgent = {
+        stream: vi.fn().mockRejectedValue(otherError),
+        generate: vi.fn(),
+        cleanup: vi.fn().mockResolvedValue(undefined),
+      };
+
+      vi.mocked(createInsightAgent).mockResolvedValue(failAgent as any);
+
+      const testSession = new AgentSession({
+        sessionId: "other-error-session",
+        mode: mockMode,
+        client: mockClient,
+        maxSteps: 25,
+        broadcast: collector.broadcast,
+      });
+
+      collector.messages.length = 0;
+
+      await testSession.executeQuery("query");
+
+      // Should have error message but NOT context_compacted
+      const compactedMessages = collector.messages.filter(
+        (m) => m.type === "context_compacted"
+      );
+      expect(compactedMessages).toHaveLength(0);
+
+      const errorMessages = collector.messages.filter((m) => m.type === "error");
+      expect(errorMessages).toHaveLength(1);
+      expect((errorMessages[0].payload as any).message).toContain(
+        "Some other error"
+      );
+
+      // Agent should only be called once (no retry)
+      expect(failAgent.stream).toHaveBeenCalledTimes(1);
+
+      await testSession.cleanup();
+    });
+
+    it("should send error with token limit details when history is empty", async () => {
+      // When there's no history to compact, the token error should still be handled
+      // but there's nothing useful to compact, so the error propagates
+      const failAgent = {
+        stream: vi.fn().mockRejectedValue(createTokenLimitError("prompt is too long: 150000 tokens")),
+        generate: vi.fn(),
+        cleanup: vi.fn().mockResolvedValue(undefined),
+      };
+
+      vi.mocked(createInsightAgent).mockResolvedValue(failAgent as any);
+
+      const testSession = new AgentSession({
+        sessionId: "empty-history-session",
+        mode: mockMode,
+        client: mockClient,
+        maxSteps: 25,
+        broadcast: collector.broadcast,
+      });
+
+      // Session has empty history at this point
+      expect(testSession.history).toHaveLength(0);
+
+      collector.messages.length = 0;
+
+      await testSession.executeQuery("query");
+
+      // With empty history, compaction still "happens" but doesn't help
+      // The compacted message is still sent and retry is attempted
+      // But since history was already empty, retry will likely fail too
+      
+      // We expect either a context_compacted (if compaction was attempted)
+      // followed by an error, OR just an error if compaction yielded no change
+      const errorMessages = collector.messages.filter((m) => m.type === "error");
+      expect(errorMessages.length).toBeGreaterThanOrEqual(1);
+
+      await testSession.cleanup();
+    });
+
+    it("should include reason with token count in context_compacted message", async () => {
+      // Create agent that fails with specific token message, then succeeds
+      let callCount = 0;
+      const createStream = () => ({
+        async *[Symbol.asyncIterator]() {
+          yield { type: "text-delta", text: "OK" };
+          yield { type: "text-end" };
+        },
+      });
+
+      const mixedAgent = {
+        stream: vi.fn().mockImplementation(() => {
+          callCount++;
+          if (callCount <= 10) {
+            return Promise.resolve({
+              fullStream: createStream(),
+              response: Promise.resolve({ text: "OK" }),
+              steps: [{ text: "OK", toolCalls: [], toolResults: [] }],
+            });
+          } else if (callCount === 11) {
+            return Promise.reject(
+              createTokenLimitError("prompt is too long: 250000 tokens > 200000 maximum")
+            );
+          } else {
+            return Promise.resolve({
+              fullStream: createStream(),
+              response: Promise.resolve({ text: "Retried!" }),
+              steps: [{ text: "Retried!", toolCalls: [], toolResults: [] }],
+            });
+          }
+        }),
+        generate: vi.fn(),
+        cleanup: vi.fn().mockResolvedValue(undefined),
+      };
+
+      vi.mocked(createInsightAgent).mockResolvedValue(mixedAgent as any);
+
+      const testSession = new AgentSession({
+        sessionId: "reason-test-session",
+        mode: mockMode,
+        client: mockClient,
+        maxSteps: 25,
+        broadcast: collector.broadcast,
+      });
+
+      // Build history
+      for (let i = 0; i < 10; i++) {
+        await testSession.executeQuery(`query ${i}`);
+      }
+
+      collector.messages.length = 0;
+
+      // Trigger compaction
+      await testSession.executeQuery("trigger compaction");
+
+      const compactedMessages = collector.messages.filter(
+        (m) => m.type === "context_compacted"
+      );
+      expect(compactedMessages).toHaveLength(1);
+
+      // The reason should contain token information
+      const payload = compactedMessages[0].payload as { sessionId: string; reason?: string };
+      expect(payload.reason).toBeDefined();
+      expect(payload.reason).toContain("250000 tokens");
+
+      await testSession.cleanup();
+    });
+
+    it("should update conversation history after successful retry", async () => {
+      // Create agent that builds history with tool calls (so compaction has something to prune)
+      let callCount = 0;
+      
+      // Create stream with tool calls
+      const createStreamWithToolCalls = () => ({
+        async *[Symbol.asyncIterator]() {
+          yield { type: "tool-call", toolName: "bash", input: { command: "ls" } };
+          yield { type: "tool-result", toolName: "bash", output: { stdout: "file.txt", exitCode: 0 } };
+          yield { type: "text-delta", text: "Response" };
+          yield { type: "text-end" };
+        },
+      });
+      
+      const createSimpleStream = () => ({
+        async *[Symbol.asyncIterator]() {
+          yield { type: "text-delta", text: "Retry Response" };
+          yield { type: "text-end" };
+        },
+      });
+
+      const stepsWithToolCalls = [{
+        text: "Response",
+        toolCalls: [{ type: "tool-call", toolCallId: `call-${Date.now()}`, toolName: "bash", input: { command: "ls" } }],
+        toolResults: [{ type: "tool-result", toolCallId: `call-${Date.now()}`, toolName: "bash", output: { stdout: "file.txt", exitCode: 0 } }],
+      }];
+
+      const mixedAgent = {
+        stream: vi.fn().mockImplementation(() => {
+          callCount++;
+          if (callCount <= 10) {
+            return Promise.resolve({
+              fullStream: createStreamWithToolCalls(),
+              response: Promise.resolve({ text: "Response" }),
+              steps: stepsWithToolCalls,
+            });
+          } else if (callCount === 11) {
+            return Promise.reject(createTokenLimitError());
+          } else {
+            return Promise.resolve({
+              fullStream: createSimpleStream(),
+              response: Promise.resolve({ text: "Retry Response" }),
+              steps: [{ text: "Retry Response", toolCalls: [], toolResults: [] }],
+            });
+          }
+        }),
+        generate: vi.fn(),
+        cleanup: vi.fn().mockResolvedValue(undefined),
+      };
+
+      vi.mocked(createInsightAgent).mockResolvedValue(mixedAgent as any);
+
+      const testSession = new AgentSession({
+        sessionId: "history-update-session",
+        mode: mockMode,
+        client: mockClient,
+        maxSteps: 25,
+        broadcast: collector.broadcast,
+      });
+
+      // Build history with 10 queries (each has user + assistant + tool = 3 messages)
+      for (let i = 0; i < 10; i++) {
+        await testSession.executeQuery(`query ${i}`);
+      }
+      const historyBefore = testSession.history.length;
+      expect(historyBefore).toBe(30); // 10 * (user + assistant + tool) = 30
+
+      // Execute query that will trigger compaction
+      await testSession.executeQuery("compaction query");
+
+      // After compaction and successful retry, history should be updated
+      // Compaction keeps first 2 and last 6 messages, prunes tool calls from middle
+      // Then adds new user message + assistant response
+      const historyAfter = testSession.history;
+      
+      // History should be smaller due to compaction of middle section
+      // Compaction prunes tool calls, so the history length should be less
+      // Note: The exact reduction depends on pruneMessages behavior
+      
+      // The last two messages should be the new query and response
+      const lastUserMsg = historyAfter[historyAfter.length - 2];
+      const lastAssistantMsg = historyAfter[historyAfter.length - 1];
+      expect(lastUserMsg.role).toBe("user");
+      expect(lastUserMsg.content).toBe("compaction query");
+      expect(lastAssistantMsg.role).toBe("assistant");
+
+      await testSession.cleanup();
     });
   });
 });

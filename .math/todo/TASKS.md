@@ -141,6 +141,6 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### test-session-history
 
 - content: Write integration tests in `packages/cli/test/session.test.ts` for the `AgentSession` class's conversation history functionality. Test that history accumulates across queries, that compaction is triggered on token errors, and that the `context_compacted` message is sent. Use mocked agents to avoid actual API calls.
-- status: pending
+- status: complete
 - dependencies: cli-session-token-retry
 
