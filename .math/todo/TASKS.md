@@ -49,7 +49,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### agent-response-to-history
 
 - content: Create a utility function `extractMessagesFromResponse(result: GenerateTextResult | StreamTextResult): ConversationMessage[]` in `packages/cli/src/agent/conversation.ts` that extracts the assistant's response (including any tool calls and results) from an AI SDK result object and converts it to internal `ConversationMessage` format. This will be used to update conversation history after each query.
-- status: pending
+- status: complete
 - dependencies: conversation-types
 
 ---
@@ -59,7 +59,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### token-error-detection
 
 - content: Create `packages/cli/src/agent/token-errors.ts` with a function `isTokenLimitError(error: unknown): boolean` that detects when an API error is due to exceeding the model's context window. Check for `AI_APICallError` and look for status code 400 with messages containing "context length", "token limit", "max_tokens", or similar patterns from Anthropic's API.
-- status: pending
+- status: complete
 - dependencies: none
 
 ### conversation-compaction

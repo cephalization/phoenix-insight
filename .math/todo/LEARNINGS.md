@@ -66,3 +66,24 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - **Type re-export**: Added `export type { ConversationMessage }` to make the type accessible from the agent module without importing from conversation.js directly.
 
 - **Testing pattern**: Used `vi.mock()` to mock the AI SDK functions and verify the correct parameters are passed. The mocks intercept `generateText` and `streamText` calls, allowing inspection of whether `prompt` or `messages` was used.
+
+## token-error-detection
+
+- **APICallError from AI SDK**: The `APICallError` class is exported from the `ai` package (re-exported from `@ai-sdk/provider`). It has:
+  - `statusCode?: number` - HTTP status code (may be undefined)
+  - `message: string` - Error message
+  - `static isInstance(error: unknown): error is APICallError` - Built-in type guard
+
+- **Conservative detection approach**: The implementation requires BOTH a relevant status code (400, 413, 422) AND a matching error message pattern. This prevents false positives from other 400 errors like "Invalid JSON". When statusCode is undefined, it falls back to message pattern matching only.
+
+- **Token limit error patterns**: Collected from Anthropic API documentation and common patterns:
+  - "prompt is too long"
+  - "context window", "context length"
+  - "max_tokens", "token limit"
+  - "tokens exceed", "too many tokens"
+  
+- **Testing with real APICallError instances**: Created actual `APICallError` instances in tests rather than mocking, because `APICallError.isInstance()` is used for type checking. The helper function `createAPICallError()` makes test setup cleaner.
+
+- **Helper function added**: Also implemented `getTokenLimitErrorDescription()` to extract user-friendly descriptions from token limit errors, including extracting token counts from messages like "150000 tokens".
+
+- **Pre-existing test failure**: The `test/server/ui.test.ts` can fail with `EADDRINUSE` on port 6007. This is an environmental issue from other processes, not related to code changes.
