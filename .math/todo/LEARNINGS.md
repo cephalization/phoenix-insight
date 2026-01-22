@@ -42,3 +42,12 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - The helper `prompt()` function wraps readline.question in a Promise - a useful pattern for sequential async prompts.
 - The config is written to `~/.phoenix-insight/config.json` - same location used by the existing config loader.
 - Tests for this command are a separate task (`test-init-command`) - the implementation task doesn't require writing tests since those are explicitly split out.
+
+## test-init-command
+
+- The init command is embedded in `cli.ts` rather than extracted to a separate module. Tests were written following the pattern from `ui.test.ts` - testing the logic and behavior patterns rather than directly calling the function.
+- Used vitest's mocking for `node:fs/promises` to test file operations without touching the real filesystem.
+- Tests cover all 5 requirements from the task: (1) config creation with provided values, (2) default value handling, (3) info messages about defaults, (4) existing config overwrite confirmation, and (5) parent directory creation.
+- The test file has 44 tests organized into logical sections: path construction, config creation, defaults handling, messages, existing file handling, directory creation, console output, prompt behavior, error handling, and config schema.
+- TypeScript gotcha: When using spread with a potentially falsy value like `...(apiKey && { apiKey })`, the spread may fail if `apiKey` is empty string. Use explicit `if` statements instead for cleaner type handling.
+- TypeScript gotcha: Direct string literal comparisons like `"custom-url" === "default-url"` trigger "no overlap" errors. Use typed variables instead of literals to avoid this.
