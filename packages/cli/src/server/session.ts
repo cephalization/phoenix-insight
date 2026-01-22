@@ -18,7 +18,12 @@ import {
   type ConversationMessage,
   createUserMessage,
   extractMessagesFromResponse,
+  compactConversation,
 } from "../agent/conversation.js";
+import {
+  isTokenLimitError,
+  getTokenLimitErrorDescription,
+} from "../agent/token-errors.js";
 
 // ============================================================================
 // Types
@@ -195,6 +200,16 @@ export class AgentSession {
   }
 
   /**
+   * Send a context compacted notification to the client
+   */
+  private sendContextCompacted(reason?: string): void {
+    this.send({
+      type: "context_compacted",
+      payload: { sessionId: this.sessionId, reason },
+    });
+  }
+
+  /**
    * Add a user message to the conversation history
    */
   private addUserMessage(content: string): void {
@@ -224,6 +239,9 @@ export class AgentSession {
    * The conversation history is passed to the agent for multi-turn context.
    * After the response completes, both the user message and the assistant's
    * response (including any tool calls and results) are appended to the history.
+   *
+   * If a token limit error occurs, the conversation is automatically compacted
+   * and the query is retried once.
    */
   async executeQuery(query: string): Promise<void> {
     if (this.isExecuting) {
@@ -234,6 +252,59 @@ export class AgentSession {
     this.isExecuting = true;
     this.abortController = new AbortController();
 
+    try {
+      // First attempt with current history
+      const firstAttemptError = await this.executeQueryWithHistory(query);
+
+      if (firstAttemptError && isTokenLimitError(firstAttemptError)) {
+        // Token limit error - compact the conversation and retry
+        const errorDescription = getTokenLimitErrorDescription(firstAttemptError);
+        
+        // Compact the conversation history
+        const originalLength = this.conversationHistory.length;
+        this.conversationHistory = compactConversation(this.conversationHistory);
+        const compactedLength = this.conversationHistory.length;
+        
+        // Notify the client that context was compacted
+        const reason = errorDescription ?? 
+          `Conversation compacted from ${originalLength} to ${compactedLength} messages to fit model limits.`;
+        this.sendContextCompacted(reason);
+        
+        // Retry with compacted history
+        const retryError = await this.executeQueryWithHistory(query);
+        
+        if (retryError) {
+          // Retry also failed - send error to client
+          if (!this.abortController?.signal.aborted) {
+            const message = retryError instanceof Error ? retryError.message : String(retryError);
+            this.sendError(`Query failed after compaction: ${message}`);
+          }
+        } else {
+          // Retry succeeded - send done signal
+          this.sendDone();
+        }
+      } else if (firstAttemptError) {
+        // Non-token-limit error - send error to client
+        if (!this.abortController?.signal.aborted) {
+          const message = firstAttemptError instanceof Error ? firstAttemptError.message : String(firstAttemptError);
+          this.sendError(`Query failed: ${message}`);
+        }
+      } else {
+        // First attempt succeeded - send done signal
+        this.sendDone();
+      }
+    } finally {
+      this.isExecuting = false;
+      this.abortController = null;
+    }
+  }
+
+  /**
+   * Execute a query with the current conversation history.
+   * Returns the error if execution fails, or null if successful.
+   * On success, updates the conversation history with the query and response.
+   */
+  private async executeQueryWithHistory(query: string): Promise<Error | null> {
     try {
       const agent = await this.getAgent();
 
@@ -300,17 +371,9 @@ export class AgentSession {
         }
       }
 
-      // Send done signal
-      this.sendDone();
+      return null; // Success
     } catch (error) {
-      // Don't send error if we were cancelled
-      if (!this.abortController?.signal.aborted) {
-        const message = error instanceof Error ? error.message : String(error);
-        this.sendError(`Query failed: ${message}`);
-      }
-    } finally {
-      this.isExecuting = false;
-      this.abortController = null;
+      return error instanceof Error ? error : new Error(String(error));
     }
   }
 
