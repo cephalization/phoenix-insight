@@ -6,7 +6,7 @@
  * - Integrates with chat store and websocket hook
  */
 
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import {
@@ -111,7 +111,7 @@ function TrashIcon({ className }: { className?: string }) {
 
 /**
  * ChatPanel - Main chat interface component
- * 
+ *
  * Features:
  * - Message list with ScrollArea and auto-scroll
  * - ChatInput integration for sending messages
@@ -134,7 +134,10 @@ export function ChatPanel({ className }: ChatPanelProps) {
 
   // Get current session
   const currentSession = getCurrentSession();
-  const messages = currentSession?.messages ?? [];
+  const messages = useMemo(
+    () => currentSession?.messages ?? [],
+    [currentSession]
+  );
 
   // Ref for auto-scrolling
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -168,7 +171,11 @@ export function ChatPanel({ className }: ChatPanelProps) {
   );
 
   // Get session display title
-  const getSessionTitle = (session: { id: string; title?: string; createdAt: number }): string => {
+  const getSessionTitle = (session: {
+    id: string;
+    title?: string;
+    createdAt: number;
+  }): string => {
     return session.title ?? `Session ${formatSessionDate(session.createdAt)}`;
   };
 
@@ -262,7 +269,7 @@ export function ChatPanel({ className }: ChatPanelProps) {
           </div>
         ) : (
           /* Message list */
-          <div className="flex flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-4">
             {messages.map((message, index) => {
               // Determine if this message is streaming
               // (last assistant message while isStreaming is true)
