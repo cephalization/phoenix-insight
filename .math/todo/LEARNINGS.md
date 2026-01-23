@@ -72,3 +72,13 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - For environment variable tests, save `process.env` in `beforeEach` and restore in `afterEach` to prevent test pollution.
 - The test suite has 38 tests covering all 5 requirements: config loading, tracing initialization, generateText parameters, missing API key handling, and Phoenix connection errors.
 - Note: `anthropic()` returns a model identifier that gets passed to `generateText`. The mock returns `"mock-model"` to simulate this behavior.
+
+## add-quickstart-section
+
+- Placed the Quickstart section after Requirements and before Installation. This flow makes sense: users first understand what they need (Requirements), then set up Phoenix and configure Phoenix Insight (Quickstart), then optionally see alternative installation methods (Installation section becomes reference material).
+- The Quickstart includes installation in step 2, which creates some redundancy with the Installation section below. This is intentional - the Quickstart is a complete flow, while Installation section serves as reference for users who skip ahead.
+- Used "Option A (Recommended)" for Phoenix Cloud since it requires less setup and is the path most new users will take.
+- Kept the docker command exactly as specified in the task: `docker run --pull=always -d --name arize-phoenix -p 6006:6006 arizephoenix/phoenix:latest`
+- For Phoenix Cloud URL format, used `https://app.phoenix.arize.com/s/<your-space>` as the example, matching the task spec with `<space_name>` placeholder style.
+- Added a final "You're ready" message with a simple first query to give users immediate gratification after setup.
+- This is a documentation-only task, so no tests were required per PROMPT.md guidelines.
