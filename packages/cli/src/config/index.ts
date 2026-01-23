@@ -160,7 +160,8 @@ export async function initializeConfig(cliArgs: CliArgs = {}): Promise<Config> {
 
   // Try to create default config if it doesn't exist (only for default path)
   if (isDefault) {
-    await createDefaultConfig(configPath, isDefault);
+    const validatedConfig = validateConfig(cliArgs as Record<string, unknown>);
+    await createDefaultConfig(configPath, isDefault, validatedConfig);
   }
 
   // Load config file
@@ -191,7 +192,9 @@ export async function initializeConfig(cliArgs: CliArgs = {}): Promise<Config> {
     // Log validation issues as warnings
     result.error.issues.forEach((issue) => {
       console.warn(
-        `Warning: Config validation error at '${issue.path.join(".")}': ${issue.message}`
+        `Warning: Config validation error at '${issue.path.join(".")}': ${
+          issue.message
+        }`
       );
     });
     // Fall back to defaults

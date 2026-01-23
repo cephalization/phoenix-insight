@@ -75,7 +75,9 @@ export async function loadConfigFile(
 
     // Other errors (permissions, etc.) - warn and return null
     console.warn(
-      `Warning: Could not read config file at ${configPath}: ${error instanceof Error ? error.message : String(error)}`
+      `Warning: Could not read config file at ${configPath}: ${
+        error instanceof Error ? error.message : String(error)
+      }`
     );
     return null;
   }
@@ -108,12 +110,16 @@ export function validateConfig(
       };
       zodError.issues.forEach((issue) => {
         console.warn(
-          `Warning: Config validation error at '${issue.path.join(".")}': ${issue.message}`
+          `Warning: Config validation error at '${issue.path.join(".")}': ${
+            issue.message
+          }`
         );
       });
     } else {
       console.warn(
-        `Warning: Config validation failed: ${error instanceof Error ? error.message : String(error)}`
+        `Warning: Config validation failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
       );
     }
 
@@ -133,7 +139,8 @@ export function validateConfig(
  */
 export async function createDefaultConfig(
   configPath: string,
-  isDefault: boolean
+  isDefault: boolean,
+  values?: Config
 ): Promise<boolean> {
   // Only create default config for the default path
   if (!isDefault) {
@@ -155,7 +162,7 @@ export async function createDefaultConfig(
     await fs.mkdir(configDir, { recursive: true });
 
     // Get default config and write it
-    const defaultConfig = getDefaultConfig();
+    const defaultConfig = values || getDefaultConfig();
     const content = JSON.stringify(defaultConfig, null, 2);
     await fs.writeFile(configPath, content, "utf-8");
 
@@ -166,7 +173,9 @@ export async function createDefaultConfig(
   } catch (error) {
     // Log warning but don't fail - config will use defaults
     console.warn(
-      `Warning: Could not create default config at ${configPath}: ${error instanceof Error ? error.message : String(error)}`
+      `Warning: Could not create default config at ${configPath}: ${
+        error instanceof Error ? error.message : String(error)
+      }`
     );
     return false;
   }

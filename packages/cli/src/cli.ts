@@ -30,6 +30,7 @@ import {
   shutdownObservability,
 } from "./observability/index.js";
 import { initializeConfig, getConfig, type CliArgs } from "./config/index.js";
+import { getConfigPath, loadConfigFile } from "./config/loader.js";
 import { createUIServer } from "./server/ui.js";
 import { createWebSocketServer } from "./server/websocket.js";
 import { createSessionManager } from "./server/session.js";
@@ -241,7 +242,7 @@ Examples:
   $ phoenix-insight help                                                       # Show this help message
 `
   )
-  .hook("preAction", async (thisCommand) => {
+  .hook("preAction", async (thisCommand, actionCommand) => {
     // Get all options from the root command
     const opts = thisCommand.opts();
     // Build CLI args from commander options
@@ -255,8 +256,12 @@ Examples:
       refresh: opts.refresh,
       trace: opts.trace,
     };
-    // Initialize config singleton before any command runs
-    await initializeConfig(cliArgs);
+    // skip initialization if this is help or init command
+    const skipCommands = ["help", "init"];
+    if (!skipCommands.includes(actionCommand.name())) {
+      // Initialize config singleton before any command runs
+      await initializeConfig(cliArgs);
+    }
   });
 
 /**
@@ -662,16 +667,14 @@ function prompt(
  * Run the init command to create a configuration file
  */
 async function runInitCommand(): Promise<void> {
-  const configDir = path.join(os.homedir(), ".phoenix-insight");
-  const configPath = path.join(configDir, "config.json");
+  // Use the config module's path resolution
+  const { path: configPath } = getConfigPath();
 
   console.log("🚀 Phoenix Insight Configuration Setup\n");
 
-  // Check if config file already exists
-  let existingConfig: Record<string, unknown> | null = null;
-  try {
-    const existingContent = await fs.readFile(configPath, "utf-8");
-    existingConfig = JSON.parse(existingContent);
+  // Check if config file already exists using the loader utility
+  const existingConfig = await loadConfigFile(configPath);
+  if (existingConfig !== null) {
     console.log(`⚠️  Config file already exists at ${configPath}`);
 
     const rl = readline.createInterface({
@@ -679,7 +682,11 @@ async function runInitCommand(): Promise<void> {
       output: process.stdout,
     });
 
-    const answer = await prompt(rl, "Overwrite existing config? (yes/no)", "no");
+    const answer = await prompt(
+      rl,
+      "Overwrite existing config? (yes/no)",
+      "no"
+    );
     rl.close();
 
     if (answer.toLowerCase() !== "yes" && answer.toLowerCase() !== "y") {
@@ -687,8 +694,6 @@ async function runInitCommand(): Promise<void> {
       return;
     }
     console.log();
-  } catch {
-    // Config doesn't exist, which is fine
   }
 
   const rl = readline.createInterface({
@@ -699,11 +704,7 @@ async function runInitCommand(): Promise<void> {
   console.log("Please provide your Phoenix configuration:\n");
 
   // Prompt for Phoenix base URL
-  const baseUrl = await prompt(
-    rl,
-    "Phoenix base URL",
-    "http://localhost:6006"
-  );
+  const baseUrl = await prompt(rl, "Phoenix base URL", "http://localhost:6006");
 
   if (baseUrl === "http://localhost:6006") {
     console.log(
@@ -712,7 +713,11 @@ async function runInitCommand(): Promise<void> {
   }
 
   // Prompt for Phoenix API key
-  const apiKey = await prompt(rl, "Phoenix API key (optional, press Enter to skip)", "");
+  const apiKey = await prompt(
+    rl,
+    "Phoenix API key (optional, press Enter to skip)",
+    ""
+  );
 
   if (!apiKey) {
     console.log(
@@ -723,30 +728,25 @@ async function runInitCommand(): Promise<void> {
   rl.close();
 
   // Build config object
-  const config: Record<string, unknown> = {
+  const config = {
     baseUrl,
     ...(apiKey && { apiKey }),
-  };
-
-  // Create directory if it doesn't exist
-  try {
-    await fs.mkdir(configDir, { recursive: true });
-  } catch {
-    // Directory may already exist
-  }
+  } satisfies CliArgs;
 
   // Write config file
   try {
-    const content = JSON.stringify(config, null, 2);
-    await fs.writeFile(configPath, content, "utf-8");
+    await initializeConfig(config);
 
     console.log("✅ Configuration saved successfully!\n");
     console.log(`📁 Config file: ${configPath}`);
     console.log("\n📋 Configuration:");
-    console.log(`   baseUrl: ${baseUrl}`);
-    if (apiKey) {
-      console.log(`   apiKey: ${apiKey.substring(0, 8)}...`);
-    }
+    Object.entries(getConfig()).forEach(([key, value]) => {
+      if (key === "apiKey" && typeof value === "string") {
+        console.log(`   ${key}: ${value.substring(0, 8)}...`);
+      } else {
+        console.log(`   ${key}: ${value}`);
+      }
+    });
     console.log(
       "\n💡 You can now run 'phoenix-insight' to start analyzing your Phoenix data."
     );
@@ -780,7 +780,9 @@ async function runSeedCommand(): Promise<void> {
   // Check for Anthropic API key
   if (!process.env.ANTHROPIC_API_KEY) {
     console.error("❌ Error: Missing ANTHROPIC_API_KEY environment variable\n");
-    console.error("The Anthropic API key is required to run the seed command.\n");
+    console.error(
+      "The Anthropic API key is required to run the seed command.\n"
+    );
     console.error("To fix this, set the environment variable:\n");
     console.error("  export ANTHROPIC_API_KEY=sk-ant-api03-...\n");
     console.error(
@@ -811,7 +813,7 @@ async function runSeedCommand(): Promise<void> {
 
     // Use ai-sdk generateText with a simple hello-world message
     const result = await generateText({
-      model: anthropic("claude-sonnet-4-20250514"),
+      model: anthropic("claude-3-haiku-20240307"),
       prompt: "Hello, world! Please respond briefly.",
       experimental_telemetry: {
         isEnabled: true,
@@ -832,10 +834,12 @@ async function runSeedCommand(): Promise<void> {
       phoenixUrl = phoenixUrl.slice(0, -1);
     }
     // Add project path
-    const projectUrl = `${phoenixUrl}/projects/phoenix-insight-seed`;
+    const projectUrl = `${phoenixUrl}/projects`;
 
     console.log("\n✅ Seed completed successfully!\n");
-    console.log("🔗 View your trace in Phoenix:");
+    console.log(
+      "🔗 View your trace in Phoenix within the 'phoenix-insight-seed' project:"
+    );
     console.log(`   ${projectUrl}\n`);
     console.log(
       "💡 If you don't see the trace immediately, wait a few seconds and refresh the page."
@@ -980,7 +984,11 @@ async function runUIServer(options: {
       },
       onMessage: async (message, ws) => {
         if (message.type === "query") {
-          const { content, sessionId: clientSessionId, history } = message.payload;
+          const {
+            content,
+            sessionId: clientSessionId,
+            history,
+          } = message.payload;
           const sessionId = clientSessionId ?? `session-${Date.now()}`;
 
           // Get or create session for this client
@@ -1356,9 +1364,7 @@ async function runInteractiveMode(): Promise<void> {
             agentProgress.stop();
 
             // Display warning to user
-            console.log(
-              "\n⚠️  Context was trimmed to fit model limits\n"
-            );
+            console.log("\n⚠️  Context was trimmed to fit model limits\n");
 
             // Compact the conversation history
             const compactedHistory = compactConversation(conversationHistory);
