@@ -75,7 +75,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### add-quickstart-section
 
 - content: Add a "Quickstart" section to the root README that guides users through: (1) Creating a Phoenix Cloud instance at https://app.phoenix.arize.com, (2) Optionally running self-hosted Phoenix with `docker run --pull=always -d --name arize-phoenix -p 6006:6006 arizephoenix/phoenix:latest`, (3) Running `phoenix-insight init` to generate config, (4) Configuring baseUrl as `https://app.phoenix.arize.com/s/<space_name>` for cloud or `http://localhost:6006` for self-hosted, (5) Running `phoenix-insight seed` to verify setup works. Reference both cloud and self-hosted options.
-- status: pending
+- status: complete
 - dependencies: create-user-focused-readme, implement-init-command, implement-seed-command
 
 ### document-init-seed-in-cli-readme
