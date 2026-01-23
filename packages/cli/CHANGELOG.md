@@ -1,5 +1,11 @@
 # @cephalization/phoenix-insight
 
+## 1.3.0
+
+### Minor Changes
+
+- b18cf99: feat: Add init and seed subcommands
+
 ## 1.2.0
 
 ### Minor Changes
