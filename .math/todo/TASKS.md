@@ -81,6 +81,6 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### document-init-seed-in-cli-readme
 
 - content: Add documentation for the `init` and `seed` commands to `packages/cli/README.md`. Include them in the Command Reference section with their options, descriptions, and example usage. Follow the existing documentation style for other commands.
-- status: pending
+- status: complete
 - dependencies: add-quickstart-section
 

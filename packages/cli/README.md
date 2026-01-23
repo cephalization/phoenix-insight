@@ -338,6 +338,100 @@ phoenix-insight [options] [query]
 | `-i, --interactive` | Start interactive REPL mode                   | `false`                 | `phoenix-insight -i`                           |
 | `--trace`           | Enable tracing of agent operations to Phoenix | `false`                 | `phoenix-insight --trace "query"`              |
 
+### Init Command
+
+Creates a configuration file at `~/.phoenix-insight/config.json` with your Phoenix connection settings.
+
+```bash
+phoenix-insight init
+```
+
+No additional options. The command interactively prompts for:
+
+- **Phoenix base URL** - Defaults to `http://localhost:6006`. For Phoenix Cloud, use `https://app.phoenix.arize.com/s/<space_name>`
+- **Phoenix API key** - Optional. Required for Phoenix Cloud or authenticated Phoenix instances
+
+**Behavior:**
+
+- Creates `~/.phoenix-insight` directory if it doesn't exist
+- Warns if config file already exists and asks for confirmation before overwriting
+- Shows helpful hints about default values when skipped
+
+**Example session:**
+
+```
+$ phoenix-insight init
+🚀 Phoenix Insight Configuration Setup
+
+Please provide your Phoenix configuration:
+
+Phoenix base URL (http://localhost:6006): https://app.phoenix.arize.com/s/my-space
+Phoenix API key (optional, press Enter to skip): phx_abc123...
+
+✅ Configuration saved successfully!
+
+📁 Config file: /Users/you/.phoenix-insight/config.json
+
+📋 Configuration:
+   baseUrl: https://app.phoenix.arize.com/s/my-space
+   apiKey: phx_abc1...
+
+💡 You can now run 'phoenix-insight' to start analyzing your Phoenix data.
+```
+
+### Seed Command
+
+Sends a traced hello-world message to verify your Phoenix setup is working correctly.
+
+```bash
+phoenix-insight seed
+```
+
+No additional options. The command:
+
+1. Loads configuration from `~/.phoenix-insight/config.json` (or uses defaults)
+2. Initializes OpenTelemetry tracing to your Phoenix instance
+3. Sends a simple message to Claude using ai-sdk
+4. Streams the response to the console
+5. Flushes the trace to Phoenix
+6. Prints a link to view the trace in Phoenix UI
+
+**Requirements:**
+
+- `ANTHROPIC_API_KEY` environment variable must be set
+
+**Example session:**
+
+```
+$ phoenix-insight seed
+🌱 Phoenix Insight Seed - Verifying Phoenix Setup
+
+📋 Configuration:
+   Phoenix URL: http://localhost:6006
+
+🔭 Initializing OpenTelemetry tracing...
+🤖 Sending hello-world message to Claude...
+
+✨ Response from Claude:
+
+   Hello! How can I help you today?
+
+📤 Flushing traces to Phoenix...
+
+✅ Seed completed successfully!
+
+🔗 View your trace in Phoenix:
+   http://localhost:6006/projects/phoenix-insight-seed
+
+💡 If you don't see the trace immediately, wait a few seconds and refresh the page.
+```
+
+**Error handling:**
+
+- Missing `ANTHROPIC_API_KEY`: Provides instructions to set the environment variable
+- Phoenix connection errors: Shows helpful message about checking Phoenix is running
+- API errors: Displays the error message with troubleshooting guidance
+
 ### Snapshot Command
 
 Creates or updates a data snapshot from Phoenix without running a query.

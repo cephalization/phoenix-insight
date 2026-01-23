@@ -82,3 +82,13 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - For Phoenix Cloud URL format, used `https://app.phoenix.arize.com/s/<your-space>` as the example, matching the task spec with `<space_name>` placeholder style.
 - Added a final "You're ready" message with a simple first query to give users immediate gratification after setup.
 - This is a documentation-only task, so no tests were required per PROMPT.md guidelines.
+
+## document-init-seed-in-cli-readme
+
+- The CLI README follows a consistent Command Reference pattern: command name with description, bash invocation, options table (if applicable), behavior notes, and example session showing realistic output.
+- Positioned `init` and `seed` commands between the Query Command (default) and Snapshot Command sections. These are setup commands that users typically run once at the beginning, so logically they come before the data management commands.
+- For commands with no CLI options (like `init` and `seed`), the documentation focuses on interactive behavior, requirements, and example sessions rather than options tables.
+- Both commands are implemented inline in `cli.ts` rather than separate files - had to search with grep to find them since `packages/cli/src/commands/init.ts` doesn't exist.
+- The `seed` command requires `ANTHROPIC_API_KEY` env var - important to document this requirement prominently since it's not obvious from the command name.
+- Example sessions in documentation should show realistic prompts, inputs, and outputs including emoji indicators (🚀, ✅, 📋, etc.) that the actual commands produce.
+- This is a documentation-only task, so no tests were required per PROMPT.md guidelines.
