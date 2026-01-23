@@ -375,6 +375,11 @@ Phoenix API key (optional, press Enter to skip): phx_abc123...
 📋 Configuration:
    baseUrl: https://app.phoenix.arize.com/s/my-space
    apiKey: phx_abc1...
+   limit: 1000
+   stream: true
+   mode: sandbox
+   refresh: false
+   trace: true
 
 💡 You can now run 'phoenix-insight' to start analyzing your Phoenix data.
 ```
@@ -420,8 +425,8 @@ $ phoenix-insight seed
 
 ✅ Seed completed successfully!
 
-🔗 View your trace in Phoenix:
-   http://localhost:6006/projects/phoenix-insight-seed
+🔗 View your trace in Phoenix within the 'phoenix-insight-seed' project:
+   http://localhost:6006/projects
 
 💡 If you don't see the trace immediately, wait a few seconds and refresh the page.
 ```
