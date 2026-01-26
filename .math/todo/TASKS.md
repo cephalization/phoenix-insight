@@ -33,7 +33,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### add-report-generating-state
 
 - content: Add `isGeneratingReport` boolean state to report store with `setIsGeneratingReport(value)` action. This state tracks when the `generate_report` tool is actively being called (distinct from general chat streaming).
-- status: pending
+- status: complete
 - dependencies: none
 
 ---

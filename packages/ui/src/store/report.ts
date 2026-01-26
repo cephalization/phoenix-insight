@@ -23,6 +23,7 @@ export interface ReportState {
   reports: Report[];
   currentReportId: string | null;
   isManuallySelected: boolean;
+  isGeneratingReport: boolean;
 }
 
 export interface ReportActions {
@@ -33,6 +34,7 @@ export interface ReportActions {
   getCurrentReport: () => Report | null;
   setCurrentReportManual: (reportId: string) => void;
   clearManualSelection: () => void;
+  setIsGeneratingReport: (value: boolean) => void;
 }
 
 export type ReportStore = ReportState & ReportActions;
@@ -48,6 +50,7 @@ export const useReportStore = create<ReportStore>()(
     reports: [],
     currentReportId: null,
     isManuallySelected: false,
+    isGeneratingReport: false,
 
   // Actions
   setReport: (reportData) => {
@@ -137,6 +140,10 @@ export const useReportStore = create<ReportStore>()(
 
   clearManualSelection: () => {
     set({ isManuallySelected: false });
+  },
+
+  setIsGeneratingReport: (value) => {
+    set({ isGeneratingReport: value });
   },
 })));
 

@@ -8,6 +8,7 @@ describe("useReportStore", () => {
       reports: [],
       currentReportId: null,
       isManuallySelected: false,
+      isGeneratingReport: false,
     });
   });
 
@@ -341,6 +342,39 @@ describe("useReportStore", () => {
       const current = useReportStore.getState().getCurrentReport();
 
       expect(current).toEqual(report2);
+    });
+  });
+
+  describe("isGeneratingReport", () => {
+    it("defaults to false", () => {
+      expect(useReportStore.getState().isGeneratingReport).toBe(false);
+    });
+
+    it("can be set to true via setIsGeneratingReport", () => {
+      useReportStore.getState().setIsGeneratingReport(true);
+
+      expect(useReportStore.getState().isGeneratingReport).toBe(true);
+    });
+
+    it("can be set to false via setIsGeneratingReport", () => {
+      useReportStore.getState().setIsGeneratingReport(true);
+      useReportStore.getState().setIsGeneratingReport(false);
+
+      expect(useReportStore.getState().isGeneratingReport).toBe(false);
+    });
+
+    it("does not affect other state when toggled", () => {
+      useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Content" },
+      });
+      const reportsBefore = useReportStore.getState().reports;
+      const currentIdBefore = useReportStore.getState().currentReportId;
+
+      useReportStore.getState().setIsGeneratingReport(true);
+
+      expect(useReportStore.getState().reports).toEqual(reportsBefore);
+      expect(useReportStore.getState().currentReportId).toBe(currentIdBefore);
     });
   });
 });
