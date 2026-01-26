@@ -49,3 +49,11 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - The implementation checks `isManuallySelected` from report store after creating a new session - if not manually selected, clears `currentReportId` to null so new sessions show empty state
 - This preserves manually viewed historical reports while ensuring new sessions start with a clean report panel
 - Unit tests for this specific cross-store behavior will be added in the `test-session-report-clearing` task that depends on this one
+
+## update-report-history-manual-selection
+
+- The change was minimal: import the `setCurrentReportManual` action from the store, and call it instead of directly using `useReportStore.setState({ currentReportId: reportId })`
+- Pattern for using store actions in callbacks: extract the action via selector `const setCurrentReportManual = useReportStore((state) => state.setCurrentReportManual)` then add it to the `useCallback` dependency array
+- Don't forget to add the new action to the dependency array of the `useCallback` to ensure React re-creates the callback if the action reference changes (though in practice Zustand actions are stable)
+- Added a test to verify that clicking "View" on a report sets `isManuallySelected` to true, complementing the existing test that verifies `currentReportId` is updated
+- This task depends on `add-manual-selection-tracking` since it uses the `setCurrentReportManual` action defined in that task

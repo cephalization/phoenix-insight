@@ -152,6 +152,7 @@ export function ReportHistoryDialog({
   const reports = useReportStore((state) => state.reports);
   const currentReportId = useReportStore((state) => state.currentReportId);
   const deleteReport = useReportStore((state) => state.deleteReport);
+  const setCurrentReportManual = useReportStore((state) => state.setCurrentReportManual);
 
   // Handle downloading a report as markdown
   const handleDownloadReport = useCallback((report: Report) => {
@@ -160,13 +161,13 @@ export function ReportHistoryDialog({
     downloadAsFile(markdown, filename);
   }, []);
 
-  // Handle viewing a report
+  // Handle viewing a report - uses setCurrentReportManual to mark as manual selection
   const handleViewReport = useCallback(
     (reportId: string) => {
-      useReportStore.setState({ currentReportId: reportId });
+      setCurrentReportManual(reportId);
       onOpenChange(false);
     },
-    [onOpenChange]
+    [setCurrentReportManual, onOpenChange]
   );
 
   // Handle deleting a report

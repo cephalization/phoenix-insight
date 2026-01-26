@@ -63,7 +63,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### update-report-history-manual-selection
 
 - content: Update ReportHistoryDialog to use `setCurrentReportManual()` instead of directly setting `currentReportId` when user clicks "View" on a report. This marks the selection as manual so it persists across new session creation.
-- status: pending
+- status: complete
 - dependencies: add-manual-selection-tracking
 
 ### create-report-generating-skeleton

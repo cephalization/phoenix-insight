@@ -241,6 +241,7 @@ describe("ReportHistoryDialog", () => {
       useReportStore.setState({
         reports,
         currentReportId: "report-1",
+        isManuallySelected: false,
       });
 
       render(
@@ -253,6 +254,35 @@ describe("ReportHistoryDialog", () => {
       await user.click(viewButton);
 
       expect(useReportStore.getState().currentReportId).toBe("report-2");
+    });
+
+    it("marks selection as manual when view button clicked", async () => {
+      const user = userEvent.setup();
+      const onOpenChange = vi.fn();
+      const reports = [
+        createReport({ id: "report-1", title: "First Report" }),
+        createReport({ id: "report-2", title: "Second Report" }),
+      ];
+      useReportStore.setState({
+        reports,
+        currentReportId: "report-1",
+        isManuallySelected: false,
+      });
+
+      render(
+        <ReportHistoryDialog open={true} onOpenChange={onOpenChange} />
+      );
+
+      // Verify initial state
+      expect(useReportStore.getState().isManuallySelected).toBe(false);
+
+      const viewButton = screen.getByRole("button", {
+        name: /view second report/i,
+      });
+      await user.click(viewButton);
+
+      // After clicking view, isManuallySelected should be true
+      expect(useReportStore.getState().isManuallySelected).toBe(true);
     });
 
     it("closes dialog after viewing a report", async () => {
