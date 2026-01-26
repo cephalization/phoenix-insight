@@ -7,6 +7,7 @@ describe("useReportStore", () => {
     useReportStore.setState({
       reports: [],
       currentReportId: null,
+      isManuallySelected: false,
     });
   });
 

@@ -22,65 +22,74 @@ Each agent picks the next pending task, implements it, and marks it complete.
 
 ---
 
-## Phase 1: Documentation Restructuring
+## Phase 1: Report Store State Enhancements
 
-### move-root-readme-to-development
+### add-manual-selection-tracking
 
-- content: Move the existing root `README.md` content to a new `DEVELOPMENT.md` file in the repo root. This file currently contains monorepo structure, development setup, package scripts, UI integration testing instructions, architecture overview, and contributing guidelines. These are developer-focused and should live in DEVELOPMENT.md. Do NOT modify `packages/cli/README.md` - leave it as is.
+- content: Add `isManuallySelected` boolean state to report store to track when users manually select a report from history vs auto-selection. Add `setCurrentReportManual(reportId)` action to set a report with manual flag, and `clearManualSelection()` to reset the flag. Update `setReport()` to automatically call `clearManualSelection()` when a new report is generated.
 - status: complete
 - dependencies: none
 
-### create-user-focused-readme
+### add-report-generating-state
 
-- content: Create a new user-focused `README.md` in the repo root with: (1) Clear project description explaining what Phoenix Insight does - AI-powered analysis of Phoenix observability data using the "bash + files" paradigm, (2) Key features section highlighting transparency, reproducibility, and extensibility, (3) Requirements section (Node.js v22+, Anthropic API key), (4) Installation instructions (`npm install -g @cephalization/phoenix-insight`), (5) Quick usage examples showing basic queries and the `ui` command, (6) Link to `packages/cli/README.md` for full CLI documentation, (7) Link to `DEVELOPMENT.md` for development/contributing. Keep it welcoming for new users while explaining the value proposition.
-- status: complete
-- dependencies: move-root-readme-to-development
-
----
-
-## Phase 2: Init Command
-
-### implement-init-command
-
-- content: Add a new `init` subcommand to the CLI that creates a config file at `~/.phoenix-insight/config.json`. The command should: (1) Prompt for Phoenix base URL (default: http://localhost:6006), (2) Prompt for Phoenix API key (default: empty), (3) Show explanation of defaults when user skips input, (4) Write the config file with the provided or default values, (5) Print success message with path to config file. Use Node.js readline for prompts (no external deps).
-- status: complete
+- content: Add `isGeneratingReport` boolean state to report store with `setIsGeneratingReport(value)` action. This state tracks when the `generate_report` tool is actively being called (distinct from general chat streaming).
+- status: pending
 - dependencies: none
 
-### test-init-command
+---
 
-- content: Write tests for the init command in `packages/cli/test/commands/init.test.ts`. Test: (1) Creates config file with provided values, (2) Uses defaults when user provides empty input, (3) Shows appropriate messages about defaults, (4) Handles existing config file (warn but don't overwrite without confirmation), (5) Creates parent directories if they don't exist.
-- status: complete
-- dependencies: implement-init-command
+## Phase 2: WebSocket Integration
+
+### track-generate-report-tool
+
+- content: Update useWebSocket hook to track when `generate_report` tool is called. In the `tool_call` handler, when `toolName === "generate_report"`, call `setIsGeneratingReport(true)`. In the `tool_result` handler, when `toolName === "generate_report"`, call `setIsGeneratingReport(false)`. Also reset `isGeneratingReport` to false in the `done` and `error` handlers.
+- status: pending
+- dependencies: add-report-generating-state
 
 ---
 
-## Phase 3: Seed Command
+## Phase 3: Session Creation Behavior
 
-### implement-seed-command
+### clear-report-on-new-session
 
-- content: Add a new `seed` subcommand to the CLI that sends a traced hello-world message using ai-sdk. The command should: (1) Load config from the config file, (2) Initialize OpenTelemetry tracing to Phoenix, (3) Use ai-sdk `generateText` with a simple "Hello, world! Please respond briefly." message, (4) Stream or print the response, (5) Ensure the trace is sent to Phoenix, (6) Print success message with link to view trace in Phoenix UI. This validates the user's Phoenix setup is working.
-- status: complete
-- dependencies: implement-init-command
-
-### test-seed-command
-
-- content: Write tests for the seed command in `packages/cli/test/commands/seed.test.ts`. Test: (1) Loads config correctly, (2) Initializes tracing with correct Phoenix endpoint, (3) Calls ai-sdk generateText with expected parameters, (4) Handles missing Anthropic API key gracefully, (5) Handles Phoenix connection errors gracefully. Use vitest mocking for ai-sdk and OpenTelemetry.
-- status: complete
-- dependencies: implement-seed-command
+- content: Update `createSession()` in chat store to clear the current report selection when a new session is created. After a new session is created, if the current report is NOT manually selected (`!isManuallySelected`), set `currentReportId` to null. This ensures empty state shows for new sessions while preserving manually viewed historical reports.
+- status: pending
+- dependencies: add-manual-selection-tracking
 
 ---
 
-## Phase 4: Final Documentation Polish
+## Phase 4: UI Updates
 
-### add-quickstart-section
+### update-report-history-manual-selection
 
-- content: Add a "Quickstart" section to the root README that guides users through: (1) Creating a Phoenix Cloud instance at https://app.phoenix.arize.com, (2) Optionally running self-hosted Phoenix with `docker run --pull=always -d --name arize-phoenix -p 6006:6006 arizephoenix/phoenix:latest`, (3) Running `phoenix-insight init` to generate config, (4) Configuring baseUrl as `https://app.phoenix.arize.com/s/<space_name>` for cloud or `http://localhost:6006` for self-hosted, (5) Running `phoenix-insight seed` to verify setup works. Reference both cloud and self-hosted options.
-- status: complete
-- dependencies: create-user-focused-readme, implement-init-command, implement-seed-command
+- content: Update ReportHistoryDialog to use `setCurrentReportManual()` instead of directly setting `currentReportId` when user clicks "View" on a report. This marks the selection as manual so it persists across new session creation.
+- status: pending
+- dependencies: add-manual-selection-tracking
 
-### document-init-seed-in-cli-readme
+### create-report-generating-skeleton
 
-- content: Add documentation for the `init` and `seed` commands to `packages/cli/README.md`. Include them in the Command Reference section with their options, descriptions, and example usage. Follow the existing documentation style for other commands.
-- status: complete
-- dependencies: add-quickstart-section
+- content: Create a new `GeneratingSkeleton` component in ReportRenderer.tsx for the report generating state. Design should be similar to `LoadingSkeleton` but with visual indication that a report is being generated (e.g., animated pulse effect, "Generating report..." text with bouncing dots). This is distinct from the streaming indicator which shows when a report is being updated.
+- status: pending
+- dependencies: none
 
+### integrate-generating-state-in-report-panel
+
+- content: Update ReportPanel and ReportRenderer to consume `isGeneratingReport` from report store. Pass it to ReportRenderer alongside existing `isStreaming` prop. In ReportRenderer, show `GeneratingSkeleton` when `isGeneratingReport && !report` (generating a new report). The `LoadingSkeleton` continues to be used when `isStreaming && !report` (streaming updates to existing reports).
+- status: pending
+- dependencies: create-report-generating-skeleton, add-report-generating-state
+
+---
+
+## Phase 5: Testing
+
+### test-report-store-enhancements
+
+- content: Add unit tests for new report store functionality: `isManuallySelected` state, `setCurrentReportManual()`, `clearManualSelection()`, `isGeneratingReport` state, and `setIsGeneratingReport()`. Verify `setReport()` clears manual selection flag.
+- status: pending
+- dependencies: add-manual-selection-tracking, add-report-generating-state
+
+### test-session-report-clearing
+
+- content: Add unit tests to verify that creating a new session clears `currentReportId` when not manually selected, and preserves `currentReportId` when manually selected.
+- status: pending
+- dependencies: clear-report-on-new-session

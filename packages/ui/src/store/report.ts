@@ -22,6 +22,7 @@ export interface Report {
 export interface ReportState {
   reports: Report[];
   currentReportId: string | null;
+  isManuallySelected: boolean;
 }
 
 export interface ReportActions {
@@ -30,6 +31,8 @@ export interface ReportActions {
   deleteReport: (reportId: string) => void;
   listReports: () => Report[];
   getCurrentReport: () => Report | null;
+  setCurrentReportManual: (reportId: string) => void;
+  clearManualSelection: () => void;
 }
 
 export type ReportStore = ReportState & ReportActions;
@@ -44,6 +47,7 @@ export const useReportStore = create<ReportStore>()(
     // State
     reports: [],
     currentReportId: null,
+    isManuallySelected: false,
 
   // Actions
   setReport: (reportData) => {
@@ -68,6 +72,7 @@ export const useReportStore = create<ReportStore>()(
           r.id === existingReport.id ? updatedReport : r
         ),
         currentReportId: existingReport.id,
+        isManuallySelected: false, // Clear manual selection when report is generated
       }));
 
       return updatedReport;
@@ -84,6 +89,7 @@ export const useReportStore = create<ReportStore>()(
       set((state) => ({
         reports: [...state.reports, newReport],
         currentReportId: newReport.id,
+        isManuallySelected: false, // Clear manual selection when report is generated
       }));
 
       return newReport;
@@ -120,6 +126,17 @@ export const useReportStore = create<ReportStore>()(
     const state = get();
     if (!state.currentReportId) return null;
     return state.reports.find((r) => r.id === state.currentReportId) ?? null;
+  },
+
+  setCurrentReportManual: (reportId) => {
+    set({
+      currentReportId: reportId,
+      isManuallySelected: true,
+    });
+  },
+
+  clearManualSelection: () => {
+    set({ isManuallySelected: false });
   },
 })));
 
