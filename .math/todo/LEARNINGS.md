@@ -78,3 +78,14 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - The rendering priority is: GeneratingSkeleton (generating new report) > LoadingSkeleton (streaming without content) > EmptyState (no report, no activity) > Report content
 - All 324 existing tests pass without modification - the new prop is optional with default `false`, so existing tests continue to work
 - The `GeneratingSkeleton` component was already defined and exported in the previous task, so this task just needed to wire it up
+
+## test-report-store-enhancements
+
+- The existing `report.test.ts` already had good test coverage for the basic report store functionality and `isGeneratingReport`/`setIsGeneratingReport` - just needed to add tests for the manual selection features
+- Test pattern: Zustand stores need their state reset in `beforeEach` to ensure test isolation. The existing tests already do this properly with `useReportStore.setState({...})`
+- When testing that `setReport()` clears manual selection, test both code paths: creating a new report AND updating an existing report (same sessionId)
+- The `setCurrentReportManual()` action combines two state updates in one call: `currentReportId` and `isManuallySelected: true`
+- The `clearManualSelection()` action only resets `isManuallySelected` to false, preserving `currentReportId` - this is intentional for the new session creation behavior
+- Added 18 new tests across 4 describe blocks: `isManuallySelected` (2 tests), `setCurrentReportManual` (4 tests), `clearManualSelection` (4 tests), `setReport clears manual selection` (3 tests)
+- Existing tests for `isGeneratingReport` and `setIsGeneratingReport` were already present (4 tests), so no new tests needed for those
+- Total tests in report.test.ts: 42 (up from ~31 before this task)

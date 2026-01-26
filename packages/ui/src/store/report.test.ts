@@ -377,4 +377,195 @@ describe("useReportStore", () => {
       expect(useReportStore.getState().currentReportId).toBe(currentIdBefore);
     });
   });
+
+  describe("isManuallySelected", () => {
+    it("defaults to false", () => {
+      expect(useReportStore.getState().isManuallySelected).toBe(false);
+    });
+
+    it("does not affect other state when accessed", () => {
+      useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Content" },
+      });
+
+      const state = useReportStore.getState();
+      expect(state.isManuallySelected).toBe(false);
+      expect(state.reports).toHaveLength(1);
+      expect(state.currentReportId).toBeDefined();
+    });
+  });
+
+  describe("setCurrentReportManual", () => {
+    it("sets currentReportId to the specified report", () => {
+      const report1 = useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Report 1" },
+      });
+      const report2 = useReportStore.getState().setReport({
+        sessionId: "session-2",
+        content: { type: "text", text: "Report 2" },
+      });
+
+      // report2 is current after creation
+      expect(useReportStore.getState().currentReportId).toBe(report2.id);
+
+      useReportStore.getState().setCurrentReportManual(report1.id);
+
+      expect(useReportStore.getState().currentReportId).toBe(report1.id);
+    });
+
+    it("sets isManuallySelected to true", () => {
+      const report = useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Content" },
+      });
+
+      // Initially false after setReport
+      expect(useReportStore.getState().isManuallySelected).toBe(false);
+
+      useReportStore.getState().setCurrentReportManual(report.id);
+
+      expect(useReportStore.getState().isManuallySelected).toBe(true);
+    });
+
+    it("sets both currentReportId and isManuallySelected together", () => {
+      const report = useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Content" },
+      });
+
+      // Clear current to test setting it
+      useReportStore.setState({ currentReportId: null, isManuallySelected: false });
+
+      useReportStore.getState().setCurrentReportManual(report.id);
+
+      expect(useReportStore.getState().currentReportId).toBe(report.id);
+      expect(useReportStore.getState().isManuallySelected).toBe(true);
+    });
+
+    it("does not affect reports array", () => {
+      const report = useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Content" },
+      });
+      const reportsBefore = [...useReportStore.getState().reports];
+
+      useReportStore.getState().setCurrentReportManual(report.id);
+
+      expect(useReportStore.getState().reports).toEqual(reportsBefore);
+    });
+  });
+
+  describe("clearManualSelection", () => {
+    it("sets isManuallySelected to false", () => {
+      const report = useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Content" },
+      });
+
+      // Set manual selection first
+      useReportStore.getState().setCurrentReportManual(report.id);
+      expect(useReportStore.getState().isManuallySelected).toBe(true);
+
+      useReportStore.getState().clearManualSelection();
+
+      expect(useReportStore.getState().isManuallySelected).toBe(false);
+    });
+
+    it("does not affect currentReportId", () => {
+      const report = useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Content" },
+      });
+
+      useReportStore.getState().setCurrentReportManual(report.id);
+      useReportStore.getState().clearManualSelection();
+
+      expect(useReportStore.getState().currentReportId).toBe(report.id);
+    });
+
+    it("does not affect reports array", () => {
+      useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Content" },
+      });
+      const reportsBefore = [...useReportStore.getState().reports];
+
+      useReportStore.setState({ isManuallySelected: true });
+      useReportStore.getState().clearManualSelection();
+
+      expect(useReportStore.getState().reports).toEqual(reportsBefore);
+    });
+
+    it("is idempotent when already false", () => {
+      expect(useReportStore.getState().isManuallySelected).toBe(false);
+
+      useReportStore.getState().clearManualSelection();
+
+      expect(useReportStore.getState().isManuallySelected).toBe(false);
+    });
+  });
+
+  describe("setReport clears manual selection", () => {
+    it("clears isManuallySelected when creating a new report", () => {
+      // Set manual selection first
+      useReportStore.setState({ isManuallySelected: true });
+      expect(useReportStore.getState().isManuallySelected).toBe(true);
+
+      useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Content" },
+      });
+
+      expect(useReportStore.getState().isManuallySelected).toBe(false);
+    });
+
+    it("clears isManuallySelected when updating an existing report", () => {
+      // Create a report first
+      useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Initial" },
+      });
+
+      // Set manual selection
+      useReportStore.setState({ isManuallySelected: true });
+      expect(useReportStore.getState().isManuallySelected).toBe(true);
+
+      // Update the same session's report
+      useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Updated" },
+      });
+
+      expect(useReportStore.getState().isManuallySelected).toBe(false);
+    });
+
+    it("clears manual selection even when manually selected a different report", () => {
+      // Create two reports
+      const report1 = useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Report 1" },
+      });
+      useReportStore.getState().setReport({
+        sessionId: "session-2",
+        content: { type: "text", text: "Report 2" },
+      });
+
+      // Manually select report1
+      useReportStore.getState().setCurrentReportManual(report1.id);
+      expect(useReportStore.getState().isManuallySelected).toBe(true);
+      expect(useReportStore.getState().currentReportId).toBe(report1.id);
+
+      // Generate a new report (different session)
+      useReportStore.getState().setReport({
+        sessionId: "session-3",
+        content: { type: "text", text: "Report 3" },
+      });
+
+      // Manual selection should be cleared, current should be the new report
+      expect(useReportStore.getState().isManuallySelected).toBe(false);
+      expect(useReportStore.getState().reports).toHaveLength(3);
+    });
+  });
 });

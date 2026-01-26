@@ -85,7 +85,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### test-report-store-enhancements
 
 - content: Add unit tests for new report store functionality: `isManuallySelected` state, `setCurrentReportManual()`, `clearManualSelection()`, `isGeneratingReport` state, and `setIsGeneratingReport()`. Verify `setReport()` clears manual selection flag.
-- status: pending
+- status: complete
 - dependencies: add-manual-selection-tracking, add-report-generating-state
 
 ### test-session-report-clearing
