@@ -114,6 +114,9 @@ export function ReportPanel({ className, isStreaming = false }: ReportPanelProps
     return state.reports.find((r) => r.id === state.currentReportId) ?? null;
   });
 
+  // Subscribe to isGeneratingReport state
+  const isGeneratingReport = useReportStore((state) => state.isGeneratingReport);
+
   // Handle downloading current report as markdown
   const handleDownload = useCallback(() => {
     if (!currentReport) return;
@@ -170,6 +173,7 @@ export function ReportPanel({ className, isStreaming = false }: ReportPanelProps
         <ReportRenderer
           report={currentReport ? (currentReport.content as unknown as UITree) : null}
           isStreaming={isStreaming}
+          isGeneratingReport={isGeneratingReport}
         />
       </ScrollArea>
     </div>

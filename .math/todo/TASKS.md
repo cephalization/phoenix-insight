@@ -75,7 +75,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### integrate-generating-state-in-report-panel
 
 - content: Update ReportPanel and ReportRenderer to consume `isGeneratingReport` from report store. Pass it to ReportRenderer alongside existing `isStreaming` prop. In ReportRenderer, show `GeneratingSkeleton` when `isGeneratingReport && !report` (generating a new report). The `LoadingSkeleton` continues to be used when `isStreaming && !report` (streaming updates to existing reports).
-- status: pending
+- status: complete
 - dependencies: create-report-generating-skeleton, add-report-generating-state
 
 ---

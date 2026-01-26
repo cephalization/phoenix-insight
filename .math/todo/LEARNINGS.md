@@ -68,3 +68,13 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Added `data-testid="report-generating-skeleton"` for easy testing in the next integration task
 - Exported the component so it can be imported by ReportPanel in the `integrate-generating-state-in-report-panel` task
 - The component is intentionally not used yet in ReportRenderer.tsx - that's part of the next task's scope
+
+## integrate-generating-state-in-report-panel
+
+- The integration was clean and minimal - two files needed changes:
+  1. `ReportPanel.tsx`: Subscribe to `isGeneratingReport` from report store and pass it to `ReportRenderer`
+  2. `ReportRenderer.tsx`: Add `isGeneratingReport` optional prop and add check before other render conditions
+- Key pattern: The order of state checks in ReportRenderer matters. `isGeneratingReport && !report` must be checked BEFORE `!report && !isStreaming` (empty state) to prioritize showing the generating skeleton
+- The rendering priority is: GeneratingSkeleton (generating new report) > LoadingSkeleton (streaming without content) > EmptyState (no report, no activity) > Report content
+- All 324 existing tests pass without modification - the new prop is optional with default `false`, so existing tests continue to work
+- The `GeneratingSkeleton` component was already defined and exported in the previous task, so this task just needed to wire it up

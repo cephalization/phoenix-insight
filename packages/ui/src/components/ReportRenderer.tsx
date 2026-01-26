@@ -21,6 +21,8 @@ export interface ReportRendererProps {
   report: UITree | null;
   /** Whether the report is currently streaming */
   isStreaming?: boolean;
+  /** Whether a report is being generated (generate_report tool is active) */
+  isGeneratingReport?: boolean;
 }
 
 /**
@@ -191,7 +193,8 @@ function FallbackComponent({
  * ReportRenderer - renders a JSON report with shadcn/ui components
  *
  * Shows:
- * - Empty state when no report is available
+ * - GeneratingSkeleton when generating a new report (isGeneratingReport && !report)
+ * - Empty state when no report is available and not generating
  * - Loading skeleton when streaming without content
  * - Report content with streaming indicator when streaming with content
  * - Full report when complete
@@ -199,8 +202,14 @@ function FallbackComponent({
 export function ReportRenderer({
   report,
   isStreaming = false,
+  isGeneratingReport = false,
 }: ReportRendererProps) {
-  // No report and not streaming - show empty state
+  // Generating a new report but no content yet - show generating skeleton
+  if (isGeneratingReport && !report) {
+    return <GeneratingSkeleton />;
+  }
+
+  // No report and not streaming/generating - show empty state
   if (!report && !isStreaming) {
     return <EmptyState />;
   }
