@@ -91,5 +91,5 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### test-session-report-clearing
 
 - content: Add unit tests to verify that creating a new session clears `currentReportId` when not manually selected, and preserves `currentReportId` when manually selected.
-- status: pending
+- status: complete
 - dependencies: clear-report-on-new-session

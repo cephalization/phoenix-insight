@@ -89,3 +89,12 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Added 18 new tests across 4 describe blocks: `isManuallySelected` (2 tests), `setCurrentReportManual` (4 tests), `clearManualSelection` (4 tests), `setReport clears manual selection` (3 tests)
 - Existing tests for `isGeneratingReport` and `setIsGeneratingReport` were already present (4 tests), so no new tests needed for those
 - Total tests in report.test.ts: 42 (up from ~31 before this task)
+
+## test-session-report-clearing
+
+- Testing cross-store interactions requires importing both stores and resetting both in `beforeEach` for proper test isolation
+- Added a nested `beforeEach` in the new describe block specifically for resetting report store state, since the outer `beforeEach` only resets chat store state
+- Key test scenarios: (1) clearing currentReportId when not manually selected, (2) preserving currentReportId when manually selected, (3) verifying reports array isn't affected, (4) ensuring session creation still works correctly alongside report clearing
+- Pattern: When testing store A calling store B, verify both the effect on store B's state AND that store A's primary function still works correctly
+- The tests verify the `clear-report-on-new-session` implementation where `createSession()` checks `isManuallySelected` from report store and conditionally clears `currentReportId`
+- Added 6 new tests covering: clearing when not manual, preserving when manual, clearing with multiple reports, flag not affected when clearing, null already works, and session creation still works

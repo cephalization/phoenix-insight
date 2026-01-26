@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { useChatStore } from "./chat";
+import { useReportStore } from "./report";
 
 describe("useChatStore", () => {
   beforeEach(() => {
@@ -321,6 +322,121 @@ describe("useChatStore", () => {
       useChatStore.getState().setConnectionStatus("disconnected");
       expect(useChatStore.getState().connectionStatus).toBe("disconnected");
       expect(useChatStore.getState().isConnected).toBe(false);
+    });
+  });
+
+  describe("createSession report clearing", () => {
+    beforeEach(() => {
+      // Reset report store state
+      useReportStore.setState({
+        reports: [],
+        currentReportId: null,
+        isManuallySelected: false,
+        isGeneratingReport: false,
+      });
+    });
+
+    it("clears currentReportId when creating a new session and report is not manually selected", () => {
+      // Create a report and set it as current (not manually)
+      const report = useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Report content" },
+      });
+      expect(useReportStore.getState().currentReportId).toBe(report.id);
+      expect(useReportStore.getState().isManuallySelected).toBe(false);
+
+      // Create a new session
+      useChatStore.getState().createSession("New Session");
+
+      // currentReportId should be cleared
+      expect(useReportStore.getState().currentReportId).toBeNull();
+    });
+
+    it("preserves currentReportId when creating a new session and report is manually selected", () => {
+      // Create a report
+      const report = useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Report content" },
+      });
+
+      // Manually select the report
+      useReportStore.getState().setCurrentReportManual(report.id);
+      expect(useReportStore.getState().currentReportId).toBe(report.id);
+      expect(useReportStore.getState().isManuallySelected).toBe(true);
+
+      // Create a new session
+      useChatStore.getState().createSession("New Session");
+
+      // currentReportId should be preserved
+      expect(useReportStore.getState().currentReportId).toBe(report.id);
+      expect(useReportStore.getState().isManuallySelected).toBe(true);
+    });
+
+    it("clears currentReportId when no manual selection even with multiple reports", () => {
+      // Create multiple reports
+      useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Report 1" },
+      });
+      const report2 = useReportStore.getState().setReport({
+        sessionId: "session-2",
+        content: { type: "text", text: "Report 2" },
+      });
+
+      expect(useReportStore.getState().reports).toHaveLength(2);
+      expect(useReportStore.getState().currentReportId).toBe(report2.id);
+      expect(useReportStore.getState().isManuallySelected).toBe(false);
+
+      // Create a new session
+      useChatStore.getState().createSession("New Session");
+
+      // currentReportId should be cleared, but reports should remain
+      expect(useReportStore.getState().currentReportId).toBeNull();
+      expect(useReportStore.getState().reports).toHaveLength(2);
+    });
+
+    it("does not affect isManuallySelected flag when clearing report", () => {
+      // Create a report (not manually selected)
+      useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Report content" },
+      });
+      expect(useReportStore.getState().isManuallySelected).toBe(false);
+
+      // Create a new session
+      useChatStore.getState().createSession("New Session");
+
+      // isManuallySelected should still be false
+      expect(useReportStore.getState().isManuallySelected).toBe(false);
+    });
+
+    it("does not clear currentReportId when it is already null", () => {
+      // Ensure no report is set
+      expect(useReportStore.getState().currentReportId).toBeNull();
+      expect(useReportStore.getState().isManuallySelected).toBe(false);
+
+      // Create a new session
+      useChatStore.getState().createSession("New Session");
+
+      // currentReportId should still be null
+      expect(useReportStore.getState().currentReportId).toBeNull();
+    });
+
+    it("creates the session correctly regardless of report clearing behavior", () => {
+      // Create a report
+      useReportStore.getState().setReport({
+        sessionId: "session-1",
+        content: { type: "text", text: "Report content" },
+      });
+
+      // Create a new session
+      const session = useChatStore.getState().createSession("New Session");
+
+      // Session should be created correctly
+      expect(session.id).toBeDefined();
+      expect(session.title).toBe("New Session");
+      expect(session.messages).toEqual([]);
+      expect(useChatStore.getState().currentSessionId).toBe(session.id);
     });
   });
 });
