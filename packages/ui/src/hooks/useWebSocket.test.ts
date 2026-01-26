@@ -96,6 +96,8 @@ describe("useWebSocket", () => {
     useReportStore.setState({
       reports: [],
       currentReportId: null,
+      isManuallySelected: false,
+      isGeneratingReport: false,
     });
 
     // Reset mock instances
@@ -386,6 +388,91 @@ describe("useWebSocket", () => {
         expect(messages[0].role).toBe("assistant");
         expect(useChatStore.getState().isStreaming).toBe(true);
       });
+
+      it("sets isGeneratingReport to true when generate_report tool is called", () => {
+        const session = useChatStore.getState().createSession();
+        renderHook(() => useWebSocket());
+
+        expect(useReportStore.getState().isGeneratingReport).toBe(false);
+
+        act(() => {
+          mockClient.messageHandler?.({
+            type: "tool_call",
+            payload: {
+              toolName: "generate_report",
+              args: { content: { type: "card" } },
+              sessionId: session.id,
+            },
+          });
+        });
+
+        expect(useReportStore.getState().isGeneratingReport).toBe(true);
+      });
+
+      it("does not set isGeneratingReport for other tool calls", () => {
+        const session = useChatStore.getState().createSession();
+        renderHook(() => useWebSocket());
+
+        expect(useReportStore.getState().isGeneratingReport).toBe(false);
+
+        act(() => {
+          mockClient.messageHandler?.({
+            type: "tool_call",
+            payload: {
+              toolName: "search",
+              args: { query: "test" },
+              sessionId: session.id,
+            },
+          });
+        });
+
+        expect(useReportStore.getState().isGeneratingReport).toBe(false);
+      });
+    });
+
+    describe("tool_result messages", () => {
+      it("sets isGeneratingReport to false when generate_report tool completes", () => {
+        const session = useChatStore.getState().createSession();
+        useReportStore.setState({ isGeneratingReport: true });
+        renderHook(() => useWebSocket());
+
+        expect(useReportStore.getState().isGeneratingReport).toBe(true);
+
+        act(() => {
+          mockClient.messageHandler?.({
+            type: "tool_result",
+            payload: {
+              toolName: "generate_report",
+              result: "Report generated",
+              sessionId: session.id,
+            },
+          });
+        });
+
+        expect(useReportStore.getState().isGeneratingReport).toBe(false);
+      });
+
+      it("does not change isGeneratingReport for other tool results", () => {
+        const session = useChatStore.getState().createSession();
+        useReportStore.setState({ isGeneratingReport: true });
+        renderHook(() => useWebSocket());
+
+        expect(useReportStore.getState().isGeneratingReport).toBe(true);
+
+        act(() => {
+          mockClient.messageHandler?.({
+            type: "tool_result",
+            payload: {
+              toolName: "search",
+              result: "Search results",
+              sessionId: session.id,
+            },
+          });
+        });
+
+        // Should still be true because this wasn't generate_report
+        expect(useReportStore.getState().isGeneratingReport).toBe(true);
+      });
     });
 
     describe("report messages", () => {
@@ -478,6 +565,24 @@ describe("useWebSocket", () => {
 
         expect(useChatStore.getState().isStreaming).toBe(false);
       });
+
+      it("resets isGeneratingReport on error", () => {
+        const session = useChatStore.getState().createSession();
+        useReportStore.setState({ isGeneratingReport: true });
+        renderHook(() => useWebSocket());
+
+        expect(useReportStore.getState().isGeneratingReport).toBe(true);
+
+        // Receive error
+        act(() => {
+          mockClient.messageHandler?.({
+            type: "error",
+            payload: { message: "Something failed", sessionId: session.id },
+          });
+        });
+
+        expect(useReportStore.getState().isGeneratingReport).toBe(false);
+      });
     });
 
     describe("context_compacted messages", () => {
@@ -539,6 +644,24 @@ describe("useWebSocket", () => {
         });
 
         expect(useChatStore.getState().isStreaming).toBe(false);
+      });
+
+      it("resets isGeneratingReport when done", () => {
+        const session = useChatStore.getState().createSession();
+        useReportStore.setState({ isGeneratingReport: true });
+        renderHook(() => useWebSocket());
+
+        expect(useReportStore.getState().isGeneratingReport).toBe(true);
+
+        // Done
+        act(() => {
+          mockClient.messageHandler?.({
+            type: "done",
+            payload: { sessionId: session.id },
+          });
+        });
+
+        expect(useReportStore.getState().isGeneratingReport).toBe(false);
       });
 
       it("allows new messages after done", () => {

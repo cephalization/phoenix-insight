@@ -32,3 +32,12 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Added tests that verify: default value is false, setting to true works, setting back to false works, and toggling doesn't affect other state
 - Remember to update `beforeEach` in tests when adding new state fields to ensure clean test isolation
 - This state will be consumed by WebSocket hook (next task `track-generate-report-tool`) and UI components (`integrate-generating-state-in-report-panel`)
+
+## track-generate-report-tool
+
+- The useWebSocket hook uses `useCallback` with a dependency array for the `handleMessage` function - when adding new store selectors/actions, remember to add them to this dependency array
+- Pattern for tracking specific tool execution: check `toolName` in both `tool_call` (set true) and `tool_result` (set false) handlers
+- Also reset `isGeneratingReport` in `done` and `error` handlers as a safety net - if the tool_result message is missed or an error occurs, we don't want to leave the UI in a stuck generating state
+- The existing test structure in `useWebSocket.test.ts` uses a mock `mockClient` that stores handlers (messageHandler, openHandler, etc.) which can be called in tests to simulate server messages
+- When testing state changes from different stores (chat vs report), make sure to import both stores and update their state in `beforeEach` to ensure test isolation
+- Added 6 new tests covering: tool_call setting isGeneratingReport for generate_report, tool_call not setting it for other tools, tool_result clearing it for generate_report, tool_result not clearing it for other tools, error handler clearing it, and done handler clearing it

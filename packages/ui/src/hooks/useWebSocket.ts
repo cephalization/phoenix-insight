@@ -234,6 +234,9 @@ export function useWebSocket(
 
   // Report store selectors
   const setReport = useReportStore((state) => state.setReport);
+  const setIsGeneratingReport = useReportStore(
+    (state) => state.setIsGeneratingReport
+  );
 
   // Handle incoming server messages
   const handleMessage = useCallback(
@@ -285,6 +288,11 @@ export function useWebSocket(
         case "tool_call": {
           const { toolName, args } = message.payload;
 
+          // Track when generate_report tool is called
+          if (toolName === "generate_report") {
+            setIsGeneratingReport(true);
+          }
+
           // Ensure we have an assistant message to attach the tool call to
           if (!currentAssistantMessageIdRef.current) {
             const newMessage = addMessage(sessionId, {
@@ -316,6 +324,11 @@ export function useWebSocket(
 
         case "tool_result": {
           const { toolName, result } = message.payload;
+
+          // Track when generate_report tool completes
+          if (toolName === "generate_report") {
+            setIsGeneratingReport(false);
+          }
 
           // Update the tool call with its result
           if (currentAssistantMessageIdRef.current) {
@@ -363,6 +376,8 @@ export function useWebSocket(
           // Reset streaming state on error
           currentAssistantMessageIdRef.current = null;
           setIsStreaming(false);
+          // Reset report generating state on error
+          setIsGeneratingReport(false);
           break;
         }
 
@@ -370,6 +385,8 @@ export function useWebSocket(
           // Query completed - reset streaming state
           currentAssistantMessageIdRef.current = null;
           setIsStreaming(false);
+          // Reset report generating state when done
+          setIsGeneratingReport(false);
           break;
         }
 
@@ -393,6 +410,7 @@ export function useWebSocket(
       updateToolCallResult,
       setIsStreaming,
       setReport,
+      setIsGeneratingReport,
     ]
   );
 

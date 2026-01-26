@@ -43,7 +43,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### track-generate-report-tool
 
 - content: Update useWebSocket hook to track when `generate_report` tool is called. In the `tool_call` handler, when `toolName === "generate_report"`, call `setIsGeneratingReport(true)`. In the `tool_result` handler, when `toolName === "generate_report"`, call `setIsGeneratingReport(false)`. Also reset `isGeneratingReport` to false in the `done` and `error` handlers.
-- status: pending
+- status: complete
 - dependencies: add-report-generating-state
 
 ---
