@@ -41,3 +41,11 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - The existing test structure in `useWebSocket.test.ts` uses a mock `mockClient` that stores handlers (messageHandler, openHandler, etc.) which can be called in tests to simulate server messages
 - When testing state changes from different stores (chat vs report), make sure to import both stores and update their state in `beforeEach` to ensure test isolation
 - Added 6 new tests covering: tool_call setting isGeneratingReport for generate_report, tool_call not setting it for other tools, tool_result clearing it for generate_report, tool_result not clearing it for other tools, error handler clearing it, and done handler clearing it
+
+## clear-report-on-new-session
+
+- Cross-store communication in Zustand is straightforward: import the other store and access it via `useOtherStore.getState()` and `useOtherStore.setState()` from within an action
+- When one store's action needs to conditionally update another store, access the other store's state directly with `.getState()` to check conditions, then use `.setState()` to update
+- The implementation checks `isManuallySelected` from report store after creating a new session - if not manually selected, clears `currentReportId` to null so new sessions show empty state
+- This preserves manually viewed historical reports while ensuring new sessions start with a clean report panel
+- Unit tests for this specific cross-store behavior will be added in the `test-session-report-clearing` task that depends on this one

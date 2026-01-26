@@ -5,6 +5,7 @@ import {
   loadSessions as dbLoadSessions,
   deleteSession as dbDeleteSession,
 } from "@/lib/db";
+import { useReportStore } from "./report";
 
 // Types
 export interface ToolCall {
@@ -191,6 +192,12 @@ export const useChatStore = create<ChatStore>()(
         sessions: [...state.sessions, newSession],
         currentSessionId: newSession.id,
       }));
+
+      // Clear current report selection for new sessions if not manually selected
+      const reportStore = useReportStore.getState();
+      if (!reportStore.isManuallySelected) {
+        useReportStore.setState({ currentReportId: null });
+      }
 
       return newSession;
     },

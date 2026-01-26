@@ -53,7 +53,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### clear-report-on-new-session
 
 - content: Update `createSession()` in chat store to clear the current report selection when a new session is created. After a new session is created, if the current report is NOT manually selected (`!isManuallySelected`), set `currentReportId` to null. This ensures empty state shows for new sessions while preserving manually viewed historical reports.
-- status: pending
+- status: complete
 - dependencies: add-manual-selection-tracking
 
 ---
