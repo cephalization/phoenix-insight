@@ -44,6 +44,57 @@ function EmptyState() {
 }
 
 /**
+ * Generating skeleton shown while report is being generated
+ * Distinct from LoadingSkeleton - shows when generate_report tool is called
+ * but no report content exists yet
+ */
+function GeneratingSkeleton() {
+  return (
+    <div className="space-y-4 p-4" data-testid="report-generating-skeleton">
+      {/* Generating indicator header */}
+      <div className="flex items-center gap-3 rounded-lg bg-primary/5 p-4">
+        <div className="flex gap-1">
+          <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]" />
+          <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]" />
+          <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-primary" />
+        </div>
+        <span className="font-medium text-primary">Generating report...</span>
+      </div>
+
+      {/* Title skeleton with emphasized pulse */}
+      <Skeleton className="h-8 w-3/4 animate-pulse" />
+
+      {/* Card skeleton */}
+      <div className="space-y-3 rounded-lg border border-primary/10 bg-primary/5 p-4">
+        <Skeleton className="h-5 w-1/2" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-4/5" />
+      </div>
+
+      {/* Another card skeleton */}
+      <div className="space-y-3 rounded-lg border border-primary/10 bg-primary/5 p-4">
+        <Skeleton className="h-5 w-2/5" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-4 w-5/6" />
+      </div>
+
+      {/* Metrics row skeleton */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2 rounded-lg border border-primary/10 bg-primary/5 p-4">
+          <Skeleton className="h-4 w-1/3" />
+          <Skeleton className="h-8 w-1/2" />
+        </div>
+        <div className="space-y-2 rounded-lg border border-primary/10 bg-primary/5 p-4">
+          <Skeleton className="h-4 w-1/3" />
+          <Skeleton className="h-8 w-1/2" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Loading skeleton shown while report is streaming
  */
 function LoadingSkeleton() {
@@ -184,4 +235,5 @@ export function ReportRenderer({
   );
 }
 
+export { GeneratingSkeleton };
 export default ReportRenderer;

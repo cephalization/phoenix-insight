@@ -57,3 +57,14 @@ Use this knowledge to avoid repeating mistakes and build on what works.
 - Don't forget to add the new action to the dependency array of the `useCallback` to ensure React re-creates the callback if the action reference changes (though in practice Zustand actions are stable)
 - Added a test to verify that clicking "View" on a report sets `isManuallySelected` to true, complementing the existing test that verifies `currentReportId` is updated
 - This task depends on `add-manual-selection-tracking` since it uses the `setCurrentReportManual` action defined in that task
+
+## create-report-generating-skeleton
+
+- The `GeneratingSkeleton` component is structurally similar to `LoadingSkeleton` but with key visual differences:
+  1. A prominent header with bouncing dots animation and "Generating report..." text
+  2. Card borders and backgrounds use `border-primary/10` and `bg-primary/5` for a subtle primary-colored tint
+- Reused the same bouncing dots pattern from `StreamingIndicator` for consistency (3 dots with staggered animation delays: -0.3s, -0.15s, 0s)
+- Made dots slightly larger (h-2.5 w-2.5 vs h-2 w-2) for the header to make it more prominent
+- Added `data-testid="report-generating-skeleton"` for easy testing in the next integration task
+- Exported the component so it can be imported by ReportPanel in the `integrate-generating-state-in-report-panel` task
+- The component is intentionally not used yet in ReportRenderer.tsx - that's part of the next task's scope

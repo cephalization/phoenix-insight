@@ -69,7 +69,7 @@ Each agent picks the next pending task, implements it, and marks it complete.
 ### create-report-generating-skeleton
 
 - content: Create a new `GeneratingSkeleton` component in ReportRenderer.tsx for the report generating state. Design should be similar to `LoadingSkeleton` but with visual indication that a report is being generated (e.g., animated pulse effect, "Generating report..." text with bouncing dots). This is distinct from the streaming indicator which shows when a report is being updated.
-- status: pending
+- status: complete
 - dependencies: none
 
 ### integrate-generating-state-in-report-panel
