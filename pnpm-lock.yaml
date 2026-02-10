@@ -42,8 +42,8 @@ importers:
         specifier: ^5.6.1
         version: 5.6.1(@opentelemetry/api@1.9.0)(ws@8.19.0)
       '@arizeai/phoenix-otel':
-        specifier: ^0.3.4
-        version: 0.3.4
+        specifier: 0.4.0
+        version: 0.4.0(@opentelemetry/semantic-conventions@1.38.0)
       '@opentelemetry/api':
         specifier: 1.9.0
         version: 1.9.0
@@ -270,6 +270,12 @@ packages:
   '@arizeai/openinference-core@2.0.5':
     resolution: {integrity: sha512-BnufYaFqmG9twkz/9DHX9WTcOs7YvVAYaufau5tdjOT1c0Y8niJwmNWzV36phNPg3c7SmdD5OYLuzeAUN0T3pQ==}
 
+  '@arizeai/openinference-genai@0.1.6':
+    resolution: {integrity: sha512-SYXKe/wKS5rrXfq2nrxvNqy3qtJzZeIp3AWAMWzmkKqd5e0R/jAquuAawhIY8Jxof0jhuhYm/QBsE+tqEg8fkg==}
+    peerDependencies:
+      '@opentelemetry/api': '>=1.9.0'
+      '@opentelemetry/semantic-conventions': '>=1.37.0'
+
   '@arizeai/openinference-semantic-conventions@1.1.0':
     resolution: {integrity: sha512-rxRYnUWjt28DlVXnWukcQAyGhPYQ3ckmKrjEdUjmUNnvvv4k8Dabbp5h6AEjNy7YzN9jL2smNRJnbLIVtkrLEg==}
 
@@ -278,6 +284,11 @@ packages:
 
   '@arizeai/openinference-vercel@2.5.5':
     resolution: {integrity: sha512-1Ot/biSA9RiRj1qy/oE4t4uxS0zmknlGj1yWpSefuREGTNUakWYTk8QwmPgql3D2nYaOSQaQO43tz0hNPNXInQ==}
+    peerDependencies:
+      '@opentelemetry/api': '>=1.7.0 <2.0.0'
+
+  '@arizeai/openinference-vercel@2.7.0':
+    resolution: {integrity: sha512-UoRh3tenlsxhCK5fw8YrPpMfiBfhG49XOQOZTZul/iGWWKPbBEhrlEfxB8jLZYGh2iCIJLx+F3Vhx0Ojn3LvPQ==}
     peerDependencies:
       '@opentelemetry/api': '>=1.7.0 <2.0.0'
 
@@ -291,6 +302,9 @@ packages:
 
   '@arizeai/phoenix-otel@0.3.4':
     resolution: {integrity: sha512-ocN9gnv7Owp6/mvCpmyOlf6vLv5yE8DV0v/JF3/LjXeIEv+ueuwMvfPycPFrAujvOBv0iGm+CWoA+PGA+tnsYA==}
+
+  '@arizeai/phoenix-otel@0.4.0':
+    resolution: {integrity: sha512-k3hDvbO0oNTj1E98wN6DEcrJfhYIiw3Mi9zIhQf0/aS4nBcmoZXuqfvih3Le9dtcvFP7ZDtAYX/0OK3NUGyOoA==}
 
   '@asamuzakjp/css-color@4.1.1':
     resolution: {integrity: sha512-B0Hv6G3gWGMn0xKJ0txEi/jM5iFpT3MfDxmhZFb4W047GvytCf1DHQ1D69W3zHI4yWe2aTZAA0JnbMZ7Xc8DuQ==}
@@ -4537,6 +4551,12 @@ snapshots:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
 
+  '@arizeai/openinference-genai@0.1.6(@opentelemetry/api@1.9.0)(@opentelemetry/semantic-conventions@1.38.0)':
+    dependencies:
+      '@arizeai/openinference-semantic-conventions': 2.1.7
+      '@opentelemetry/api': 1.9.0
+      '@opentelemetry/semantic-conventions': 1.38.0
+
   '@arizeai/openinference-semantic-conventions@1.1.0': {}
 
   '@arizeai/openinference-semantic-conventions@2.1.7': {}
@@ -4547,6 +4567,16 @@ snapshots:
       '@arizeai/openinference-semantic-conventions': 2.1.7
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
+
+  '@arizeai/openinference-vercel@2.7.0(@opentelemetry/api@1.9.0)(@opentelemetry/semantic-conventions@1.38.0)':
+    dependencies:
+      '@arizeai/openinference-core': 2.0.5
+      '@arizeai/openinference-genai': 0.1.6(@opentelemetry/api@1.9.0)(@opentelemetry/semantic-conventions@1.38.0)
+      '@arizeai/openinference-semantic-conventions': 2.1.7
+      '@opentelemetry/api': 1.9.0
+      '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
+    transitivePeerDependencies:
+      - '@opentelemetry/semantic-conventions'
 
   '@arizeai/phoenix-client@5.6.1(@opentelemetry/api@1.9.0)(ws@8.19.0)':
     dependencies:
@@ -4583,6 +4613,21 @@ snapshots:
       '@opentelemetry/sdk-trace-base': 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/sdk-trace-node': 1.30.1(@opentelemetry/api@1.9.0)
     transitivePeerDependencies:
+      - supports-color
+
+  '@arizeai/phoenix-otel@0.4.0(@opentelemetry/semantic-conventions@1.38.0)':
+    dependencies:
+      '@arizeai/openinference-semantic-conventions': 1.1.0
+      '@arizeai/openinference-vercel': 2.7.0(@opentelemetry/api@1.9.0)(@opentelemetry/semantic-conventions@1.38.0)
+      '@opentelemetry/api': 1.9.0
+      '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
+      '@opentelemetry/exporter-trace-otlp-proto': 0.57.2(@opentelemetry/api@1.9.0)
+      '@opentelemetry/instrumentation': 0.57.2(@opentelemetry/api@1.9.0)
+      '@opentelemetry/resources': 2.4.0(@opentelemetry/api@1.9.0)
+      '@opentelemetry/sdk-trace-base': 1.30.1(@opentelemetry/api@1.9.0)
+      '@opentelemetry/sdk-trace-node': 1.30.1(@opentelemetry/api@1.9.0)
+    transitivePeerDependencies:
+      - '@opentelemetry/semantic-conventions'
       - supports-color
 
   '@asamuzakjp/css-color@4.1.1':
