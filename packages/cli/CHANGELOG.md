@@ -1,5 +1,11 @@
 # @cephalization/phoenix-insight
 
+## 1.4.0
+
+### Minor Changes
+
+- a41d317: feat: Improve tracing
+
 ## 1.3.0
 
 ### Minor Changes
