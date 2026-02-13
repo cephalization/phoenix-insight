@@ -97,6 +97,26 @@ export type ClientMessage =
   | { type: "cancel"; payload: { sessionId?: string } };
 
 /**
+ * Report generation progress status
+ */
+export type ReportProgressStatus =
+  | "starting"
+  | "generating"
+  | "validating"
+  | "complete"
+  | "error";
+
+/**
+ * Report generation progress payload
+ */
+export interface ReportProgressPayload {
+  status: ReportProgressStatus;
+  message?: string;
+  title?: string;
+  sessionId: string;
+}
+
+/**
  * Messages sent from the server to the UI client
  */
 export type ServerMessage =
@@ -110,6 +130,7 @@ export type ServerMessage =
       payload: { toolName: string; result: unknown; sessionId: string };
     }
   | { type: "report"; payload: { content: JSONRenderTree; sessionId: string } }
+  | { type: "report_progress"; payload: ReportProgressPayload }
   | { type: "error"; payload: { message: string; sessionId?: string } }
   | { type: "done"; payload: { sessionId: string } }
   | {

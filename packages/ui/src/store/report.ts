@@ -5,6 +5,7 @@ import {
   loadReports as dbLoadReports,
   deleteReport as dbDeleteReport,
 } from "@/lib/db";
+import type { ReportProgressStatus } from "@/lib/websocket";
 
 // JSONRenderTree type - will be properly typed when @json-render/core is added
 // For now, define as a flexible JSON structure that json-render expects
@@ -14,14 +15,31 @@ export type JSONRenderTree = Record<string, unknown>;
 export interface Report {
   id: string;
   sessionId: string;
-  content: JSONRenderTree;
+  /** Report content, null when report is being generated */
+  content: JSONRenderTree | null;
   createdAt: number;
   title?: string;
+}
+
+/**
+ * Report generation progress state
+ */
+export interface ReportGenerationProgress {
+  /** Current status of report generation */
+  status: ReportProgressStatus;
+  /** Optional status message */
+  message?: string;
+  /** The report title if available */
+  title?: string;
+  /** Session ID this progress belongs to */
+  sessionId: string;
 }
 
 export interface ReportState {
   reports: Report[];
   currentReportId: string | null;
+  /** Current report generation progress (null if not generating) */
+  generationProgress: ReportGenerationProgress | null;
 }
 
 export interface ReportActions {
@@ -30,6 +48,15 @@ export interface ReportActions {
   deleteReport: (reportId: string) => void;
   listReports: () => Report[];
   getCurrentReport: () => Report | null;
+  /** Update report generation progress */
+  setGenerationProgress: (progress: ReportGenerationProgress | null) => void;
+  /** Check if a report is currently being generated */
+  isGenerating: () => boolean;
+  /** 
+   * Start generating a new report - creates a placeholder report with null content
+   * and switches to it immediately. Returns the new report's ID.
+   */
+  startGeneratingReport: (sessionId: string, title?: string) => string;
 }
 
 export type ReportStore = ReportState & ReportActions;
@@ -44,6 +71,7 @@ export const useReportStore = create<ReportStore>()(
     // State
     reports: [],
     currentReportId: null,
+    generationProgress: null,
 
   // Actions
   setReport: (reportData) => {
@@ -120,6 +148,56 @@ export const useReportStore = create<ReportStore>()(
     const state = get();
     if (!state.currentReportId) return null;
     return state.reports.find((r) => r.id === state.currentReportId) ?? null;
+  },
+
+  setGenerationProgress: (progress) => {
+    set({ generationProgress: progress });
+  },
+
+  isGenerating: () => {
+    const state = get();
+    return (
+      state.generationProgress !== null &&
+      state.generationProgress.status !== "complete" &&
+      state.generationProgress.status !== "error"
+    );
+  },
+
+  startGeneratingReport: (sessionId, title) => {
+    const state = get();
+    
+    // Check if a report for this session already exists
+    const existingReport = state.reports.find((r) => r.sessionId === sessionId);
+    
+    if (existingReport) {
+      // Clear the existing report's content and switch to it
+      // This shows loading state on the existing report
+      set((state) => ({
+        reports: state.reports.map((r) =>
+          r.id === existingReport.id
+            ? { ...r, content: null, title: title ?? r.title }
+            : r
+        ),
+        currentReportId: existingReport.id,
+      }));
+      return existingReport.id;
+    } else {
+      // Create new report with null content (placeholder)
+      const newReport: Report = {
+        id: generateId(),
+        sessionId,
+        content: null,
+        createdAt: Date.now(),
+        title,
+      };
+
+      set((state) => ({
+        reports: [...state.reports, newReport],
+        currentReportId: newReport.id,
+      }));
+
+      return newReport.id;
+    }
   },
 })));
 

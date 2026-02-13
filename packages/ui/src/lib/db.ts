@@ -256,9 +256,13 @@ export function exportReportAsMarkdown(report: Report): string {
     parts.push(`# ${report.title}\n\n`);
   }
 
-  // Convert content to markdown
-  const contentMarkdown = jsonRenderTreeToMarkdown(report.content);
-  parts.push(contentMarkdown);
+  // Convert content to markdown (handle null content for reports being generated)
+  if (report.content) {
+    const contentMarkdown = jsonRenderTreeToMarkdown(report.content);
+    parts.push(contentMarkdown);
+  } else {
+    parts.push("*Report content is being generated...*\n\n");
+  }
 
   // Add metadata footer
   parts.push("\n---\n\n");

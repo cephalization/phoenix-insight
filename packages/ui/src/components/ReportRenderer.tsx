@@ -2,7 +2,7 @@
  * ReportRenderer Component
  *
  * Renders a JSON report using the json-render library with shadcn/ui components.
- * Supports loading states, empty states, and streaming indicators.
+ * Supports loading states, empty states, generation progress, and streaming indicators.
  */
 
 import {
@@ -14,13 +14,16 @@ import {
 import type { UITree } from "@json-render/core";
 import { registry } from "@/lib/json-render/registryManifest";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText } from "lucide-react";
+import { FileText, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import type { ReportGenerationProgress } from "@/store/report";
 
 export interface ReportRendererProps {
   /** The report content as a JSON render tree, or null if no report */
   report: UITree | null;
   /** Whether the report is currently streaming */
   isStreaming?: boolean;
+  /** Current report generation progress (null if not generating) */
+  generationProgress?: ReportGenerationProgress | null;
 }
 
 /**
@@ -122,6 +125,62 @@ function StreamingIndicator() {
 }
 
 /**
+ * Generation progress indicator shown while report subagent is working
+ */
+function GenerationProgressIndicator({
+  progress,
+}: {
+  progress: ReportGenerationProgress;
+}) {
+  const getStatusIcon = () => {
+    switch (progress.status) {
+      case "complete":
+        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
+      case "error":
+        return <AlertCircle className="h-5 w-5 text-destructive" />;
+      default:
+        return <Loader2 className="h-5 w-5 animate-spin text-primary" />;
+    }
+  };
+
+  const getStatusText = () => {
+    switch (progress.status) {
+      case "starting":
+        return "Initializing report generation...";
+      case "generating":
+        return "Analyzing data and generating report...";
+      case "validating":
+        return "Validating report structure...";
+      case "complete":
+        return progress.title
+          ? `Report "${progress.title}" generated`
+          : "Report generated successfully";
+      case "error":
+        return progress.message || "Report generation failed";
+      default:
+        return progress.message || "Generating report...";
+    }
+  };
+
+  return (
+    <div
+      className="flex min-h-[200px] flex-col items-center justify-center gap-4 p-8"
+      data-testid="report-generation-progress"
+    >
+      {getStatusIcon()}
+      <div className="space-y-2 text-center">
+        <p className="text-sm font-medium">{getStatusText()}</p>
+        {progress.title && progress.status !== "complete" && (
+          <p className="text-xs text-muted-foreground">
+            Creating: {progress.title}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
  * Fallback component for unknown component types
  */
 function FallbackComponent({
@@ -141,6 +200,7 @@ function FallbackComponent({
  *
  * Shows:
  * - Empty state when no report is available
+ * - Generation progress when report subagent is working (hides old report)
  * - Loading skeleton when streaming without content
  * - Report content with streaming indicator when streaming with content
  * - Full report when complete
@@ -148,7 +208,20 @@ function FallbackComponent({
 export function ReportRenderer({
   report,
   isStreaming = false,
+  generationProgress = null,
 }: ReportRendererProps) {
+  // Check if actively generating (not complete/error)
+  const isGenerating =
+    generationProgress !== null &&
+    generationProgress.status !== "complete" &&
+    generationProgress.status !== "error";
+
+  // Show generation progress when subagent is working
+  // This takes priority over showing the old report to avoid confusion
+  if (isGenerating) {
+    return <GenerationProgressIndicator progress={generationProgress} />;
+  }
+
   // No report and not streaming - show empty state
   if (!report && !isStreaming) {
     return <EmptyState />;
