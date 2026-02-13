@@ -13,7 +13,10 @@ import {
 } from "../agent/index.js";
 import type { ExecutionMode } from "../modes/types.js";
 import type { PhoenixClient } from "@arizeai/phoenix-client";
-import { createReportTool } from "../commands/report-tool.js";
+import {
+  createReportSubagentTool,
+  type ReportProgress,
+} from "../agent/report-subagent.js";
 import {
   type ConversationMessage,
   createUserMessage,
@@ -123,13 +126,18 @@ export class AgentSession {
   }
 
   /**
-   * Initialize the agent lazily, including the report tool for UI mode
+   * Initialize the agent lazily, including the report subagent tool for UI mode
    */
   private async getAgent(): Promise<PhoenixInsightAgent> {
     if (!this.agent) {
-      // Create the report tool with a callback to send reports to the client
-      const reportTool = createReportTool((content, title) => {
-        this.sendReport(content, title);
+      // Create the report subagent tool with callbacks for progress and completion
+      const reportSubagentTool = createReportSubagentTool({
+        onReport: (content, title) => {
+          this.sendReport(content, title);
+        },
+        onProgress: (progress) => {
+          this.sendReportProgress(progress);
+        },
       });
 
       const config: PhoenixInsightAgentConfig = {
@@ -137,7 +145,7 @@ export class AgentSession {
         client: this.client,
         maxSteps: this.maxSteps,
         additionalTools: {
-          generate_report: reportTool,
+          generate_report: reportSubagentTool,
         },
       };
       this.agent = await createInsightAgent(config);
@@ -189,6 +197,21 @@ export class AgentSession {
     this.send({
       type: "report",
       payload: { content, sessionId: this.sessionId },
+    });
+  }
+
+  /**
+   * Send a report generation progress update to the client
+   */
+  private sendReportProgress(progress: ReportProgress): void {
+    this.send({
+      type: "report_progress",
+      payload: {
+        status: progress.status,
+        message: progress.message,
+        title: progress.title,
+        sessionId: this.sessionId,
+      },
     });
   }
 

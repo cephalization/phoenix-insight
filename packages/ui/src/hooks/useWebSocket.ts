@@ -234,6 +234,12 @@ export function useWebSocket(
 
   // Report store selectors
   const setReport = useReportStore((state) => state.setReport);
+  const setGenerationProgress = useReportStore(
+    (state) => state.setGenerationProgress
+  );
+  const startGeneratingReport = useReportStore(
+    (state) => state.startGeneratingReport
+  );
 
   // Handle incoming server messages
   const handleMessage = useCallback(
@@ -337,6 +343,38 @@ export function useWebSocket(
             sessionId,
             content: content as JSONRenderTree,
           });
+          // Clear generation progress when report is actually received
+          setGenerationProgress(null);
+          break;
+        }
+
+        case "report_progress": {
+          const { status, message: progressMessage, title } = message.payload;
+          
+          // When generation starts, create/switch to a new report with null content
+          // This immediately shows the loading state on the new report
+          if (status === "starting") {
+            startGeneratingReport(sessionId, title);
+          }
+          
+          // Update report generation progress, but NOT for "complete" status.
+          // Progress is cleared only when the actual "report" message arrives.
+          // This ensures the loading state stays visible until the report is ready.
+          if (status !== "complete") {
+            setGenerationProgress({
+              status,
+              message: progressMessage,
+              title,
+              sessionId,
+            });
+          }
+          
+          // Clear on error since no report will arrive
+          if (status === "error") {
+            setTimeout(() => {
+              setGenerationProgress(null);
+            }, 3000);
+          }
           break;
         }
 
@@ -393,6 +431,8 @@ export function useWebSocket(
       updateToolCallResult,
       setIsStreaming,
       setReport,
+      setGenerationProgress,
+      startGeneratingReport,
     ]
   );
 

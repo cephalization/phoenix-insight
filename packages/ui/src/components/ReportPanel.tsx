@@ -3,6 +3,7 @@
  * - Displays report with header toolbar
  * - Provides download as markdown
  * - Shows report history in a dialog
+ * - Shows report generation progress
  * - Integrates with report store and IndexedDB persistence
  */
 
@@ -102,6 +103,7 @@ function downloadAsFile(content: string, filename: string): void {
  * Features:
  * - Header toolbar with title, download, and history buttons
  * - ReportRenderer integration for displaying report content
+ * - Report generation progress indicator
  * - History dialog showing all cached reports with view/delete/download actions
  */
 export function ReportPanel({ className, isStreaming = false }: ReportPanelProps) {
@@ -113,6 +115,12 @@ export function ReportPanel({ className, isStreaming = false }: ReportPanelProps
     if (!state.currentReportId) return null;
     return state.reports.find((r) => r.id === state.currentReportId) ?? null;
   });
+
+  // Subscribe to generation progress
+  const generationProgress = useReportStore((state) => state.generationProgress);
+  const isGenerating = generationProgress != null && 
+    generationProgress.status !== "complete" && 
+    generationProgress.status !== "error";
 
   // Handle downloading current report as markdown
   const handleDownload = useCallback(() => {
@@ -137,12 +145,12 @@ export function ReportPanel({ className, isStreaming = false }: ReportPanelProps
         </span>
 
         <div className="flex items-center gap-1">
-          {/* Download button */}
+          {/* Download button - disabled when no report or report has no content */}
           <Button
             variant="ghost"
             size="sm"
             onClick={handleDownload}
-            disabled={!currentReport}
+            disabled={!currentReport || !currentReport.content}
             aria-label="Download as markdown"
           >
             <DownloadIcon className="h-4 w-4" />
@@ -169,7 +177,8 @@ export function ReportPanel({ className, isStreaming = false }: ReportPanelProps
       <ScrollArea className="min-h-0 flex-1">
         <ReportRenderer
           report={currentReport ? (currentReport.content as unknown as UITree) : null}
-          isStreaming={isStreaming}
+          isStreaming={isStreaming || isGenerating}
+          generationProgress={generationProgress}
         />
       </ScrollArea>
     </div>

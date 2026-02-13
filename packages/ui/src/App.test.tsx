@@ -49,7 +49,11 @@ vi.mock("@/store/report", () => ({
     const state = {
       reports: [],
       currentReportId: null,
+      generationProgress: null,
       getCurrentReport: () => null,
+      setGenerationProgress: vi.fn(),
+      isGenerating: () => false,
+      startGeneratingReport: vi.fn(() => "mock-report-id"),
     };
     return selector(state);
   }),

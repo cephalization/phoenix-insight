@@ -7,6 +7,9 @@ export type {
   ClientMessage,
   ServerMessage,
   JSONRenderTree,
+  // Report progress types
+  ReportProgressStatus,
+  ReportProgressPayload,
   // Conversation history types
   UIConversationMessage,
   UIUserMessage,
